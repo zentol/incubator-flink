@@ -20,41 +20,4 @@
 bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
 
-# get flink config
-. "$bin"/config.sh
-
-if [ "$FLINK_IDENT_STRING" = "" ]; then
-        FLINK_IDENT_STRING="$USER"
-fi
-
-FLINK_LIB_CLIENTS_DIR=$FLINK_ROOT_DIR/lib_clients
-
-
-# auxiliary function to construct a lightweight classpath for the
-# Flink CLI client
-constructCLIClientClassPath() {
-
-	for jarfile in $FLINK_LIB_DIR/*.jar ; do
-		if [[ $CC_CLASSPATH = "" ]]; then
-			CC_CLASSPATH=$jarfile;
-		else
-			CC_CLASSPATH=$CC_CLASSPATH:$jarfile
-		fi
-	done
-	
-	for jarfile in $FLINK_LIB_CLIENTS_DIR/*.jar ; do
-		CC_CLASSPATH=$CC_CLASSPATH:$jarfile
-	done
-
-	echo $CC_CLASSPATH
-}
-
-CC_CLASSPATH=`manglePathList $(constructCLIClientClassPath)`
-
-log=$FLINK_LOG_DIR/flink-$FLINK_IDENT_STRING-flink-client-$HOSTNAME.log
-log_setting="-Dlog.file="$log" -Dlog4j.configuration=file:"$FLINK_CONF_DIR"/log4j.properties"
-
-export FLINK_ROOT_DIR
-export FLINK_CONF_DIR
-
-$JAVA_RUN $JVM_ARGS $log_setting -classpath $CC_CLASSPATH org.apache.flink.client.CliFrontend $*
+. "$bin"/flink run lib/flink-language-binding-0.6-incubating-SNAPSHOT.jar "$@"
