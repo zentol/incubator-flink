@@ -22,7 +22,6 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import static org.apache.flink.api.java.typeutils.TypeExtractor.getForObject;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.languagebinding.api.java.python.streaming.PythonStreamer;
-import org.apache.flink.languagebinding.api.java.streaming.Converter;
 import org.apache.flink.types.TypeInformation;
 import java.io.IOException;
 
@@ -35,9 +34,6 @@ import java.io.IOException;
 public class PythonJoin<IN1, IN2, OUT> extends JoinFunction<IN1, IN2, OUT> implements ResultTypeQueryable {
 	private final String operator;
 	private PythonStreamer streamer;
-	private Converter inConverter1;
-	private Converter inConverter2;
-	private Converter outConverter;
 	private final Object typeInformation;
 	private String metaInformation;
 
@@ -51,14 +47,6 @@ public class PythonJoin<IN1, IN2, OUT> extends JoinFunction<IN1, IN2, OUT> imple
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonJoin(String operator, Object typeInformation,
-			Converter inConverter1, Converter inConverter2, Converter outConverter) {
-		this(operator, typeInformation);
-		this.inConverter1 = inConverter1;
-		this.inConverter2 = inConverter2;
-		this.outConverter = outConverter;
-	}
-
 	/**
 	 Opens this function.
 	 @param ignored ignored
@@ -66,9 +54,9 @@ public class PythonJoin<IN1, IN2, OUT> extends JoinFunction<IN1, IN2, OUT> imple
 	 */
 	@Override
 	public void open(Configuration ignored) throws IOException {
-		streamer = inConverter1 == null && inConverter2 == null && outConverter == null
+		streamer = metaInformation != null
 				? new PythonStreamer(this, operator, metaInformation)
-				: new PythonStreamer(this, operator, inConverter1, inConverter2, outConverter);
+				: new PythonStreamer(this, operator);
 		streamer.open();
 	}
 

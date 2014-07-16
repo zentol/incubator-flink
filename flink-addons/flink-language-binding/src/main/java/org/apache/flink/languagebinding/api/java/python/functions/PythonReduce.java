@@ -20,7 +20,6 @@ package org.apache.flink.languagebinding.api.java.python.functions;
 import org.apache.flink.api.java.functions.ReduceFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.languagebinding.api.java.python.streaming.PythonStreamer;
-import org.apache.flink.languagebinding.api.java.streaming.Converter;
 import java.io.IOException;
 
 /**
@@ -30,8 +29,6 @@ import java.io.IOException;
 public class PythonReduce<IN> extends ReduceFunction<IN> {
 	private final String operator;
 	private PythonStreamer streamer;
-	private Converter inConverter;
-	private Converter outConverter;
 	private String metaInformation;
 
 	public PythonReduce(String operator) {
@@ -43,12 +40,6 @@ public class PythonReduce<IN> extends ReduceFunction<IN> {
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonReduce(String operator, Converter inConverter, Converter outConverter) {
-		this(operator);
-		this.inConverter = inConverter;
-		this.outConverter = outConverter;
-	}
-
 	/**
 	 * Opens this function.
 	 *
@@ -57,9 +48,9 @@ public class PythonReduce<IN> extends ReduceFunction<IN> {
 	 */
 	@Override
 	public void open(Configuration ignored) throws IOException {
-		streamer = inConverter == null && outConverter == null
+		streamer = metaInformation != null
 				? new PythonStreamer(this, operator, metaInformation)
-				: new PythonStreamer(this, operator, inConverter, outConverter);
+				: new PythonStreamer(this, operator);
 		streamer.open();
 	}
 

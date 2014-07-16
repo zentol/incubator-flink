@@ -17,15 +17,13 @@
  */
 package org.apache.flink.languagebinding.api.java.python.streaming;
 
+import java.io.IOException;
 import org.apache.flink.api.common.functions.AbstractFunction;
-import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_EXECUTOR_ID;
-import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_PLAN_ID;
+import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_PYTHON_EXECUTOR_NAME;
 import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_PYTHON_ID;
-import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_USER_ID;
-import org.apache.flink.languagebinding.api.java.streaming.Converter;
+import static org.apache.flink.languagebinding.api.java.python.PythonExecutor.FLINK_PYTHON_PLAN_NAME;
 //import org.apache.flink.languagebinding.api.java.streaming.StreamPrinter;
 import org.apache.flink.languagebinding.api.java.streaming.Streamer;
-import java.io.IOException;
 
 /**
  * This streamer is used by functions with two input types to send/receive data to/from an external python process.
@@ -55,9 +53,6 @@ public class PythonStreamer extends Streamer {
 	private AbstractFunction function;
 	private Process process;
 	private String metaInformation;
-	private Converter inConverter1;
-	private Converter inConverter2;
-	private Converter outConverter;
 
 	public PythonStreamer(AbstractFunction function, String operator, String metaInformation) {
 		this.function = function;
@@ -65,22 +60,8 @@ public class PythonStreamer extends Streamer {
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonStreamer(AbstractFunction function, String operator,
-			Converter inConverter1,
-			Converter outConverter) {
-		this(function, operator, null);
-		this.inConverter1 = inConverter1;
-		this.outConverter = outConverter;
-	}
-
-	public PythonStreamer(AbstractFunction function, String operator,
-			Converter inConverter1,
-			Converter inConverter2,
-			Converter outConverter) {
-		this(function, operator, null);
-		this.inConverter1 = inConverter1;
-		this.inConverter2 = inConverter2;
-		this.outConverter = outConverter;
+	public PythonStreamer(AbstractFunction function, String operatorPath){
+		this(function, operatorPath, null);
 	}
 
 	/**
@@ -91,30 +72,24 @@ public class PythonStreamer extends Streamer {
 	public void open() throws IOException {
 		ProcessBuilder pb = new ProcessBuilder();
 
-		function.getRuntimeContext().getDistributedCache()
-				.getFile(FLINK_USER_ID).getAbsolutePath();
-		String tmpPlanPath = function.getRuntimeContext().getDistributedCache()
-				.getFile(FLINK_PLAN_ID).getAbsolutePath();
-		function.getRuntimeContext().getDistributedCache()
+		String path = function.getRuntimeContext().getDistributedCache()
 				.getFile(FLINK_PYTHON_ID).getAbsolutePath();
-		String executorPath = function.getRuntimeContext().getDistributedCache()
-				.getFile(FLINK_EXECUTOR_ID).getAbsolutePath();
-
-		String planFileName = tmpPlanPath.substring(tmpPlanPath.lastIndexOf('/') + 1, tmpPlanPath.lastIndexOf('.'));
+		
+		String executorPath = path + FLINK_PYTHON_EXECUTOR_NAME;
 
 		if (metaInformation == null) {//hybrid mode
-			pb.command("python", executorPath, "1", operator);
+			pb.command("python", "-B", executorPath, "1", operator);
 		} else {//plan mode
 			String[] frag = metaInformation.split("\\|");
 			StringBuilder sb = new StringBuilder();
 			if (frag[0].contains("__main__")) {
 				sb.append("from ");
-				sb.append(planFileName);
+				sb.append(FLINK_PYTHON_PLAN_NAME.substring(1,FLINK_PYTHON_PLAN_NAME.length()-3));
 				sb.append(" import ");
 				sb.append(frag[1]);
 			} else {
 				sb.append("import ");
-				sb.append(planFileName);
+				sb.append(FLINK_PYTHON_PLAN_NAME);
 			}
 			pb.command("python", executorPath, "0", operator, sb.toString());
 		}

@@ -54,10 +54,10 @@ class JDBCInputFormat(_InputFormat):
 
 
 class CSVInputFormat(_InputFormat):
-    def __init__(self, file_path, types):
+    def __init__(self, file_path, types, line_delimiter, field_delimiter):
         super(CSVInputFormat, self).__init__()
         self._identifier = InputIdentifier.CSV
-        self._arguments += [file_path]
+        self._arguments += [file_path, line_delimiter, field_delimiter]
         if not isinstance(types, (list, tuple)):
             self._arguments += (types,)
         else:

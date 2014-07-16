@@ -22,7 +22,6 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import static org.apache.flink.api.java.typeutils.TypeExtractor.getForObject;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.languagebinding.api.java.python.streaming.PythonStreamer;
-import org.apache.flink.languagebinding.api.java.streaming.Converter;
 import org.apache.flink.types.TypeInformation;
 import java.io.IOException;
 
@@ -34,8 +33,6 @@ import java.io.IOException;
 public class PythonMap<IN, OUT> extends MapFunction<IN, OUT> implements ResultTypeQueryable {
 	private final String operator;
 	private PythonStreamer streamer;
-	private Converter inConverter;
-	private Converter outConverter;
 	private final Object typeInformation;
 	private String metaInformation;
 
@@ -49,13 +46,6 @@ public class PythonMap<IN, OUT> extends MapFunction<IN, OUT> implements ResultTy
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonMap(String operator, Object typeInformation,
-			Converter inConverter, Converter outConverter) {
-		this(operator, typeInformation);
-		this.inConverter = inConverter;
-		this.outConverter = outConverter;
-	}
-
 	/**
 	 * Opens this function.
 	 *
@@ -64,9 +54,9 @@ public class PythonMap<IN, OUT> extends MapFunction<IN, OUT> implements ResultTy
 	 */
 	@Override
 	public void open(Configuration ignored) throws IOException {
-		streamer = inConverter == null & outConverter == null
+		streamer = metaInformation != null
 				? new PythonStreamer(this, operator, metaInformation)
-				: new PythonStreamer(this, operator, inConverter, outConverter);
+				: new PythonStreamer(this, operator);
 		streamer.open();
 	}
 

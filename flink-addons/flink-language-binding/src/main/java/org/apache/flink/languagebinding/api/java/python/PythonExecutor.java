@@ -71,8 +71,8 @@ public class PythonExecutor {
 	private static Process process;
 	private static HashMap<Integer, Object> sets;
 	private static ExecutionEnvironment env;
-	private static String tmpPackagePath;
-	private static String tmpPlanPath;
+	private static String tmpPackagePath = null;
+	private static String tmpPlanPath = null;
 
 	public static final byte BYTE = new Integer(1).byteValue();
 	public static final int SHORT = new Integer(1).shortValue();
@@ -84,63 +84,65 @@ public class PythonExecutor {
 	public static final boolean BOOLEAN = true;
 
 	public static String FLINK_HDFS_PATH;
-	public static String FLINK_PYTHON_HDFS_PATH;
-	public static String FLINK_EXECUTOR_HDFS_PATH;
-
 	public static final String FLINK_PYTHON_ID = "flink";
-	public static final String FLINK_EXECUTOR_ID = "executor";
-	public static final String FLINK_USER_ID = "userpackage";
-	public static final String FLINK_PLAN_ID = "plan";
-
-	public static final String FLINK_PYTHON_PATH_PREFIX = "/resources/python";
-	public static final String FLINK_PYTHON_PATH_SUFFIX = FLINK_PYTHON_PATH_PREFIX + "/flink";
-	public static final String FLINK_EXECUTOR_PATH_SUFFIX = FLINK_PYTHON_PATH_PREFIX + "/executor.py";
+	public static final String FLINK_PYTHON_LOCAL_PATH = "/resources/python";
+	public static final String FLINK_PYTHON_PLAN_NAME = "/plan.py";
+	public static final String FLINK_PYTHON_EXECUTOR_NAME = "/executor.py";
 
 	public static String FLINK_DIR = System.getenv("FLINK_ROOT_DIR");
 
 	/**
 	 Entry point for the execution of a python plan.
 	 @param args 
-	 [0] = local path to user package
+	 [0] = local path to user package (can be omitted)
 	 [1] = local path to python script containing the plan
 	 [X] = additional parameters passed to the plan
 	 @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
-		try {
-			env = ExecutionEnvironment.getExecutionEnvironment();
-			preparePlanExecution(args[1], args[0]);
-			open(Arrays.copyOfRange(args, 2, args.length));
-			receivePlan();
-			distributePackages(args[1], args[0]);
-			env.execute();
-			close();
-		} catch (Exception ex) {
-			try {
-				close();
-			} catch (NullPointerException npe) {
-			}
-			throw ex;
-		}
-	}
-	
-	private static void preparePlanExecution(String planPath, String packagePath) throws IOException {
-		//move user package to the same folder as executor (for pythonpath reasons)
-		if (packagePath.endsWith("/")) {
-			packagePath = packagePath.substring(0, packagePath.length() - 1);
-		}
-		tmpPackagePath = FLINK_DIR + FLINK_PYTHON_PATH_PREFIX
-				+ packagePath.substring(packagePath.lastIndexOf('/'));
+		FLINK_DIR = FLINK_DIR.substring(0, FLINK_DIR.length() - 7);
 
-		//move user plan to the same folder as executor (for pythonpath reasons)
-		if (planPath.endsWith("/")) {
-			planPath = planPath.substring(0, planPath.length() - 1);
+		env = ExecutionEnvironment.getExecutionEnvironment();
+		boolean singleArgument = !FileSystem.get(new URI(args[0])).getFileStatus(new Path(args[0])).isDir();
+		if (singleArgument) {
+			prepareLocalUserFile(args[0]);
+		} else {
+			prepareLocalUserFile(args[0], args[1]);
 		}
-		tmpPlanPath = FLINK_DIR + FLINK_PYTHON_PATH_PREFIX
-				+ planPath.substring(planPath.lastIndexOf('/'));
-		
-		FileCache.copy(new Path(packagePath), new Path(tmpPackagePath), false);
-		FileCache.copy(new Path(planPath), new Path(tmpPlanPath), false);
+		open(Arrays.copyOfRange(args, singleArgument ? 1 : 2, args.length));
+		receivePlan();
+		prepareDistributedFiles();
+		env.execute();
+		close();
+	}
+
+	private static void prepareLocalUserFile(String... filePaths) throws IOException, URISyntaxException {
+		for (int x = 0; x < filePaths.length; x++) {
+
+			String filePath = filePaths[x];
+			if (filePath.endsWith("/")) {
+				filePath = filePath.substring(0, filePath.length() - 1);
+			}
+
+			FileSystem fs;
+
+			if (x + 1 == filePaths.length) {
+				tmpPlanPath = FLINK_DIR + FLINK_PYTHON_LOCAL_PATH + FLINK_PYTHON_PLAN_NAME;
+				fs = FileSystem.get(new URI(tmpPlanPath));
+				if (fs.exists(new Path(tmpPlanPath))) {
+					fs.delete(new Path(tmpPlanPath), false);
+				}
+				FileCache.copy(new Path(filePath), new Path(tmpPlanPath), false);
+			} else {
+				tmpPackagePath = FLINK_DIR + FLINK_PYTHON_LOCAL_PATH
+						+ filePath.substring(filePath.lastIndexOf('/'));
+				fs = FileSystem.get(new URI(tmpPackagePath));
+				if (fs.exists(new Path(tmpPackagePath))) {
+					fs.delete(new Path(tmpPackagePath), false);
+				}
+				FileCache.copy(new Path(filePath), new Path(tmpPackagePath), false);
+			}
+		}
 	}
 
 	private static void open(String[] args) throws IOException {
@@ -149,85 +151,41 @@ public class PythonExecutor {
 		for (String arg : args) {
 			argsBuilder.append(" ").append(arg);
 		}
-		process = Runtime.getRuntime().exec("python " + tmpPlanPath + argsBuilder.toString());
+		process = Runtime.getRuntime().exec("python -B " + tmpPlanPath + argsBuilder.toString());
 		sender = new RawSender(null, process.getOutputStream());
 		receiver = new RawReceiver(null, process.getInputStream());
 		new StreamPrinter(process.getErrorStream()).start();
-	}	
-
-	private static void eC(String planPath, String packagePath) throws IOException, URISyntaxException {
-		FileSystem fs = FileSystem.get(new URI(FLINK_PYTHON_HDFS_PATH));
-
-		Path[] paths = new Path[]{
-			new Path(tmpPackagePath),
-			new Path(tmpPlanPath)
-		};
-
-		for (Path path : paths) {
-			if (fs.exists(path)) {
-				fs.delete(path, true);
-			}
-		}
 	}
 
-	private static void distributePackages(String planPath, String packagePath) throws IOException, URISyntaxException {
-		ensureConditions(planPath, packagePath);
-		//copy flink package to hdfs
-		FileCache.copy(
-				new Path(FLINK_DIR + FLINK_PYTHON_PATH_SUFFIX),
-				new Path(FLINK_PYTHON_HDFS_PATH), false);
-		FileCache.copy(
-				new Path(FLINK_DIR + FLINK_EXECUTOR_PATH_SUFFIX),
-				new Path(FLINK_EXECUTOR_HDFS_PATH), false);
-		//copy user package to hdfs
-		String distributedPackagePath = FLINK_HDFS_PATH + packagePath.substring(packagePath.lastIndexOf('/'));
-		FileCache.copy(new Path(tmpPackagePath), new Path(distributedPackagePath), false);
-		//copy user package to hdfs
-		String distributedPlanPath = FLINK_HDFS_PATH + planPath.substring(planPath.lastIndexOf('/'));
-		FileCache.copy(new Path(tmpPlanPath), new Path(distributedPlanPath), false);
+	private static void prepareDistributedFiles() throws IOException, URISyntaxException {
+		FileSystem fs = FileSystem.get(new URI(FLINK_HDFS_PATH));
 
-		//register packages in distributed cache
-		env.registerCachedFile(FLINK_PYTHON_HDFS_PATH, FLINK_PYTHON_ID);
-		env.registerCachedFile(FLINK_EXECUTOR_HDFS_PATH, FLINK_EXECUTOR_ID);
-		env.registerCachedFile(distributedPackagePath, FLINK_USER_ID);
-		env.registerCachedFile(distributedPlanPath, FLINK_PLAN_ID);
-	}
-
-	private static void ensureConditions(String planPath, String packagePath) throws IOException, URISyntaxException {
-		FileSystem fs = FileSystem.get(new URI(FLINK_PYTHON_HDFS_PATH));
-
-		Path[] paths = new Path[]{
-			new Path(FLINK_PYTHON_HDFS_PATH),
-			new Path(FLINK_PYTHON_PATH_PREFIX + packagePath.substring(packagePath.lastIndexOf('/'))),
-			new Path(FLINK_PYTHON_PATH_PREFIX + planPath.substring(planPath.lastIndexOf('/'))),
-			new Path(FLINK_EXECUTOR_HDFS_PATH),
-			new Path(FLINK_HDFS_PATH + packagePath.substring(packagePath.lastIndexOf('/'))),
-			new Path(FLINK_HDFS_PATH + planPath.substring(planPath.lastIndexOf('/')))
-		};
-
-		for (Path path : paths) {
-			if (fs.exists(path)) {
-				fs.delete(path, true);
-			}
+		if (fs.exists(new Path(FLINK_HDFS_PATH))) {
+			fs.delete(new Path(FLINK_HDFS_PATH), true);
 		}
+
+		FileCache.copy(new Path(FLINK_DIR + FLINK_PYTHON_LOCAL_PATH), new Path(FLINK_HDFS_PATH), false);
+		env.registerCachedFile(FLINK_HDFS_PATH, FLINK_PYTHON_ID);
 	}
 
 	private static void close() throws IOException, URISyntaxException {
-		FileSystem hdfs = FileSystem.get(new URI(FLINK_PYTHON_HDFS_PATH));
+		FileSystem hdfs = FileSystem.get(new URI(FLINK_HDFS_PATH));
 		hdfs.delete(new Path(FLINK_HDFS_PATH), true);
 
-		//delete temporary files
-		if (!tmpPackagePath.endsWith("flink")) {
-			FileSystem local = FileSystem.get(new URI(tmpPackagePath));
+		FileSystem local = FileSystem.getLocalFileSystem();
+		if (tmpPackagePath != null) {
 			local.delete(new Path(tmpPackagePath), true);
 		}
-		//delete temporary files
-		FileSystem local = FileSystem.get(new URI(tmpPlanPath));
 		local.delete(new Path(tmpPlanPath), true);
 
-		sender.close();
-		receiver.close();
-		process.destroy();
+		try {
+			sender.close();
+		} catch (NullPointerException npe) {
+		}
+		try {
+			receiver.close();
+		} catch (NullPointerException npe) {
+		}
 	}
 
 	//====Plan==========================================================================================================
@@ -259,17 +217,13 @@ public class PythonExecutor {
 					env.setDegreeOfParallelism(dop);
 					break;
 				case MODE:
-					boolean localMode = (Boolean) value.getField(1);
-					FLINK_HDFS_PATH = localMode ? "/tmp/flink" : "hdfs:/tmp/flink";
-					FLINK_PYTHON_HDFS_PATH = FLINK_HDFS_PATH + "/flink";
-					FLINK_EXECUTOR_HDFS_PATH = FLINK_HDFS_PATH + "/flink/executor.py";
+					FLINK_HDFS_PATH = (Boolean) value.getField(1) ? "file:/tmp/flink" : "hdfs:/tmp/flink";
 					break;
 			}
 		}
 		if (env.getDegreeOfParallelism() < 0) {
 			env.setDegreeOfParallelism(1);
 		}
-
 	}
 
 	//====Sources=======================================================================================================
@@ -490,7 +444,7 @@ public class PythonExecutor {
 	}
 
 	/**
-	 General purpose container for all information relating to operations.
+	 General purpose container for all information related to operations.
 	 */
 	protected static class OperationInfo {
 		protected static final int INFO_MODE_FULL_PRJ = -1;

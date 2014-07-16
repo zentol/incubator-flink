@@ -20,7 +20,6 @@ package org.apache.flink.languagebinding.api.java.python.functions;
 import org.apache.flink.api.java.functions.FilterFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.languagebinding.api.java.python.streaming.PythonStreamer;
-import org.apache.flink.languagebinding.api.java.streaming.Converter;
 import java.io.IOException;
 
 /**
@@ -30,7 +29,6 @@ import java.io.IOException;
 public class PythonFilter<IN> extends FilterFunction<IN> {
 	private final String operator;
 	private PythonStreamer streamer;
-	public Converter inConverter;
 	private String metaInformation;
 
 	public PythonFilter(String operator) {
@@ -42,11 +40,6 @@ public class PythonFilter<IN> extends FilterFunction<IN> {
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonFilter(String operator, Converter inConverter) {
-		this(operator);
-		this.inConverter = inConverter;
-	}
-
 	/**
 	 * Opens this function.
 	 *
@@ -55,9 +48,9 @@ public class PythonFilter<IN> extends FilterFunction<IN> {
 	 */
 	@Override
 	public void open(Configuration ignored) throws IOException {
-		streamer = inConverter == null
+		streamer = metaInformation != null
 				? new PythonStreamer(this, operator, metaInformation)
-				: new PythonStreamer(this, operator, inConverter, null);
+				: new PythonStreamer(this, operator);
 		streamer.open();
 	}
 
