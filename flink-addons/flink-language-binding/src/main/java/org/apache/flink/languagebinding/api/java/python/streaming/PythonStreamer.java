@@ -60,7 +60,7 @@ public class PythonStreamer extends Streamer {
 		this.metaInformation = metaInformation;
 	}
 
-	public PythonStreamer(AbstractFunction function, String operatorPath){
+	public PythonStreamer(AbstractFunction function, String operatorPath) {
 		this(function, operatorPath, null);
 	}
 
@@ -74,7 +74,7 @@ public class PythonStreamer extends Streamer {
 
 		String path = function.getRuntimeContext().getDistributedCache()
 				.getFile(FLINK_PYTHON_ID).getAbsolutePath();
-		
+
 		String executorPath = path + FLINK_PYTHON_EXECUTOR_NAME;
 
 		if (metaInformation == null) {//hybrid mode
@@ -84,12 +84,12 @@ public class PythonStreamer extends Streamer {
 			StringBuilder sb = new StringBuilder();
 			if (frag[0].contains("__main__")) {
 				sb.append("from ");
-				sb.append(FLINK_PYTHON_PLAN_NAME.substring(1,FLINK_PYTHON_PLAN_NAME.length()-3));
+				sb.append(FLINK_PYTHON_PLAN_NAME.substring(1, FLINK_PYTHON_PLAN_NAME.length() - 3));
 				sb.append(" import ");
 				sb.append(frag[1]);
 			} else {
 				sb.append("import ");
-				sb.append(FLINK_PYTHON_PLAN_NAME);
+				sb.append(FLINK_PYTHON_PLAN_NAME.substring(1, FLINK_PYTHON_PLAN_NAME.length() - 3));
 			}
 			pb.command("python", executorPath, "0", operator, sb.toString());
 		}
