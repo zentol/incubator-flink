@@ -150,7 +150,7 @@ class RawIterator(Iterator):
 
 class Dummy(Iterator):
     def __init__(self, iterator, group):
-        super(Dummy, self).__init__(iterator.connection)
+        super(Dummy, self).__init__(iterator._connection)
         self._iterator = iterator
         self._group = group
 
