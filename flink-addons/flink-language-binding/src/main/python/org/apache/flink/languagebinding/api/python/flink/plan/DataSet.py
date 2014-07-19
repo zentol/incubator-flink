@@ -697,8 +697,8 @@ class CrossOperator(object):
         self._dic = dic
         self._dic[_Fields.PKEY1] = None
         self._dic[_Fields.PKEY2] = None
-        self._dic[_Fields.OPERATOR] = []
-        self._dic[_Fields.META] = []
+        self._dic[_Fields.OPERATOR] = None
+        self._dic[_Fields.META] = None
 
 
     def project_first(self, *fields):
