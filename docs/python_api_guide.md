@@ -25,7 +25,7 @@ of programming in general, though.
 Word Count Example
 ------------------
 
-To start, let's look at a Word Count job implemented in Python. This program is
+To start, let's look at a Word Count job implemented completely in Python. This program is
 very simple but it will give you a basic idea of what a Python job looks like.
 
 ```python
