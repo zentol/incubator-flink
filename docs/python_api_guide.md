@@ -91,7 +91,10 @@ Project Setup
 -------------
 
 Apart from setting up Flink, no additional work is required. The python package can be found in the
-/resource folder of your Flink distribution.
+/resource folder of your Flink distribution. The flink package, along with the plan and one optional
+package are automatically distributed among the cluster via HDFS when running a job.
+
+Any other packages have to be installed manually on the cluster.
 
 <section id="dataset">
 The DataSet Abstraction
@@ -112,16 +115,13 @@ data sets is created that contains both the specification of the flow of data as
 well as all the transformations. This graph can be wrapped in a `Plan` and
 executed.
 
-Working with the system is like working with lazy collections, where execution
-is postponed until the user submits the job.
-
 <section id="datatypes">
 Data Types
 ----------
 
 There are some restrictions regarding the data types that can be used in Python
 jobs. Only primitive Python types (bool, int, float, string) aswell as lists or tuples
-containing them are currently supported.
+containing them are currently supported. (Note that lists will return as tuples!)
 Other types will be converted to strings using `str()`.
 
 Several operations require you to explicitly declare types. This is done by passing
@@ -145,7 +145,7 @@ graph one of the following methods is used:
 
 ```python
 input = env.read_text("<file-path>")
-input = env.read_csv("<file-path>", <types>)
+input = env.read_csv("<file-path>", <types>, line_delimiter='\n', field_delimiter=',')
 input = env.from_elements(element1, element2, .. , elementX)
 ```
 
@@ -173,7 +173,7 @@ files must be text files. They will be read automatically and returned as
 Python tuples to you. It is used as:
 
 ```python
-input = env.read_csv("<file-path>", <types>, line_delimiter, field_delimiter)
+input = env.read_csv("<file-path>", <types>, line_delimiter='\n', field_delimiter=',')
 ```
 With `types` you define how the data is read. `line_delimiter` and `field_delimiter` are optional fields.
 ```python
@@ -473,7 +473,7 @@ To output a DataSet one of the following methods is used:
 
 ```python
 data.write_text("<file-path>")
-data.write_csv("<file-path>")
+data.write_csv("<file-path>", WriteMode=Constants.NO_OVERWRITE, line_delimiter='\n', field_delimiter=',')
 data.output()
 ```
 
@@ -501,7 +501,7 @@ This method is used to write Csv-Files, as the name suggests. Every value is
 written in a separate line; the values in each line are separated by a comma.
 
 ```python
-data.write_csv("<file-path>", WriteMode)
+data.write_csv("<file-path>", WriteMode=Constants.NO_OVERWRITE, line_delimiter='\n', field_delimiter=',')
 ```
 `WriteMode`is an optional parameter indicating whether an existing file for
 `file-path` should be overwritten. (default: NO_OVERWRITE)
@@ -522,7 +522,7 @@ Debugging
 --------------
 
 When debugging your program, do not use statements that involve `stdout` or `stderr`,
-like `print()`. Instead write directly to a file.
+like `print()`. Instead write directly to a file of your choosing.
 
 
 <section id="execution">
@@ -537,7 +537,7 @@ used on bigger data sets it can be executed on a cluster. We will
 now give an example for each of the two execution modes.
 
 Inside the plan, the only difference between local and cluster mode is the call
-to `env.execute()` call, which for local mode has to be modifiedd to `env.execute(local=true)`.
+to `env.execute()` call, which for local mode has to be modified to `env.execute(local=true)`.
 
 To run the plan with Flink, go to your Flink distribution, and run the 
 pysphere.sh script from the /bin folder. This script takes two file paths as arguments: 
