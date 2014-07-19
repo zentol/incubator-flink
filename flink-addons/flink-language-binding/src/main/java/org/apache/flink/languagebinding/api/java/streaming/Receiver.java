@@ -64,7 +64,7 @@ public abstract class Receiver extends Thread {
 	public static Tuple createTuple(int size) {
 		switch (size) {
 			case 0:
-				return null;
+				return new Tuple0();
 			case 1:
 				return new Tuple1();
 			case 2:

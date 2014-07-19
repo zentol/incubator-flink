@@ -55,7 +55,7 @@ public class RawReceiver extends Receiver {
 		try {
 			receivedLast = (meta & 32) == 32;
 			int size = meta & 31;
-			if (size > 0) {
+			if (size < 31) {
 				Tuple tuple = createTuple(size);
 				for (int x = 0; x < tuple.getArity(); x++) {
 					tuple.setField(receiveField(x), x);
@@ -64,7 +64,7 @@ public class RawReceiver extends Receiver {
 			}
 			return receiveField(0);
 		} catch (IllegalArgumentException iae) {
-			throw new IllegalArgumentException(iae.getMessage() + "meta = " + meta, iae);
+			throw new IllegalArgumentException(iae.getMessage() + " meta = " + meta, iae);
 		}
 	}
 

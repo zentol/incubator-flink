@@ -100,6 +100,7 @@ public class RawSender extends Sender {
 				sendField(((Tuple) value).getField(x), x, group);
 			}
 		} else {
+			meta |= 31;
 			outStream.write(meta);
 			outStream.flush();
 			sendField(value, 0, group);

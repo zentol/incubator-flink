@@ -71,6 +71,7 @@ class RawCollector(Collector):
         if last:
             meta |= 32
         if not isinstance(self._cache, (list, tuple)):
+            meta |= 31
             meta = struct.pack(">i", meta)
             self._connection.send(meta[3])
             self._send_field(self._cache)

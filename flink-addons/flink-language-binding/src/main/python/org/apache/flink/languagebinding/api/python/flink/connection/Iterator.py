@@ -81,14 +81,14 @@ class RawIterator(Iterator):
             self._was_last[group] = True
         size = meta & 31
         if record_group == group:
-            if size == 0:
+            if size == 31:
                 return self._receive_field()
             result = ()
             for i in range(size):
                 result += (self._receive_field(),)
             return result
         else:
-            if size == 0:
+            if size == 31:
                 self._cache.append(self._receive_field())
             else:
                 result = ()
