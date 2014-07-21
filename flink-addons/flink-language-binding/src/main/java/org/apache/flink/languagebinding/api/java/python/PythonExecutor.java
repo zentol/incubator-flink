@@ -138,7 +138,7 @@ public class PythonExecutor {
 						+ filePath.substring(filePath.lastIndexOf('/'));
 				fs = FileSystem.get(new URI(tmpPackagePath));
 				if (fs.exists(new Path(tmpPackagePath))) {
-					fs.delete(new Path(tmpPackagePath), false);
+					fs.delete(new Path(tmpPackagePath), true);
 				}
 				FileCache.copy(new Path(filePath), new Path(tmpPackagePath), false);
 			}
