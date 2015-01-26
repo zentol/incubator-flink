@@ -1027,6 +1027,8 @@ under the License.
 						<!-- Test Data. -->
 						<exclude>flink-tests/src/test/resources/testdata/terainput.txt</exclude>
 						<exclude>flink-addons/flink-avro/src/test/resources/avro/user.avsc</exclude>
+						<exclude>flink-addons/flink-language-binding/src/main/python/org/apache/flink/languagebinding/api/python/flink/test/data_csv</exclude>
+						<exclude>flink-addons/flink-language-binding/src/main/python/org/apache/flink/languagebinding/api/python/flink/test/data_text</exclude>
 						<!-- Configuration Files. -->
 						<exclude>**/flink-bin/conf/slaves</exclude>
 						<!-- Administrative files in the main trunk. -->
@@ -1041,6 +1043,11 @@ under the License.
 						<exclude>**/target/**</exclude>
 						<exclude>docs/_site/**</exclude>
 						<exclude>**/scalastyle-output.xml</exclude>
+						<!-- Documentation -->
+						<exclude>**/docs/**</exclude>
+						<exclude>**/tools/*.md</exclude>
+						<!-- PyCharm -->
+						<exclude>**/.idea/**</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

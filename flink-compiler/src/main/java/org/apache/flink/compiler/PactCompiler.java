@@ -49,6 +49,7 @@ import org.apache.flink.api.common.operators.base.MapPartitionOperatorBase;
 import org.apache.flink.api.common.operators.base.PartitionOperatorBase;
 import org.apache.flink.api.common.operators.base.ReduceOperatorBase;
 import org.apache.flink.api.common.operators.base.BulkIterationBase.PartialSolutionPlaceHolder;
+import org.apache.flink.api.common.operators.base.CoGroupPythonOperatorBase;
 import org.apache.flink.api.common.operators.base.DeltaIterationBase.SolutionSetPlaceHolder;
 import org.apache.flink.api.common.operators.base.DeltaIterationBase.WorksetPlaceHolder;
 import org.apache.flink.compiler.costs.CostEstimator;
@@ -57,6 +58,7 @@ import org.apache.flink.compiler.dag.BinaryUnionNode;
 import org.apache.flink.compiler.dag.BulkIterationNode;
 import org.apache.flink.compiler.dag.BulkPartialSolutionNode;
 import org.apache.flink.compiler.dag.CoGroupNode;
+import org.apache.flink.compiler.dag.CoGroupPythonNode;
 import org.apache.flink.compiler.dag.CollectorMapNode;
 import org.apache.flink.compiler.dag.CrossNode;
 import org.apache.flink.compiler.dag.DataSinkNode;
@@ -698,6 +700,9 @@ public class PactCompiler {
 			}
 			else if (c instanceof CoGroupOperatorBase) {
 				n = new CoGroupNode((CoGroupOperatorBase<?, ?, ?, ?>) c);
+			}
+			else if (c instanceof CoGroupPythonOperatorBase) {
+				n = new CoGroupPythonNode((CoGroupPythonOperatorBase<?, ?, ?, ?>) c);
 			}
 			else if (c instanceof CrossOperatorBase) {
 				n = new CrossNode((CrossOperatorBase<?, ?, ?, ?>) c);
