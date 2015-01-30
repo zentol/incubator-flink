@@ -30,7 +30,7 @@ class Tokenizer(FlatMapFunction):
 
 
 class Adder(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         count, word = iterator.next()
         count += sum([x[0] for x in iterator])
         collector.collect((count, word))
@@ -48,9 +48,9 @@ if __name__ == "__main__":
         data = env.from_elements("hello","world","hello","car","tree","data","hello")
 
     result = data \
-        .flatmap(Tokenizer(), (Types.INT, Types.STRING)) \
+        .flat_map(Tokenizer(), (Types.INT, Types.STRING)) \
         .group_by(1) \
-        .groupreduce(Adder(), (Types.INT, Types.STRING), combinable=True) \
+        .reduce_group(Adder(), (Types.INT, Types.STRING), combinable=True) \
 
     if len(sys.argv) == 3:
         result.write_csv(sys.argv[2])

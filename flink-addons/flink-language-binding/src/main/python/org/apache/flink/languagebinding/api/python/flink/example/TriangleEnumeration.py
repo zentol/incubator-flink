@@ -31,7 +31,7 @@ class EdgeDuplicator(FlatMapFunction):
 
 
 class DegreeCounter(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         other_vertices = []
 
         data = iterator.next()
@@ -94,7 +94,7 @@ class EdgeByIdProjector(MapFunction):
 
 
 class TriadBuilder(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         vertices = []
 
         y = iterator.next()
@@ -123,10 +123,10 @@ if __name__ == "__main__":
         (1, 2), (1, 3), (1, 4), (1, 5), (2, 3), (2, 5), (3, 4), (3, 7), (3, 8), (5, 6), (7, 8))
 
     edges_with_degrees = edges \
-        .flatmap(EdgeDuplicator(), [Types.INT, Types.INT]) \
+        .flat_map(EdgeDuplicator(), [Types.INT, Types.INT]) \
         .group_by(0) \
         .sort_group(1, Order.ASCENDING) \
-        .groupreduce(DegreeCounter(), [Types.INT, Types.INT, Types.INT, Types.INT]) \
+        .reduce_group(DegreeCounter(), [Types.INT, Types.INT, Types.INT, Types.INT]) \
         .group_by(0, 2) \
         .reduce(DegreeJoiner())
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     triangles = edges_by_degree \
         .group_by(0) \
         .sort_group(1, Order.ASCENDING) \
-        .groupreduce(TriadBuilder(), [Types.INT, Types.INT, Types.INT]) \
+        .reduce_group(TriadBuilder(), [Types.INT, Types.INT, Types.INT]) \
         .join(edges_by_id) \
         .where(1, 2) \
         .equal_to(0, 1) \

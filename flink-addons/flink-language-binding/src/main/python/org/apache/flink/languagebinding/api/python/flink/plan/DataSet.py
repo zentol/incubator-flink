@@ -83,7 +83,7 @@ class Set(object):
         self._dic[_Fields.SINKS].append(dic)
         self._env._sinks.append(dic)
 
-    def groupreduce(self, operator, types, combinable=False):
+    def reduce_group(self, operator, types, combinable=False):
         """
         Applies a GroupReduce transformation.
 
@@ -99,7 +99,7 @@ class Set(object):
         if isinstance(operator, TYPES.FunctionType):
             f = operator
             operator = GroupReduceFunction()
-            operator.group_reduce = f
+            operator.reduce = f
         dic = dict()
         self._dic[_Fields.CHILDREN].append(dic)
         reduce = OperatorSet(self._env, dic)
@@ -203,7 +203,7 @@ class DataSet(ReduceSet):
         dics.append(dic)
         return new_set
 
-    def cogroup(self, other_set):
+    def co_group(self, other_set):
         """
         Initiates a CoGroup transformation which combines the elements of two DataSets into on DataSet.
 
@@ -301,7 +301,7 @@ class DataSet(ReduceSet):
         self._env._sets.append(dic)
         return new_set
 
-    def flatmap(self, operator, types):
+    def flat_map(self, operator, types):
         """
         Applies a FlatMap transformation on a DataSet.
 
@@ -485,7 +485,7 @@ class Grouping(object):
         dic[_Fields.CHILDREN] = []
         dic[_Fields.SINKS] = []
 
-    def groupreduce(self, operator, types, combinable=False):
+    def reduce_group(self, operator, types, combinable=False):
         """
         Applies a GroupReduce transformation.
 
@@ -501,7 +501,7 @@ class Grouping(object):
         if isinstance(operator, TYPES.FunctionType):
             f = operator
             operator = GroupReduceFunction()
-            operator.group_reduce = f
+            operator.reduce = f
         operator._set_keys(self._dics[0][_Fields.KEYS])
         sort_ops = []
         for x in range(len(self._dics) - 1):

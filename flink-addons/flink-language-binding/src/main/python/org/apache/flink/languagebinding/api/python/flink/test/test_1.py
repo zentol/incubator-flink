@@ -84,7 +84,7 @@ class Join(JoinFunction):
 
 
 class GroupReduce(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         if iterator.has_next():
             i, f, s, b = iterator.next()
             for value in iterator:
@@ -95,13 +95,13 @@ class GroupReduce(GroupReduceFunction):
 
 
 class GroupReduce2(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         for value in iterator:
             collector.collect(value)
 
 
 class GroupReduce3(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         collector.collect(iterator.next())
 
     def combine(self, iterator, collector):
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         .map_partition(Verify([12], "Filter"), Types.STRING).output()
 
     d1 \
-        .flatmap(FlatMap(), Types.INT).flatmap(FlatMap(), Types.INT) \
+        .flat_map(FlatMap(), Types.INT).flat_map(FlatMap(), Types.INT) \
         .map_partition(Verify([1, 2, 2, 4, 6, 12, 12, 24, 12, 24, 24, 48], "FlatMap"), Types.STRING).output()
 
     d1 \
@@ -242,23 +242,23 @@ if __name__ == "__main__":
         .map_partition(Verify2([(1, 0.5, "hello", True), (2, 0.4, "world", False), (1, 0.5, "hello", True), (1, 0.4, "hello", False), (1, 0.5, "hello", True), (2, 0.4, "world", False)], "Union"), Types.STRING).output()
 
     d4 \
-        .group_by(2).groupreduce(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=False) \
+        .group_by(2).reduce_group(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=False) \
         .map_partition(Verify([(3, 1.4, "hello", True), (2, 0.4, "world", False)], "AllGroupReduce"), Types.STRING).output()
 
     d4 \
-        .map(Id(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL)).group_by(2).groupreduce(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=True) \
+        .map(Id(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL)).group_by(2).reduce_group(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=True) \
         .map_partition(Verify([(3, 1.4, "hello", True), (2, 0.4, "world", False)], "ChainedGroupReduce"), Types.STRING).output()
 
     d4 \
-        .group_by(2).groupreduce(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=True) \
+        .group_by(2).reduce_group(GroupReduce(), (Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), combinable=True) \
         .map_partition(Verify([(3, 1.4, "hello", True), (2, 0.4, "world", False)], "CombineGroupReduce"), Types.STRING).output()
 
     d5 \
-        .group_by(2).sort_group(0, Order.DESCENDING).sort_group(1, Order.ASCENDING).groupreduce(GroupReduce3(), (Types.FLOAT, Types.FLOAT, Types.INT), combinable=True) \
+        .group_by(2).sort_group(0, Order.DESCENDING).sort_group(1, Order.ASCENDING).reduce_group(GroupReduce3(), (Types.FLOAT, Types.FLOAT, Types.INT), combinable=True) \
         .map_partition(Verify([(4.3, 4.4, 1), (4.1, 4.1, 3)], "ChainedSortedGroupReduce"), Types.STRING).output()
 
     d4 \
-        .cogroup(d5).where(0).equal_to(2).using(CoGroup(), ((Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), (Types.FLOAT, Types.FLOAT, Types.INT))) \
+        .co_group(d5).where(0).equal_to(2).using(CoGroup(), ((Types.INT, Types.FLOAT, Types.STRING, Types.BOOL), (Types.FLOAT, Types.FLOAT, Types.INT))) \
         .map_partition(Verify([((1, 0.5, "hello", True), (4.4, 4.3, 1)), ((1, 0.4, "hello", False), (4.3, 4.4, 1))], "CoGroup"), Types.STRING).output()
 
     env.set_degree_of_parallelism(1)

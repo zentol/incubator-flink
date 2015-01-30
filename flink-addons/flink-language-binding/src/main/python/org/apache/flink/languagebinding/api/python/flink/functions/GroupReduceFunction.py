@@ -36,7 +36,7 @@ class GroupReduceFunction(Function.Function):
     def run(self):
         connection = self._connection
         collector = self._collector
-        function = self.group_reduce
+        function = self.reduce
         iterator = self._group_iterator
         iterator._init()
         while iterator.has_group():
@@ -124,8 +124,8 @@ class GroupReduceFunction(Function.Function):
     def _extract_keys_id(self, x):
         return x
 
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         pass
 
     def combine(self, iterator, collector):
-        self.group_reduce(iterator, collector)
+        self.reduce(iterator, collector)
