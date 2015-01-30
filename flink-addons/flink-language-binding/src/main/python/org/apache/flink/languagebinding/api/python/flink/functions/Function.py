@@ -37,8 +37,11 @@ class Function(object):
     def _configure_chain(self, collector):
         if self._chain_operator is not None:
             frag = self._meta.split("|")
-            self._chain_operator = self._chain_operator.replace(b"__main__", b"plan", 50)
-            exec("from plan import " + frag[1])
+            if "flink/functions" in frag[0]:  #lambda function
+                exec("from flink.functions." + frag[1] + " import " + frag[1])
+            else:  #rich function
+                self._chain_operator = self._chain_operator.replace(b"__main__", b"plan", 50)
+                exec("from plan import " + frag[1])
             self._collector = dill.loads(self._chain_operator)
             self._collector._configure_chain(collector)
             self._collector.open()
