@@ -50,12 +50,11 @@ to run it locally.
 
 {% highlight python %}
 from flink.plan.Environment import get_environment
-from flink.plan.Constants import Types
-from flink.functions.FlatMapFunction import FlatMapFunction
+from flink.plan.Constants import INT, STRING
 from flink.functions.GroupReduceFunction import GroupReduceFunction
 
 class Adder(GroupReduceFunction):
-  def group_reduce(self, iterator, collector):
+  def reduce(self, iterator, collector):
     count, word = iterator.next()
     count += sum([x[0] for x in iterator])
     collector.collect((count, word))
@@ -66,9 +65,9 @@ if __name__ == "__main__":
    "I think I hear them. Stand, ho! Who's there?")
   
   data \
-    .flatmap(lambda x: x.lower().split(), (Types.INT, Types.STRING)) \
+    .flat_map(lambda x: x.lower().split(), (INT, STRING)) \
     .group_by(1) \
-    .groupreduce(Adder(), (Types.INT, Types.STRING), combinable=True) \
+    .reduce_group(Adder(), (INT, STRING), combinable=True) \
     .output()
   
   env.execute()
@@ -83,7 +82,7 @@ Program Skeleton
 As we already saw in the example, Flink programs look like regular python
 programs with a `if __name__ == "__main__":` block. Each program consists of the same basic parts:
 
-1. Obtain an `ExecutionEnvironment`,
+1. Obtain an `Environment`,
 2. Load/create the initial data,
 3. Specify transformations on this data,
 4. Specify where to put the results of your computations, and
@@ -93,7 +92,7 @@ We will now give an overview of each of those steps but please refer to the resp
 more details. 
 
 
-The `ExecutionEnvironment` is the basis for all Flink programs. You can
+The `Environment` is the basis for all Flink programs. You can
 obtain one using these static methods on class `Environment`:
 
 {% highlight python %}
@@ -119,10 +118,10 @@ methods on DataSet with your own custom transformation function. For example,
 a map transformation looks like this:
 
 {% highlight python %}
-data.map(lambda x: x*2, Types.INT)
+data.map(lambda x: x*2, INT)
 {% endhighlight %}
 
-This will create a new DataSet by doubles every value in the original DataSet. 
+This will create a new DataSet by doubling every value in the original DataSet. 
 For more information and a list of all the transformations,
 please refer to [Transformations](#transformations).
 
@@ -154,7 +153,7 @@ Project setup
 
 Apart from setting up Flink, no additional work is required. The python package can be found in the /resource folder of your Flink distribution. The flink package, along with the plan and optional packages are automatically distributed among the cluster via HDFS when running a job.
 
-The Python API currently supports Linux systems that have Python 2.7 or 3.4 installed.
+The Python API was tested on Linux systems that have Python 2.7 or 3.4 installed.
 
 [Back to top](#top)
 
@@ -164,7 +163,7 @@ Lazy Evaluation
 All Flink programs are executed lazily: When the program's main method is executed, the data loading
 and transformations do not happen directly. Rather, each operation is created and added to the
 program's plan. The operations are actually executed when one of the `execute()` methods is invoked
-on the ExecutionEnvironment object. Whether the program is executed locally or on a cluster depends
+on the Environment object. Whether the program is executed locally or on a cluster depends
 on the environment of the program.
 
 The lazy evaluation lets you construct sophisticated programs that Flink executes as one
@@ -199,7 +198,7 @@ examples.
       <td>
         <p>Takes one element and produces one element.</p>
 {% highlight python %}
-data.map(lambda x: x * 2, Types.INT)
+data.map(lambda x: x * 2, INT)
 {% endhighlight %}
       </td>
     </tr>
@@ -209,9 +208,9 @@ data.map(lambda x: x * 2, Types.INT)
       <td>
         <p>Takes one element and produces zero, one, or more elements. </p>
 {% highlight python %}
-data.flatmap(
-  lambda x,c: [(1,word) for word in line.lower.split() for line in x],
-  (Types.INT, Types.STRING))
+data.flat_map(
+  lambda x,c: [(1,word) for word in line.lower().split() for line in x],
+  (INT, STRING))
 {% endhighlight %}
       </td>
     </tr>
@@ -223,7 +222,7 @@ data.flatmap(
         as an `Iterator` and can produce an arbitrary number of result values. The number of
         elements in each partition depends on the degree-of-parallelism and previous operations.</p>
 {% highlight python %}
-data.map_partition(lambda x,c: [value * 2 for value in x], Types.INT)
+data.map_partition(lambda x,c: [value * 2 for value in x], INT)
 {% endhighlight %}
       </td>
     </tr>
@@ -257,12 +256,12 @@ data.reduce(lambda x,y : x + y)
         full data set, or on a grouped data set.</p>
 {% highlight python %}
 class Adder(GroupReduceFunction):
-  def group_reduce(self, iterator, collector):
+  def reduce(self, iterator, collector):
     count, word = iterator.next()
     count += sum([x[0] for x in iterator)      
     collector.collect((count, word))
 
-data.group_reduce(Adder(), (Types.INT, Types.STRING))
+data.reduce_group(Adder(), (INT, STRING))
 {% endhighlight %}
       </td>
     </tr>
@@ -271,9 +270,8 @@ data.group_reduce(Adder(), (Types.INT, Types.STRING))
       <td><strong>Join</strong></td>
       <td>
         Joins two data sets by creating all pairs of elements that are equal on their keys.
-        Optionally uses a JoinFunction to turn the pair of elements into a single element, or a
-        FlatJoinFunction to turn the pair of elements into arbitararily many (including none)
-        elements. See <a href="#specifying-keys">keys</a> on how to define join keys.
+        Optionally uses a JoinFunction to turn the pair of elements into a single element. 
+        See <a href="#specifying-keys">keys</a> on how to define join keys.
 {% highlight python %}
 # In this case tuple fields are used as keys. 
 # "0" is the join field on the first tuple
@@ -290,7 +288,7 @@ result = input1.join(input2).where(0).equal_to(1)
         fields and then joins the groups. The transformation function is called per pair of groups.
         See <a href="#specifying-keys">keys</a> on how to define coGroup keys.</p>
 {% highlight python %}
-data1.cogroup(data2).where(0).equal_to(1)
+data1.co_group(data2).where(0).equal_to(1)
 {% endhighlight %}
       </td>
     </tr>
@@ -300,7 +298,7 @@ data1.cogroup(data2).where(0).equal_to(1)
       <td>
         <p>Builds the Cartesian product (cross product) of two inputs, creating all pairs of
         elements. Optionally uses a CrossFunction to turn the pair of elements into a single
-        element</p>
+        element.</p>
 {% highlight python %}
 result = data1.cross(data2)
 {% endhighlight %}
@@ -332,7 +330,7 @@ A DataSet is grouped as
 {% highlight python %}
 reduced = data \
   .group_by(<define key here>) \
-  .group_reduce(<do something>)
+  .reduce_group(<do something>)
 {% endhighlight %}
 
 The data model of Flink is not based on key-value pairs. Therefore,
@@ -348,7 +346,7 @@ fields of the Tuple:
 {% highlight python %}
 reduced = data \
   .group_by(0) \
-  .group_reduce(<do something>)
+  .reduce_group(<do something>)
 {% endhighlight %}
 
 The data set is grouped on the first field of the tuples. 
@@ -374,11 +372,7 @@ specifying `group_by(<index of tuple>)` will cause the system to use the full tu
 Passing Functions to Flink
 --------------------------
 
-Operations require user-defined functions. This section lists several ways for doing this.
-
-#### Lambda vs Rich Functions
-
-All transformation accept lambda functions and rich functions as arguments.
+Certain operations require user-defined functions, whereas all of them accept lambda functions and rich functions as arguments.
 
 {% highlight python %}
 data.filter(lambda x: x > 5)
@@ -393,30 +387,30 @@ data.filter(Filter())
 {% endhighlight %}
 
 Rich functions allow the use of imported functions, provide access to broadcast-variables, 
-can be parameterized using __init__(), and are the goto-option for complex functions.
+can be parameterized using __init__(), and are the go-to-option for complex functions.
 They are also the only way to define an optional `combine` function for a reduce operation.
 
-Lambda functions allow the easy insertion of one-liners. Note that for operations that can 
-return multiple values (using a collector), the lambda functions has to return an iterable.
+Lambda functions allow the easy insertion of one-liners. Note that a lambda function has to return
+an iterable, if the operation can return multiple values. (All functions receiving a collector argument)
 
 Flink requires type information at the time when it prepares the program for execution 
 (when the main method of the program is called). This is done by passing an exemplary 
 object that has the desired type. This holds also for tuples.
 
 {% highlight python %}
-(Types.INT, Types.STRING)
+(INT, STRING)
 {% endhighlight %}
 
 Would denote a tuple containing an int and a string. Note that for Operations that work strictly on tuples (like cross), no braces are required.
 
-There are a few Constants defined in flink.plan.Constants.Types that allow this in a more readable fashion.
+There are a few Constants defined in flink.plan.Constants that allow this in a more readable fashion.
 
 [Back to top](#top)
 
 Data Types
 ----------
 
-Flink's Python API currently only supports primitive python types (int, float, bool, string)
+Flink's Python API currently only supports primitive python types (int, float, bool, string) and byte arrays.
 
 #### Tuples/Lists
 
@@ -424,9 +418,9 @@ You can use the tuples (or lists) for composite types. Python tuples are mapped 
 a fix number of fields of various types (up to 25). Every field of a tuple can be a primitive type - including further tuples, resulting in nested tuples.
 
 {% highlight python %}
-wordCounts = env.from_elements(("hello", 1), ("world",2))
+word_counts = env.from_elements(("hello", 1), ("world",2))
 
-counts = wordCounts.map(lambda x: x[1], Types.INT)
+counts = word_counts.map(lambda x: x[1], INT)
 {% endhighlight %}
 
 When working with operators that require a Key for grouping or matching records,
@@ -435,7 +429,7 @@ than one position to use composite keys (see [Section Data Transformations](#tra
 
 {% highlight python %}
 wordCounts \
-    .groupBy(0) \
+    .group_by(0) \
     .reduce(MyReduceFunction())
 {% endhighlight %}
 
@@ -462,16 +456,16 @@ Collection-based:
 {% highlight python %}
 env  = get_environment
 
-// read text file from local files system
-localLiens = env.read_text("file:///path/to/my/textfile")
+# read text file from local files system
+localLiens = env.read_text("file:#/path/to/my/textfile")
 
-// read text file from a HDFS running at nnHost:nnPort
+ read text file from a HDFS running at nnHost:nnPort
 hdfsLines = env.read_text("hdfs://nnHost:nnPort/path/to/my/textfile")
 
-// read a CSV file with three fields
-csvInput = env.read_csv("hdfs:///the/CSV/file", (Types.INT, Types.STRING, Types.DOUBLE))
+ read a CSV file with three fields
+csvInput = env.read_csv("hdfs:///the/CSV/file", (INT, STRING, DOUBLE))
 
-// create a set from some given elements
+ create a set from some given elements
 values = env.from_elements("Foo", "bar", "foobar", "fubar")
 {% endhighlight %}
 
@@ -497,20 +491,19 @@ same time run additional transformations on them.
 Standard data sink methods:
 
 {% highlight scala %}
-// write DataSet to a file on the local file system
+ write DataSet to a file on the local file system
 textData.write_text("file:///my/result/on/localFS")
 
-// write DataSet to a file on a HDFS with a namenode running at nnHost:nnPort
+ write DataSet to a file on a HDFS with a namenode running at nnHost:nnPort
 textData.write_text("hdfs://nnHost:nnPort/my/result/on/localFS")
 
-// write DataSet to a file and overwrite the file if it exists
+ write DataSet to a file and overwrite the file if it exists
 textData.write_text("file:///my/result/on/localFS", WriteMode.OVERWRITE)
 
-// tuples as lines with pipe as the separator "a|b|c"
-val values: DataSet[(String, Int, Double)] = // [...]
+ tuples as lines with pipe as the separator "a|b|c"
 values.write_csv("file:///path/to/the/result/file", line_delimiter="\n", field_delimiter="|")
 
-// this writes tuples in the text formatting "(a, b, c)", rather than as CSV lines
+ this writes tuples in the text formatting "(a, b, c)", rather than as CSV lines
 values.write_text("file:///path/to/the/result/file")
 {% endhighlight %}
 
@@ -538,7 +531,7 @@ toBroadcast = env.from_elements(1, 2, 3)
 data = env.from_elements("a", "b")
 
 # 2. Broadcast the DataSet
-data.map(MapperBcv(), Types.INT).with_broadcast_set("bcv", toBroadcast) 
+data.map(MapperBcv(), INT).with_broadcast_set("bcv", toBroadcast) 
 {% endhighlight %}
 
 Make sure that the names (`bcv` in the previous example) match when registering and
@@ -546,25 +539,6 @@ accessing broadcasted data sets.
 
 **Note**: As the content of broadcast variables is kept in-memory on each node, it should not become
 too large. For simpler things like scalar values you can simply parameterize the rich function.
-
-[Back to top](#top)
-
-#### Summary
-
-The overall procedure to invoke a packaged program is as follows:
-
-1. The JAR's manifest is searched for a *main-class* or *program-class* attribute. If both
-attributes are found, the *program-class* attribute takes precedence over the *main-class*
-attribute. Both the command line and the web interface support a parameter to pass the entry point
-class name manually for cases where the JAR manifest contains neither attribute.
-
-2. If the entry point class implements the `org.apache.flinkapi.common.Program`, then the system
-calls the `getPlan(String...)` method to obtain the program plan to execute. The
-`getPlan(String...)` method was the only possible way of defining a program in the *Record API*
-(see [0.4 docs](http://stratosphere.eu/docs/0.4/)) and is also supported in the new Java API.
-
-3. If the entry point class does not implement the `org.apache.flinkapi.common.Program` interface,
-the system will invoke the main method of the class.
 
 [Back to top](#top)
 
@@ -595,9 +569,9 @@ execution environment as follows:
 env = get_environment()
 env.set_degree_of_parallelism(3)
 
-text.flatmap(lambda x,c: x.lower().split(), (Types.INT, Types.STRING)) \
+text.flat_map(lambda x,c: x.lower().split(), (INT, STRING)) \
     .group_by(1) \
-    .groupreduce(Adder(), (Types.INT, Types.STRING), combinable=True) \
+    .reduce_group(Adder(), (INT, STRING), combinable=True) \
     .output()
 
 env.execute()
