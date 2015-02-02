@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.operators.Keys;
 import org.apache.flink.api.java.operators.CoGroupPythonOperator;
 import org.apache.flink.api.java.operators.SortedGrouping;
@@ -80,13 +81,16 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 
 	public PythonPlanBinder() throws IOException {
 		FULL_PATH = FLINK_DIR != null
-				? FLINK_DIR.substring(0, FLINK_DIR.length() - 7) + FLINK_PYTHON_REL_LOCAL_PATH
-				: FileSystem.getLocalFileSystem().getWorkingDirectory().toString() //command-line
-				+ "/src/main/python/org/apache/flink/languagebinding/api/python"; //testing
+				? FLINK_DIR.substring(0, FLINK_DIR.length() - 7) + FLINK_PYTHON_REL_LOCAL_PATH //command-line
+				: FileSystem.getLocalFileSystem().getWorkingDirectory().toString() //testing
+				+ "/src/main/python/org/apache/flink/languagebinding/api/python";
 	}
 
 	protected void runPlan(String[] args) throws Exception {
 		env = ExecutionEnvironment.getExecutionEnvironment();
+		FLINK_HDFS_PATH = env instanceof LocalEnvironment 
+				? "file:/tmp/flink"  //local mode
+				: "hdfs:/tmp/flink"; //cluster mode
 
 		int split = 0;
 		for (int x = 0; x < args.length; x++) {
