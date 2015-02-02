@@ -30,7 +30,7 @@ class Tokenizer(FlatMapFunction):
 
 
 class Adder(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         count, word = iterator.next()
         count += sum([x[0] for x in iterator])
         collector.collect((count, word))

@@ -84,7 +84,7 @@ class Join(JoinFunction):
 
 
 class GroupReduce(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         if iterator.has_next():
             i, f, s, b = iterator.next()
             for value in iterator:
@@ -95,13 +95,13 @@ class GroupReduce(GroupReduceFunction):
 
 
 class GroupReduce2(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         for value in iterator:
             collector.collect(value)
 
 
 class GroupReduce3(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         collector.collect(iterator.next())
 
     def combine(self, iterator, collector):

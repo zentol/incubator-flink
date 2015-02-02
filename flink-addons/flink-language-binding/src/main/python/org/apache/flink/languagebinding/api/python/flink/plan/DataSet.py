@@ -101,7 +101,7 @@ class Set(object):
         if isinstance(operator, TYPES.FunctionType):
             f = operator
             operator = GroupReduceFunction()
-            operator.group_reduce = f
+            operator.reduce = f
         child = dict()
         self._info[_Fields.CHILDREN].append(child)
         child_set = OperatorSet(self._env, child)
@@ -493,7 +493,7 @@ class Grouping(object):
         if isinstance(operator, TYPES.FunctionType):
             f = operator
             operator = GroupReduceFunction()
-            operator.group_reduce = f
+            operator.reduce = f
         operator._set_grouping_keys(self._child_chain[0][_Fields.KEYS])
         sort_ops = []
         for x in range(len(self._child_chain) - 1):

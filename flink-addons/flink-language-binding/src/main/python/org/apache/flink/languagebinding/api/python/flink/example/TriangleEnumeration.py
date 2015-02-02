@@ -31,7 +31,7 @@ class EdgeDuplicator(FlatMapFunction):
 
 
 class DegreeCounter(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         other_vertices = []
 
         data = iterator.next()
@@ -94,7 +94,7 @@ class EdgeByIdProjector(MapFunction):
 
 
 class TriadBuilder(GroupReduceFunction):
-    def group_reduce(self, iterator, collector):
+    def reduce(self, iterator, collector):
         vertices = []
 
         y = iterator.next()
