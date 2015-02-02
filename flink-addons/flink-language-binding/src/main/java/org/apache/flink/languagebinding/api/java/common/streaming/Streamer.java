@@ -23,12 +23,15 @@ import org.apache.flink.configuration.Configuration;
 import static org.apache.flink.languagebinding.api.java.common.PlanBinder.PLANBINDER_CONFIG_BCVAR_COUNT;
 import static org.apache.flink.languagebinding.api.java.common.PlanBinder.PLANBINDER_CONFIG_BCVAR_NAME_PREFIX;
 import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is the basis for using an external process within a Java Flink operator. It contains logic to send and
  * receive data, while taking care of synchronization.
  */
 public abstract class Streamer implements Serializable {
+	public static final Logger LOG = LoggerFactory.getLogger(Streamer.class);
 	private static final int SIGNAL_BUFFER_REQUEST = 0;
 	private static final int SIGNAL_BUFFER_REQUEST_G0 = -3;
 	private static final int SIGNAL_BUFFER_REQUEST_G1 = -4;

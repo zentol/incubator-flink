@@ -214,8 +214,10 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 		} catch (URISyntaxException use) { // can't occur
 		}
 		try {
+			process.exitValue();
+		} catch (NullPointerException npe) { //exception occurred before process was started
+		} catch (IllegalThreadStateException ise) { //process still active
 			process.destroy();
-		} catch (NullPointerException npe) {
 		}
 	}
 

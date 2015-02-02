@@ -127,7 +127,11 @@ public class PythonStreamer extends Streamer {
 	 */
 	@Override
 	public void close() throws IOException {
-		super.close();
+		try {
+			super.close();
+		} catch (Exception e) {
+			LOG.error("Exception occurred while closing Streamer. :" + e.getMessage());
+		}
 		try {
 			process.exitValue();
 		} catch (IllegalThreadStateException ise) { //process still active
