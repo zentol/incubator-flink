@@ -16,12 +16,12 @@
 # limitations under the License.
 ################################################################################
 from flink.plan.Environment import get_environment
-from flink.plan.Constants import Types
+from flink.plan.Constants import INT, STRING
 
 if __name__ == "__main__":
     env = get_environment()
 
-    d1 = env.read_csv("src/main/python/org/apache/flink/languagebinding/api/python/flink/test/data_csv", (Types.INT, Types.INT, Types.STRING))
+    d1 = env.read_csv("src/main/python/org/apache/flink/languagebinding/api/python/flink/test/data_csv", (INT, INT, STRING))
 
     d1.write_csv("/tmp/flink/result")
 

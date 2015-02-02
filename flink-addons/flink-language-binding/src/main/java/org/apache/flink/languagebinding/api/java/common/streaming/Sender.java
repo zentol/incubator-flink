@@ -155,7 +155,7 @@ public class Sender implements Serializable {
 	}
 
 	private enum SupportedTypes {
-		TUPLE, BOOLEAN, BYTE, CHARACTER, SHORT, INTEGER, LONG, FLOAT, DOUBLE, STRING, OTHER, NULL
+		TUPLE, BOOLEAN, BYTE, BYTES, CHARACTER, SHORT, INTEGER, LONG, FLOAT, DOUBLE, STRING, OTHER, NULL
 	}
 
 	//=====Serializer===================================================================================================
@@ -164,84 +164,50 @@ public class Sender implements Serializable {
 		if (className.startsWith("TUPLE")) {
 			className = "TUPLE";
 		}
+		if (className.startsWith("BYTE[]")) {
+			className = "BYTES";
+		}
 		SupportedTypes type = SupportedTypes.valueOf(className);
 		switch (type) {
 			case TUPLE:
-				bufferType(TYPE_TUPLE, ((Tuple) value).getArity());
+				fileBuffer.put(TYPE_TUPLE);
+				fileBuffer.putInt(((Tuple) value).getArity());
 				return new TupleSerializer((Tuple) value);
 			case BOOLEAN:
-				bufferType(TYPE_BOOLEAN, 0);
+				fileBuffer.put(TYPE_BOOLEAN);
 				return new BooleanSerializer();
 			case BYTE:
-				bufferType(TYPE_BYTE, 0);
+				fileBuffer.put(TYPE_BYTE);
 				return new ByteSerializer();
+			case BYTES:
+				fileBuffer.put(TYPE_BYTES);
+				return new BytesSerializer();
 			case CHARACTER:
-				bufferType(TYPE_CHAR, 0);
+				fileBuffer.put(TYPE_CHAR);
 				return new CharSerializer();
 			case SHORT:
-				bufferType(TYPE_SHORT, 0);
+				fileBuffer.put(TYPE_SHORT);
 				return new ShortSerializer();
 			case INTEGER:
-				bufferType(TYPE_INTEGER, 0);
+				fileBuffer.put(TYPE_INTEGER);
 				return new IntSerializer();
 			case LONG:
-				bufferType(TYPE_LONG, 0);
+				fileBuffer.put(TYPE_LONG);
 				return new LongSerializer();
 			case STRING:
-				bufferType(TYPE_STRING, 0);
+				fileBuffer.put(TYPE_STRING);
 				return new StringSerializer();
 			case FLOAT:
-				bufferType(TYPE_FLOAT, 0);
+				fileBuffer.put(TYPE_FLOAT);
 				return new FloatSerializer();
 			case DOUBLE:
-				bufferType(TYPE_DOUBLE, 0);
+				fileBuffer.put(TYPE_DOUBLE);
 				return new DoubleSerializer();
 			case NULL:
-				bufferType(TYPE_NULL, 0);
+				fileBuffer.put(TYPE_NULL);
 				return new NullSerializer();
 			default:
-				throw new IllegalArgumentException("Unknown TypeID encountered: " + type);
-		}
-	}
-
-	private void bufferType(byte type, int tupleSize) throws IOException {
-		switch (type) {
-			case TYPE_TUPLE:
-				fileBuffer.put(TYPE_TUPLE);
-				fileBuffer.putInt(tupleSize);
-				break;
-			case TYPE_BOOLEAN:
-				fileBuffer.put(TYPE_BOOLEAN);
-				break;
-			case TYPE_BYTE:
-				fileBuffer.put(TYPE_BYTE);
-				break;
-			case TYPE_CHAR:
-				fileBuffer.put(TYPE_STRING);
-				break;
-			case TYPE_SHORT:
-				fileBuffer.put(TYPE_SHORT);
-				break;
-			case TYPE_INTEGER:
-				fileBuffer.put(TYPE_INTEGER);
-				break;
-			case TYPE_LONG:
-				fileBuffer.put(TYPE_LONG);
-				break;
-			case TYPE_STRING:
-				fileBuffer.put(TYPE_STRING);
-				break;
-			case TYPE_FLOAT:
-				fileBuffer.put(TYPE_FLOAT);
-				break;
-			case TYPE_DOUBLE:
-				fileBuffer.put(TYPE_DOUBLE);
-				break;
-			case TYPE_NULL:
-				fileBuffer.put(TYPE_NULL);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown TypeID encountered: " + type);
+				throw new IllegalArgumentException("Unknown Type encountered: " + type);
 		}
 	}
 
@@ -320,6 +286,15 @@ public class Sender implements Serializable {
 		@Override
 		public void serialize(Object value) {
 		}
+	}
+	
+	private class BytesSerializer extends Serializer<byte[]> {
+		@Override
+		public void serialize(byte[] value) {
+			fileBuffer.putInt(value.length);
+			fileBuffer.put(value);
+		}
+		
 	}
 
 	private class TupleSerializer extends Serializer<Tuple> {

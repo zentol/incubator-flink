@@ -15,25 +15,20 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
-
-from flink.functions import Function, RuntimeContext
-from flink.connection import Connection, Iterator, Collector
+from flink.functions import Function
 
 
 class CrossFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(CrossFunction, self).__init__()
 
-    def run(self):
+    def _run(self):
         collector = self._collector
         function = self.cross
         iterator = self._iterator
         for value in iterator:
             collector.collect(function(value[0], value[1]))
-        collector.close()
+        collector._close()
 
     def cross(self, value1, value2):
         pass

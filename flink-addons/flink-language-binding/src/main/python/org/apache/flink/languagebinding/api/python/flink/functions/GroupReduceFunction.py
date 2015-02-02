@@ -15,17 +15,13 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-
 from flink.functions import Function, RuntimeContext
 from flink.connection import Connection, Iterator, Collector
 from flink.plan.Constants import Order
 
 
 class GroupReduceFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(GroupReduceFunction, self).__init__()
         self._keys = None
@@ -33,10 +29,39 @@ class GroupReduceFunction(Function.Function):
         self._combine = False
         self._values = []
 
-    def run(self):
+    def _configure(self, input_file, output_file, port):
+        if self._combine:
+            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
+            self._iterator = Iterator.Iterator(self._connection)
+            self._collector = Collector.Collector(self._connection)
+            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+            self._run = self._run_combine
+        else:
+            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
+            self._iterator = Iterator.Iterator(self._connection)
+            self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
+            self._collector = Collector.Collector(self._connection)
+            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+        self._open()
+
+    def _open(self):
+        if self._keys is None:
+            self._extract_keys = self._extract_keys_id
+
+    def _close(self):
+        self._sort_and_combine()
+        self._collector._close()
+
+    def _set_grouping_keys(self, keys):
+        self._keys = keys
+
+    def _set_sort_ops(self, ops):
+        self._sort_ops = ops
+
+    def _run(self):#reduce
         connection = self._connection
         collector = self._collector
-        function = self.reduce
+        function = self.group_reduce
         iterator = self._group_iterator
         iterator._init()
         while iterator.has_group():
@@ -45,10 +70,10 @@ class GroupReduceFunction(Function.Function):
             if result is not None:
                 for value in result:
                     collector.collect(value)
-        collector.close()
+        collector._close()
         connection.send_end_signal()
 
-    def _run_combine(self):
+    def _run_combine(self):#unchained combine
         connection = self._connection
         collector = self._collector
         function = self.combine
@@ -61,36 +86,7 @@ class GroupReduceFunction(Function.Function):
             connection.send_end_signal()
             connection.reset()
 
-    def configure(self, input_file, output_file, port):
-        if self._combine:
-            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
-            self._iterator = Iterator.Iterator(self._connection)
-            self._collector = Collector.Collector(self._connection)
-            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-            self.run = self._run_combine
-        else:
-            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
-            self._iterator = Iterator.Iterator(self._connection)
-            self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
-            self._collector = Collector.Collector(self._connection)
-            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-        self.open()
-
-    def open(self):
-        if self._keys is None:
-            self._extract_keys = self._extract_keys_id
-
-    def _set_keys(self, keys):
-        self._keys = keys
-
-    def _set_sort_ops(self, ops):
-        self._sort_ops = ops
-
-    def close(self):
-        self._sort_and_combine()
-        self._collector.close()
-
-    def collect(self, value):
+    def collect(self, value):#chained combine
         self._values.append(value)
         if len(self._values) > 1000000:
             self._sort_and_combine()
@@ -124,8 +120,8 @@ class GroupReduceFunction(Function.Function):
     def _extract_keys_id(self, x):
         return x
 
-    def reduce(self, iterator, collector):
+    def group_reduce(self, iterator, collector):
         pass
 
     def combine(self, iterator, collector):
-        self.reduce(iterator, collector)
+        self.group_reduce(iterator, collector)

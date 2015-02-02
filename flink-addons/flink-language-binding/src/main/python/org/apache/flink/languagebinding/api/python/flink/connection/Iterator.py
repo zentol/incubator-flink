@@ -189,12 +189,6 @@ class Iterator(defIter.Iterator):
     def has_next(self):
         return self._connection.has_next(self._group)
 
-    def all(self):
-        values = []
-        while self.has_next():
-            values.append(self.next())
-        return values
-
     def _reset(self):
         self._deserializer = None
 
@@ -221,6 +215,8 @@ def _get_deserializer(group, read, type=None):
         return TupleDeserializer(read, group)
     elif type == Types.TYPE_BYTE:
         return ByteDeserializer(read, group)
+    elif type == Types.TYPE_BYTES:
+        return ByteArrayDeserializer(read, group)
     elif type == Types.TYPE_BOOLEAN:
         return BooleanDeserializer(read, group)
     elif type == Types.TYPE_FLOAT:
@@ -255,6 +251,16 @@ class ByteDeserializer(object):
 
     def deserialize(self):
         return unpack(">c", self.read(1, self._group))[0]
+
+
+class ByteArrayDeserializer(object):
+    def __init__(self, read, group):
+        self.read = read
+        self._group = group
+
+    def deserialize(self):
+        size = unpack(">i", self.read(4, self._group))[0]
+        return bytearray(self.read(size, self._group))
 
 
 class BooleanDeserializer(object):

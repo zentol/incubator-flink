@@ -17,7 +17,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 import static org.apache.flink.languagebinding.api.java.python.PythonPlanBinder.FLINK_PYTHON_EXECUTOR_NAME;
-import static org.apache.flink.languagebinding.api.java.python.PythonPlanBinder.FLINK_PYTHON_ID;
+import static org.apache.flink.languagebinding.api.java.python.PythonPlanBinder.FLINK_PYTHON_DC_ID;
 import static org.apache.flink.languagebinding.api.java.python.PythonPlanBinder.FLINK_PYTHON_PLAN_NAME;
 import static org.apache.flink.languagebinding.api.java.common.PlanBinder.FLINK_TMP_DATA_DIR;
 import org.apache.flink.languagebinding.api.java.common.streaming.StreamPrinter;
@@ -56,8 +56,6 @@ public class PythonStreamer extends Streamer {
 
 	private void startPython() throws IOException {
 		DatagramSocket s = new DatagramSocket(0);
-		byte[] opSize = new byte[4];
-		putInt(opSize, 0, operator.length);
 
 		this.outputFilePath = FLINK_TMP_DATA_DIR + "/" + id + this.function.getRuntimeContext().getIndexOfThisSubtask() + "output";
 		this.inputFilePath = FLINK_TMP_DATA_DIR + "/" + id + this.function.getRuntimeContext().getIndexOfThisSubtask() + "input";
@@ -67,7 +65,7 @@ public class PythonStreamer extends Streamer {
 
 		ProcessBuilder pb = new ProcessBuilder();
 
-		String path = function.getRuntimeContext().getDistributedCache().getFile(FLINK_PYTHON_ID).getAbsolutePath();
+		String path = function.getRuntimeContext().getDistributedCache().getFile(FLINK_PYTHON_DC_ID).getAbsolutePath();
 		String executorPath = path + FLINK_PYTHON_EXECUTOR_NAME;
 		String[] frag = metaInformation.split("\\|");
 		StringBuilder importString = new StringBuilder();
@@ -105,6 +103,8 @@ public class PythonStreamer extends Streamer {
 			throw new RuntimeException(
 					"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely. Check log-files for details.");
 		}
+		byte[] opSize = new byte[4];
+		putInt(opSize, 0, operator.length);
 		int exPort = getInt(executorPort, 0);
 		s.send(new DatagramPacket(opSize, 0, 4, host, exPort));
 		s.send(new DatagramPacket(operator, 0, operator.length, host, exPort));
@@ -113,10 +113,11 @@ public class PythonStreamer extends Streamer {
 			Thread.sleep(2000);
 		} catch (InterruptedException ex) {
 		}
+
 		try {
 			process.exitValue();
 			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely. Check log-files for details.");
-		} catch (IllegalThreadStateException ise) { //process still active
+		} catch (IllegalThreadStateException ise) { //process still active -> start receiving data
 		}
 	}
 

@@ -46,10 +46,10 @@ import org.slf4j.LoggerFactory;
 public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 	static final Logger LOG = LoggerFactory.getLogger(PythonPlanBinder.class);
 
-	public static final String ARGUMENT_PYTHON_2 = "0";
-	public static final String ARGUMENT_PYTHON_3 = "1";
+	public static final String ARGUMENT_PYTHON_2 = "2";
+	public static final String ARGUMENT_PYTHON_3 = "3";
 
-	public static final String FLINK_PYTHON_ID = "flink";
+	public static final String FLINK_PYTHON_DC_ID = "flink";
 	public static final String FLINK_PYTHON_PLAN_NAME = "/plan.py";
 	public static final String FLINK_PYTHON_EXECUTOR_NAME = "/executor.py";
 
@@ -65,7 +65,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 	/**
 	 * Entry point for the execution of a python plan.
 	 *
-	 * @param args planPath [package1[packageX[|parameter1[parameterX]]]]
+	 * @param args planPath[ package1[ packageX[ - parameter1[ parameterX]]]]
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
@@ -79,11 +79,10 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 	}
 
 	public PythonPlanBinder() throws IOException {
-
 		FULL_PATH = FLINK_DIR != null
 				? FLINK_DIR.substring(0, FLINK_DIR.length() - 7) + FLINK_PYTHON_REL_LOCAL_PATH
-				: FileSystem.getLocalFileSystem().getWorkingDirectory().toString()
-				+ "/src/main/python/org/apache/flink/languagebinding/api/python";
+				: FileSystem.getLocalFileSystem().getWorkingDirectory().toString() //command-line
+				+ "/src/main/python/org/apache/flink/languagebinding/api/python"; //testing
 	}
 
 	protected void runPlan(String[] args) throws Exception {
@@ -118,26 +117,18 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 	 * @throws URISyntaxException
 	 */
 	private void prepareFiles(String... filePaths) throws IOException, URISyntaxException {
-		prepareFlinkPythonPackage();
-
-		String planPath = filePaths[0];
-		if (planPath.endsWith("/")) {
-			planPath = planPath.substring(0, planPath.length() - 1);
-		}
-		String tmpPlanPath = FLINK_PYTHON_FILE_PATH + FLINK_PYTHON_PLAN_NAME;
-		clearPath(tmpPlanPath);
-		Path p = new Path(planPath);
-		FileCache.copy(p.makeQualified(FileSystem.get(p.toUri())), new Path(tmpPlanPath), false);
-
-		for (int x = 1; x < filePaths.length; x++) {
-			copyFile(filePaths[x]);
-		}
-	}
-
-	private static void prepareFlinkPythonPackage() throws IOException, URISyntaxException {
+		//Flink python package
 		String tempFilePath = FLINK_PYTHON_FILE_PATH;
 		clearPath(tempFilePath);
 		FileCache.copy(new Path(FULL_PATH), new Path(tempFilePath), false);
+
+		//plan file		
+		copyFile(filePaths[0], FLINK_PYTHON_PLAN_NAME);
+
+		//additional files/folders
+		for (int x = 1; x < filePaths.length; x++) {
+			copyFile(filePaths[x], null);
+		}
 	}
 
 	private static void clearPath(String path) throws IOException, URISyntaxException {
@@ -147,22 +138,21 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 		}
 	}
 
-	public static String copyFile(String path) throws IOException, URISyntaxException {
+	private static void copyFile(String path, String name) throws IOException, URISyntaxException {
 		if (path.endsWith("/")) {
 			path = path.substring(0, path.length() - 1);
 		}
-		String identifier = path.substring(path.lastIndexOf("/"));
+		String identifier = name == null ? path.substring(path.lastIndexOf("/")) : name;
 		String tmpFilePath = FLINK_PYTHON_FILE_PATH + "/" + identifier;
 		clearPath(tmpFilePath);
 		Path p = new Path(path);
 		FileCache.copy(p.makeQualified(FileSystem.get(p.toUri())), new Path(tmpFilePath), true);
-		return identifier;
 	}
 
 	private static void distributeFiles(ExecutionEnvironment env) throws IOException, URISyntaxException {
 		clearPath(FLINK_HDFS_PATH);
 		FileCache.copy(new Path(FLINK_PYTHON_FILE_PATH), new Path(FLINK_HDFS_PATH), true);
-		env.registerCachedFile(FLINK_HDFS_PATH, FLINK_PYTHON_ID);
+		env.registerCachedFile(FLINK_HDFS_PATH, FLINK_PYTHON_DC_ID);
 		clearPath(FLINK_PYTHON_FILE_PATH);
 	}
 
@@ -182,20 +172,17 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 		new StreamPrinter(process.getInputStream()).start();
 		new StreamPrinter(process.getErrorStream()).start();
 
-		boolean planning = true;
-		while (planning) {
-			try {
-				int value = process.exitValue();
-				planning = false;
-				if (value != 0) {
-					throw new RuntimeException("Plan file caused an error. Check log-files for details.");
-				}
-			} catch (IllegalThreadStateException ise) { //process still active, let's wait a bit
-				try { // wait a bit to catch syntax errors
-					Thread.sleep(2000);
-				} catch (InterruptedException ex) {
-				}
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException ex) {
+		}
+
+		try {
+			int value = process.exitValue();
+			if (value != 0) {
+				throw new RuntimeException("Plan file caused an error. Check log-files for details.");
 			}
+		} catch (IllegalThreadStateException ise) {
 		}
 	}
 

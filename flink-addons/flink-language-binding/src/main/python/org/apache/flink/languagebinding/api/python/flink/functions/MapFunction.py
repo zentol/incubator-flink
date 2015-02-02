@@ -15,23 +15,18 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
-
-from flink.functions import Function, RuntimeContext
-from flink.connection import Connection, Iterator, Collector
+from flink.functions import Function
 
 
 class MapFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(MapFunction, self).__init__()
 
-    def run(self):
+    def _run(self):
         collector = self._collector
         for value in map(self.map, self._iterator):
             collector.collect(value)
-        collector.close()
+        collector._close()
 
     def collect(self, value):
         self._collector.collect(self.map(value))

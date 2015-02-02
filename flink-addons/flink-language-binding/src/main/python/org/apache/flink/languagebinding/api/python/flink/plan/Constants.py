@@ -50,7 +50,6 @@ class _Identifier(object):
 class _Fields(object):
     PARENT = "parent"
     OTHER = "other_set"
-    SET = "set"
     SINKS = "sinks"
     IDENTIFIER = "identifier"
     FIELD = "field"
@@ -58,8 +57,6 @@ class _Fields(object):
     KEYS = "keys"
     KEY1 = "key1"
     KEY2 = "key2"
-    PKEY1 = "pkey1"
-    PKEY2 = "pkey2"
     TYPES = "types"
     OPERATOR = "operator"
     META = "meta"
@@ -74,6 +71,7 @@ class _Fields(object):
     CHILDREN = "children"
     BCVARS = "bcvars"
     PROJECTIONS = "projections"
+    ID = "id"
 
 
 class WriteMode(object):
@@ -93,15 +91,15 @@ PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
 if PY2:
-    class Types(object):
-        BOOL = True
-        INT = 1
-        LONG = long(1)
-        FLOAT = 2.5
-        STRING = "type"
+    BOOL = True
+    INT = 1
+    LONG = long(1)
+    FLOAT = 2.5
+    STRING = "type"
+    BYTES = bytearray(b"byte")
 elif PY3:
-    class Types(object):
-        BOOL = True
-        INT = 1
-        FLOAT = 2.5
-        STRING = "type"
+    BOOL = True
+    INT = 1
+    FLOAT = 2.5
+    STRING = "type"
+    BYTES = bytearray(b"byte")

@@ -33,7 +33,7 @@ class Collector(object):
         self._connection = con
         self._serializer = None
 
-    def close(self):
+    def _close(self):
         self._connection.send_end_signal()
 
     def collect(self, value):
@@ -62,6 +62,9 @@ def _get_serializer(write, value):
     elif isinstance(value, int) or PY2 and isinstance(value, long):
         write(Types.TYPE_LONG)
         return LongSerializer()
+    elif isinstance(value, bytearray):
+        write(Types.TYPE_BYTES)
+        return ByteArraySerializer()
     elif isinstance(value, float):
         write(Types.TYPE_DOUBLE)
         return FloatSerializer()
@@ -93,6 +96,12 @@ class FloatSerializer(object):
 class LongSerializer(object):
     def serialize(self, value):
         return pack(">q", value)
+
+
+class ByteArraySerializer(object):
+    def serialize(self, value):
+        value = bytes(value)
+        return pack(">I", len(value)) + value
 
 
 class StringSerializer(object):
@@ -148,6 +157,10 @@ class TypedCollector(object):
         elif isinstance(value, float):
             data = pack(">d", value)
             self._connection.write("".join([Types.TYPE_DOUBLE, data]))
+        elif isinstance(value, bytearray):
+            value = bytes(value)
+            size = pack(">I", len(value))
+            self._connection.write("".join([Types.TYPE_BYTES, size, value]))
         else:
             raise Exception("Unsupported Type encountered.")
 
@@ -180,5 +193,9 @@ class TypedCollector(object):
         elif isinstance(value, float):
             data = pack(">d", value)
             self._connection.write(b"".join([Types.TYPE_DOUBLE, data]))
+        elif isinstance(value, bytearray):
+            value = bytes(value)
+            size = pack(">I", len(value))
+            self._connection.write(b"".join([Types.TYPE_BYTES, size, value]))
         else:
             raise Exception("Unsupported Type encountered.")

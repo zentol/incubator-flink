@@ -25,7 +25,6 @@ import struct
 #argv[5] = port
 
 
-
 try:
     import dill
     s1 = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -35,8 +34,10 @@ try:
     serialized_operator = s1.recv(opSize)
     exec(sys.argv[2])
     operator = dill.loads(serialized_operator)
-    operator.configure(sys.argv[3], sys.argv[4], int(sys.argv[5]))
-    operator.go()
+    operator._configure(sys.argv[3], sys.argv[4], int(sys.argv[5]))
+    operator._go()
+    sys.stdout.flush()
+    sys.stderr.flush()
 except:
     sys.stdout.flush()
     sys.stderr.flush()

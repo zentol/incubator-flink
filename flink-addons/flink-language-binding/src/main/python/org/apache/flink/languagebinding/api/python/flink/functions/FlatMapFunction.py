@@ -15,19 +15,14 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
-
-from flink.functions import Function, RuntimeContext
-from flink.connection import Connection, Iterator, Collector
+from flink.functions import Function
 
 
 class FlatMapFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(FlatMapFunction, self).__init__()
 
-    def run(self):
+    def _run(self):
         collector = self._collector
         function = self.flat_map
         iterator = self._iterator
@@ -36,7 +31,7 @@ class FlatMapFunction(Function.Function):
             if result is not None:
                 for res in result:
                     collector.collect(res)
-        collector.close()
+        collector._close()
 
     def collect(self, value):
         collector = self._collector

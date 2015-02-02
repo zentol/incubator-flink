@@ -15,26 +15,31 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
-
 from flink.functions import Function, RuntimeContext
 from flink.connection import Iterator, Connection, Collector
 
 
 class CoGroupFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(CoGroupFunction, self).__init__()
         self._keys1 = None
         self._keys2 = None
 
-    def run(self):
+    def _configure(self, input_file, output_file, port):
+        self._connection = Connection.TwinBufferingUDPMappedFileConnection(input_file, output_file, port)
+        self._iterator = Iterator.Iterator(self._connection, 0)
+        self._iterator2 = Iterator.Iterator(self._connection, 1)
+        self._cgiter = Iterator.CoGroupIterator(self._iterator, self._iterator2, self._keys1, self._keys2)
+        self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+        self._configure_chain(Collector.Collector(self._connection))
+
+    def _run(self):
         collector = self._collector
         iterator = self._cgiter
+        function = self.co_group
         iterator._init()
         while iterator.next():
-            result = self.co_group(iterator.p1, iterator.p2, collector)
+            result = function(iterator.p1, iterator.p2, collector)
             if result is not None:
                 for res in result:
                     collector.collect(res)
@@ -42,15 +47,7 @@ class CoGroupFunction(Function.Function):
                 iterator.p1.next()
             while iterator.p2.has_next():
                 iterator.p2.next()
-        self._collector.close()
-
-    def configure(self, input_file, output_file, port):
-        self._connection = Connection.TwinBufferingUDPMappedFileConnection(input_file, output_file, port)
-        self._iterator = Iterator.Iterator(self._connection, 0)
-        self._iterator2 = Iterator.Iterator(self._connection, 1)
-        self._cgiter = Iterator.CoGroupIterator(self._iterator, self._iterator2, self._keys1, self._keys2)
-        self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-        self._configure_chain(Collector.Collector(self._connection))
+        collector._close()
 
     def co_group(self, iterator1, iterator2, collector):
         pass

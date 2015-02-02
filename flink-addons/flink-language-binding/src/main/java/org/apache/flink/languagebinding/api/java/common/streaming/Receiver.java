@@ -22,20 +22,10 @@ import java.nio.channels.FileChannel;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 //CHECKSTYLE.OFF: AvoidStarImport - tuple imports
 import org.apache.flink.api.java.tuple.*;
+import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.*;
 //CHECKSTYLE.ON: AvoidStarImport
 import static org.apache.flink.languagebinding.api.java.common.PlanBinder.FLINK_TMP_DATA_DIR;
 import static org.apache.flink.languagebinding.api.java.common.PlanBinder.MAPPED_FILE_SIZE;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_BOOLEAN;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_BYTE;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_BYTES;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_DOUBLE;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_FLOAT;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_INTEGER;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_LONG;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_NULL;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_SHORT;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_STRING;
-import static org.apache.flink.languagebinding.api.java.common.streaming.Sender.TYPE_TUPLE;
 import org.apache.flink.util.Collector;
 
 /**
@@ -273,6 +263,8 @@ public class Receiver implements Serializable {
 				return new BooleanDeserializer();
 			case TYPE_BYTE:
 				return new ByteDeserializer();
+			case TYPE_BYTES:
+				return new BytesDeserializer();
 			case TYPE_SHORT:
 				return new ShortDeserializer();
 			case TYPE_INTEGER:
@@ -365,6 +357,17 @@ public class Receiver implements Serializable {
 			return null;
 		}
 	}
+	
+	private class BytesDeserializer implements Deserializer<byte[]> {
+		@Override
+		public byte[] deserialize() {
+			int length = fileBuffer.getInt();
+			byte[] result = new byte[length];
+			fileBuffer.get(result);
+			return result;
+		}
+		
+	}
 
 	private class TupleDeserializer implements Deserializer<Tuple> {
 		Deserializer[] deserializer = null;
@@ -388,7 +391,6 @@ public class Receiver implements Serializable {
 		}
 	}
 
-	//Misc
 	public static Tuple createTuple(int size) {
 		switch (size) {
 			case 0:

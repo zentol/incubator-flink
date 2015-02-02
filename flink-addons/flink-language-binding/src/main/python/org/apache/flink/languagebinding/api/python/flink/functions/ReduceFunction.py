@@ -15,23 +15,43 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-
 from flink.functions import Function, RuntimeContext
 from flink.connection import Connection, Iterator, Collector
 
 
 class ReduceFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(ReduceFunction, self).__init__()
         self._keys = None
         self._combine = False
         self._values = []
 
-    def run(self):
+    def _configure(self, input_file, output_file, port):
+        if self._combine:
+            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
+            self._iterator = Iterator.Iterator(self._connection)
+            self._collector = Collector.Collector(self._connection)
+            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+            self._run = self._run_combine
+        else:
+            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
+            self._iterator = Iterator.Iterator(self._connection)
+            if self._keys is None:
+                self._run = self._run_allreduce
+            else:
+                self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
+            self._collector = Collector.Collector(self._connection)
+            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+
+    def _set_grouping_keys(self, keys):
+        self._keys = keys
+
+    def _close(self):
+        self._sort_and_combine()
+        self._collector._close()
+
+    def _run(self):#grouped reduce
         collector = self._collector
         function = self.reduce
         iterator = self._group_iterator
@@ -43,9 +63,9 @@ class ReduceFunction(Function.Function):
                 for value in iterator:
                     base = function(base, value)
             collector.collect(base)
-        collector.close()
+        collector._close()
 
-    def _run_allreduce(self):
+    def _run_allreduce(self):#ungrouped reduce
         collector = self._collector
         function = self.reduce
         iterator = self._iterator
@@ -54,9 +74,9 @@ class ReduceFunction(Function.Function):
             for value in iterator:
                 base = function(base, value)
             collector.collect(base)
-        collector.close()
+        collector._close()
 
-    def _run_combine(self):
+    def _run_combine(self):#unchained combine
         connection = self._connection
         collector = self._collector
         function = self.combine
@@ -70,31 +90,7 @@ class ReduceFunction(Function.Function):
             connection.send_end_signal()
             connection.reset()
 
-    def configure(self, input_file, output_file, port):
-        if self._combine:
-            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
-            self._iterator = Iterator.Iterator(self._connection)
-            self._collector = Collector.Collector(self._connection)
-            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-            self.run = self._run_combine
-        else:
-            self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
-            self._iterator = Iterator.Iterator(self._connection)
-            if self._keys is None:
-                self.run = self._run_allreduce
-            else:
-                self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
-            self._collector = Collector.Collector(self._connection)
-            self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-
-    def _set_keys(self, keys):
-        self._keys = keys
-
-    def close(self):
-        self._sort_and_combine()
-        self._collector.close()
-
-    def collect(self, value):
+    def collect(self, value):#chained combine
         self._values.append(value)
         if len(self._values) > 1000000:
             self._sort_and_combine()

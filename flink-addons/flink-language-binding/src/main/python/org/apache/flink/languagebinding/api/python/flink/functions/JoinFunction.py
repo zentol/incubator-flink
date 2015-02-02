@@ -15,25 +15,19 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from abc import ABCMeta, abstractmethod
-
-from flink.functions import Function, RuntimeContext
-from flink.connection import Connection, Iterator, Collector
+from flink.functions import Function
 
 
 class JoinFunction(Function.Function):
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super(JoinFunction, self).__init__()
 
-    def run(self):
+    def _run(self):
         collector = self._collector
         function = self.join
-        iterator = self._iterator
-        for value in iterator:
+        for value in self._iterator:
             collector.collect(function(value[0], value[1]))
-        collector.close()
+        collector._close()
 
     def join(self, value1, value2):
         pass

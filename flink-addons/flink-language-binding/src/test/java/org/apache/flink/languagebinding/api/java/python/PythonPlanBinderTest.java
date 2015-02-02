@@ -52,8 +52,7 @@ public class PythonPlanBinderTest {
 		}
 	}
 	
-	private static void checkPythonSupport() {
-		
+	private static void checkPythonSupport() {	
 		try {
 			Runtime.getRuntime().exec("python");
 		} catch (IOException ex) {

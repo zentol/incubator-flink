@@ -39,7 +39,7 @@ else:
 class OneWayBusyBufferingMappedFileConnection(object):
     def __init__(self):
         self._output_file = open("/tmp/flink_data/output", "rb+")
-        self.file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
+        self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
 
         self._out = deque()
         self._out_size = 0
@@ -53,18 +53,18 @@ class OneWayBusyBufferingMappedFileConnection(object):
             self._write_buffer()
 
     def _write_buffer(self):
-        self.file_output_buffer.seek(1, 0)
-        self.file_output_buffer.write(b"".join(self._out))
-        self.file_output_buffer.seek(0, 0)
-        self.file_output_buffer.write(b'\x01')
+        self._file_output_buffer.seek(1, 0)
+        self._file_output_buffer.write(b"".join(self._out))
+        self._file_output_buffer.seek(0, 0)
+        self._file_output_buffer.write(b'\x01')
 
 
 class BufferingUDPMappedFileConnection(object):
     def __init__(self, input_file="/tmp/flink_data/input", output_file="/tmp/flink_data/output", port=25000):
         self._input_file = open(input_file, "rb+")
         self._output_file = open(output_file, "rb+")
-        self.file_input_buffer = mmap.mmap(self._input_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_READ)
-        self.file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
+        self._file_input_buffer = mmap.mmap(self._input_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_READ)
+        self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
         self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self._socket.bind((socket.gethostname(), 0))
         self._destination = (socket.gethostname(), port)
@@ -89,8 +89,8 @@ class BufferingUDPMappedFileConnection(object):
             self._write_buffer()
 
     def _write_buffer(self):
-        self.file_output_buffer.seek(0, 0)
-        self.file_output_buffer.write(b"".join(self._out))
+        self._file_output_buffer.seek(0, 0)
+        self._file_output_buffer.write(b"".join(self._out))
         self._socket.sendto(pack(">i", self._out_size), self._destination)
         self._out.clear()
         self._out_size = 0
@@ -105,12 +105,12 @@ class BufferingUDPMappedFileConnection(object):
 
     def _read_buffer(self):
         self._socket.sendto(SIGNAL_REQUEST_BUFFER, self._destination)
-        self.file_input_buffer.seek(0, 0)
+        self._file_input_buffer.seek(0, 0)
         self._input_offset = 0
         meta_size = self._socket.recvfrom(5)[0]
         self._input_size = unpack(">I", meta_size[:4])[0]
         self._was_last = meta_size[4] == SIGNAL_WAS_LAST
-        self._input = self.file_input_buffer.read(self._input_size)
+        self._input = self._file_input_buffer.read(self._input_size)
 
     def send_end_signal(self):
         if self._out_size:
@@ -131,8 +131,8 @@ class TwinBufferingUDPMappedFileConnection(object):
     def __init__(self, input_file="/tmp/flink/data/input", output_file="/tmp/flink/data/output", port=25000):
         self._input_file = open(input_file, "rb+")
         self._output_file = open(output_file, "rb+")
-        self.file_input_buffer = mmap.mmap(self._input_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_READ)
-        self.file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
+        self._file_input_buffer = mmap.mmap(self._input_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_READ)
+        self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
         self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self._socket.bind((socket.gethostname(), 0))
         self._destination = (socket.gethostname(), port)
@@ -157,8 +157,8 @@ class TwinBufferingUDPMappedFileConnection(object):
             self._write_buffer()
 
     def _write_buffer(self):
-        self.file_output_buffer.seek(0, 0)
-        self.file_output_buffer.write(b"".join(self._out))
+        self._file_output_buffer.seek(0, 0)
+        self._file_output_buffer.write(b"".join(self._out))
         self._socket.sendto(pack(">i", self._out_size), self._destination)
         self._out.clear()
         self._out_size = 0
@@ -176,12 +176,12 @@ class TwinBufferingUDPMappedFileConnection(object):
             self._socket.sendto(SIGNAL_REQUEST_BUFFER_G1, self._destination)
         else:
             self._socket.sendto(SIGNAL_REQUEST_BUFFER_G0, self._destination)
-        self.file_input_buffer.seek(0, 0)
+        self._file_input_buffer.seek(0, 0)
         self._input_offset[group] = 0
         meta_size = self._socket.recvfrom(5)[0]
         self._input_size[group] = unpack(">I", meta_size[:4])[0]
         self._was_last[group] = meta_size[4] == SIGNAL_WAS_LAST
-        self._input[group] = self.file_input_buffer.read(self._input_size[group])
+        self._input[group] = self._file_input_buffer.read(self._input_size[group])
 
     def send_end_signal(self):
         if self._out_size:

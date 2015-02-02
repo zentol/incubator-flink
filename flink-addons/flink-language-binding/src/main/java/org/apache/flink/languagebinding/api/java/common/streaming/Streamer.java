@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * receive data, while taking care of synchronization.
  */
 public abstract class Streamer implements Serializable {
-	public static final Logger LOG = LoggerFactory.getLogger(Streamer.class);
+	protected static final Logger LOG = LoggerFactory.getLogger(Streamer.class);
 	private static final int SIGNAL_BUFFER_REQUEST = 0;
 	private static final int SIGNAL_BUFFER_REQUEST_G0 = -3;
 	private static final int SIGNAL_BUFFER_REQUEST_G1 = -4;
@@ -89,7 +89,7 @@ public abstract class Streamer implements Serializable {
 	 *
 	 * @throws IOException
 	 */
-	protected void setupPorts() throws IOException {
+	private void setupPorts() throws IOException {
 		socket.receive(new DatagramPacket(buffer, 0, 4));
 		checkForError();
 		port1 = getInt(buffer, 0);

@@ -34,17 +34,23 @@ class Function(object):
         self._chain_operator = None
         self._meta = None
 
+    def _configure(self, input_file, output_file, port):
+        self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
+        self._iterator = Iterator.Iterator(self._connection)
+        self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+        self._configure_chain(Collector.Collector(self._connection))
+
     def _configure_chain(self, collector):
         if self._chain_operator is not None:
             frag = self._meta.split("|")
-            if "flink/functions" in frag[0]:  #lambda function
+            if "flink/functions" in frag[0]:#lambda function
                 exec("from flink.functions." + frag[1] + " import " + frag[1])
-            else:  #rich function
-                self._chain_operator = self._chain_operator.replace(b"__main__", b"plan", 50)
+            else:
+                self._chain_operator = self._chain_operator.replace(b"__main__", b"plan")
                 exec("from plan import " + frag[1])
             self._collector = dill.loads(self._chain_operator)
             self._collector._configure_chain(collector)
-            self._collector.open()
+            self._collector._open()
         else:
             self._collector = collector
 
@@ -52,27 +58,21 @@ class Function(object):
         self._chain_operator = operator
         self._meta = meta
 
-    def configure(self, input_file, output_file, port):
-        self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
-        self._iterator = Iterator.Iterator(self._connection)
-        self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
-        self._configure_chain(Collector.Collector(self._connection))
-
     @abstractmethod
-    def run(self):
+    def _run(self):
         pass
 
-    def open(self):
+    def _open(self):
         pass
 
-    def close(self):
-        self._collector.close()
+    def _close(self):
+        self._collector._close()
 
-    def go(self):
-        self.receive_broadcast_variables()
-        self.run()
+    def _go(self):
+        self._receive_broadcast_variables()
+        self._run()
 
-    def receive_broadcast_variables(self):
+    def _receive_broadcast_variables(self):
         broadcast_count = self._iterator.next()
         self._iterator._reset()
         self._connection.reset()
