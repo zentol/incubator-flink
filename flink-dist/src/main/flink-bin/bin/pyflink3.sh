@@ -20,4 +20,6 @@
 bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
 
-. "$bin"/flink run lib/flink-language-binding-0.9-SNAPSHOT.jar "1" "$@"
+. "$bin"/config.sh
+
+"$FLINK_BIN_DIR"/flink run "$FLINK_ROOT_DIR"/lib/flink-language-binding-0.9-SNAPSHOT.jar "3" "$@"
