@@ -65,7 +65,7 @@ if __name__ == "__main__":
    "I think I hear them. Stand, ho! Who's there?")
   
   data \
-    .flat_map(lambda x, c: x.lower().split(), (INT, STRING)) \
+    .flat_map(lambda x, c: [(1, word) for word in x.lower().split()], (INT, STRING)) \
     .group_by(1) \
     .reduce_group(Adder(), (INT, STRING), combinable=True) \
     .output()
