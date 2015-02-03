@@ -39,8 +39,7 @@ class Adder(GroupReduceFunction):
 if __name__ == "__main__":
     env = get_environment()
     if len(sys.argv) != 1 and len(sys.argv) != 3:
-        print("Usage: ./bin/pyflink.sh WordCount[ - <text path> <result path>]")
-        sys.exit()
+        sys.exit("Usage: ./bin/pyflink.sh WordCount[ - <text path> <result path>]")
 
     if len(sys.argv) == 3:
         data = env.read_text(sys.argv[1])
