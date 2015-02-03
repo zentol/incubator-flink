@@ -257,11 +257,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					}
 					name = (String) receiver.getRecord();
 					break;
-				case FILTER:
-					operator = (byte[]) receiver.getRecord();
-					meta = (String) receiver.getRecord();
-					name = (String) receiver.getRecord();
-					break;
+				case REDUCE:
 				case GROUPREDUCE:
 					operator = (byte[]) receiver.getRecord();
 					combineOperator = (byte[]) receiver.getRecord();
@@ -291,6 +287,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 				case MAPPARTITION:
 				case FLATMAP:
 				case MAP:
+				case FILTER:
 					operator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
 					types = receiver.getRecord();
@@ -298,13 +295,6 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					break;
 				case PROJECTION:
 					keys1 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
-					break;
-				case REDUCE:
-					operator = (byte[]) receiver.getRecord();
-					combineOperator = (byte[]) receiver.getRecord();
-					meta = (String) receiver.getRecord();
-					combine = (Boolean) receiver.getRecord();
-					name = (String) receiver.getRecord();
 					break;
 				case GROUPBY:
 					keys1 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
@@ -357,7 +347,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 
 	@Override
 	protected DataSet applyFilterOperation(DataSet op1, PythonOperationInfo info) {
-		return op1.mapPartition(new PythonMapPartitionTypePreserving(info.setID, info.operator, info.meta)).name(info.name);
+		return op1.mapPartition(new PythonMapPartition(info.setID, info.operator, info.types, info.meta)).name(info.name);
 	}
 
 	@Override
@@ -441,7 +431,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 	protected DataSet applyReduceOperation(DataSet op1, PythonOperationInfo info) {
 		return op1.reduceGroup(new PythonCombineIdentity())
 				.setCombinable(false).name("PythonReducePreStep")
-				.mapPartition(new PythonMapPartitionTypePreserving(info.setID * -1, info.operator, info.meta))
+				.mapPartition(new PythonMapPartition(info.setID * -1, info.operator, info.types, info.meta))
 				.name(info.name);
 	}
 
@@ -450,12 +440,12 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 		if (info.combine) {
 			return op1.reduceGroup(new PythonCombineIdentity(info.setID, info.combineOperator, info.meta))
 					.setCombinable(true).name("PythonCombine")
-					.mapPartition(new PythonMapPartitionTypePreserving(info.setID * -1, info.operator, info.meta))
+					.mapPartition(new PythonMapPartition(info.setID * -1, info.operator, info.types, info.meta))
 					.name(info.name);
 		} else {
 			return op1.reduceGroup(new PythonCombineIdentity())
 					.setCombinable(false).name("PythonReducePreStep")
-					.mapPartition(new PythonMapPartitionTypePreserving(info.setID * -1, info.operator, info.meta))
+					.mapPartition(new PythonMapPartition(info.setID * -1, info.operator, info.types, info.meta))
 					.name(info.name);
 		}
 	}

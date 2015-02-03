@@ -40,8 +40,8 @@ class GroupReduceFunction(Function.Function):
             self._connection = Connection.BufferingUDPMappedFileConnection(input_file, output_file, port)
             self._iterator = Iterator.Iterator(self._connection)
             self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
-            self._collector = Collector.Collector(self._connection)
             self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
+            self._configure_chain(Collector.Collector(self._connection))
         self._open()
 
     def _open(self):

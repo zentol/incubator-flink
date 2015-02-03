@@ -143,7 +143,7 @@ class Environment(object):
             if child_type in chainable:
                 parent = child[_Fields.PARENT]
                 parent_type = parent[_Fields.IDENTIFIER]
-                if len(parent[_Fields.SINKS])==0:
+                if len(parent[_Fields.SINKS]) == 0:
                     if child_type == _Identifier.GROUPREDUCE or child_type == _Identifier.REDUCE:
                         if child[_Fields.COMBINE]:
                             while parent_type == _Identifier.GROUP or parent_type == _Identifier.SORT:
@@ -163,6 +163,7 @@ class Environment(object):
                                 meta = str(inspect.getmodule(function)) + "|" + str(function.__class__.__name__)
                                 parent_op._chain(_dump(function), meta)
                                 parent[_Fields.NAME] += " -> " + child[_Fields.NAME]
+                                parent[_Fields.TYPES] = child[_Fields.TYPES]
                                 for grand_child in child[_Fields.CHILDREN]:
                                     grand_child[_Fields.PARENT] = parent
                                     parent[_Fields.CHILDREN].append(grand_child)
@@ -247,12 +248,7 @@ class Environment(object):
                         collect(p[1])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.FILTER):
-                    collectBytes(_dump(set[_Fields.OPERATOR]))
-                    collect(set[_Fields.META])
-                    collect(set[_Fields.NAME])
-                    break
-                if case(_Identifier.GROUPREDUCE):
+                if case(_Identifier.REDUCE) or case(_Identifier.GROUPREDUCE):
                     collectBytes(_dump(set[_Fields.OPERATOR]))
                     collectBytes(_dump(set[_Fields.COMBINEOP]))
                     collect(set[_Fields.META])
@@ -273,17 +269,10 @@ class Environment(object):
                         collect(p[1])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.MAP) or case(_Identifier.MAPPARTITION) or case(_Identifier.FLATMAP):
+                if case(_Identifier.MAP) or case(_Identifier.MAPPARTITION) or case(_Identifier.FLATMAP) or case(_Identifier.FILTER):
                     collectBytes(_dump(set[_Fields.OPERATOR]))
                     collect(set[_Fields.META])
                     collect(set[_Fields.TYPES])
-                    collect(set[_Fields.NAME])
-                    break
-                if case(_Identifier.REDUCE):
-                    collectBytes(_dump(set[_Fields.OPERATOR]))
-                    collectBytes(_dump(set[_Fields.COMBINEOP]))
-                    collect(set[_Fields.META])
-                    collect(set[_Fields.COMBINE])
                     collect(set[_Fields.NAME])
                     break
                 if case(_Identifier.UNION):

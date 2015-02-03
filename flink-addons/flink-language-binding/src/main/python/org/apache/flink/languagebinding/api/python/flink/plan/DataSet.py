@@ -19,7 +19,7 @@ import inspect
 import copy
 import types as TYPES
 
-from flink.plan.Constants import _Fields, _Identifier, WriteMode
+from flink.plan.Constants import _Fields, _Identifier, WriteMode, STRING
 from flink.functions.CoGroupFunction import CoGroupFunction
 from flink.functions.FilterFunction import FilterFunction
 from flink.functions.FlatMapFunction import FlatMapFunction
@@ -29,6 +29,27 @@ from flink.functions.JoinFunction import JoinFunction
 from flink.functions.MapFunction import MapFunction
 from flink.functions.MapPartitionFunction import MapPartitionFunction
 from flink.functions.ReduceFunction import ReduceFunction
+
+
+def deduct_output_type(set):
+    skip = {_Identifier.GROUP, _Identifier.SORT, _Identifier.UNION}
+    source = {_Identifier.SOURCE_CSV, _Identifier.SOURCE_TEXT, _Identifier.SOURCE_VALUE}
+    parent = set[_Fields.PARENT]
+    while True:
+        parent_type = parent[_Fields.IDENTIFIER]
+        if parent_type in skip:
+            parent = parent[_Fields.PARENT]
+            continue
+        if parent_type in source:
+            if parent_type == _Identifier.SOURCE_TEXT:
+                return STRING
+            if parent_type == _Identifier.SOURCE_VALUE:
+                return parent[_Fields.VALUES][0]
+            if parent_type == _Identifier.SOURCE_CSV:
+                return parent[_Fields.TYPES]
+        if parent_type == _Identifier.PROJECTION:
+            return [deduct_output_type(parent)[k] for k in parent[_Fields.KEYS]]
+        return parent[_Fields.TYPES]
 
 
 class Set(object):
@@ -149,6 +170,7 @@ class ReduceSet(Set):
         child[_Fields.COMBINE] = False
         child[_Fields.META] = str(inspect.getmodule(operator)) + "|" + str(operator.__class__.__name__)
         child[_Fields.NAME] = "PythonReduce"
+        child[_Fields.TYPES] = deduct_output_type(child)
         self._env._sets.append(child)
         return child_set
 
@@ -294,6 +316,7 @@ class DataSet(ReduceSet):
         child[_Fields.OPERATOR] = operator
         child[_Fields.META] = str(inspect.getmodule(operator)) + "|" + str(operator.__class__.__name__)
         child[_Fields.NAME] = "PythonFilter"
+        child[_Fields.TYPES] = deduct_output_type(child)
         self._env._sets.append(child)
         return child_set
 
@@ -569,6 +592,7 @@ class UnsortedGrouping(Grouping):
         operator._combine = True
         child[_Fields.COMBINEOP] = operator
         child[_Fields.NAME] = "PythonReduce"
+        child[_Fields.TYPES] = deduct_output_type(child)
         self._env._sets.append(child)
 
         return child_set

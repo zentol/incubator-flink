@@ -41,7 +41,7 @@ class ReduceFunction(Function.Function):
                 self._run = self._run_allreduce
             else:
                 self._group_iterator = Iterator.GroupIterator(self._iterator, self._keys)
-            self._collector = Collector.Collector(self._connection)
+            self._configure_chain(Collector.Collector(self._connection))
             self.context = RuntimeContext.RuntimeContext(self._iterator, self._collector)
 
     def _set_grouping_keys(self, keys):
