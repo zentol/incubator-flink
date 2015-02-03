@@ -91,7 +91,7 @@ public class PythonStreamer extends Streamer {
 
 		process = pb.start();
 		new StreamPrinter(process.getInputStream()).start();
-		new StreamPrinter(process.getErrorStream()).start();
+		new StreamPrinter(process.getErrorStream(), true, msg).start();
 
 		byte[] executorPort = new byte[4];
 		s.receive(new DatagramPacket(executorPort, 0, 4));
@@ -100,8 +100,7 @@ public class PythonStreamer extends Streamer {
 				Thread.sleep(2000);
 			} catch (InterruptedException ex) {
 			}
-			throw new RuntimeException(
-					"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely. Check log-files for details.");
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely." + msg);
 		}
 		byte[] opSize = new byte[4];
 		putInt(opSize, 0, operator.length);
@@ -116,7 +115,7 @@ public class PythonStreamer extends Streamer {
 
 		try {
 			process.exitValue();
-			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely. Check log-files for details.");
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely." + msg);
 		} catch (IllegalThreadStateException ise) { //process still active -> start receiving data
 		}
 	}

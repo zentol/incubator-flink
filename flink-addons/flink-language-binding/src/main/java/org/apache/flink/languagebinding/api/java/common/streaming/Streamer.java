@@ -49,6 +49,8 @@ public abstract class Streamer implements Serializable {
 	protected Sender sender;
 	protected Receiver receiver;
 
+	protected StringBuilder msg = new StringBuilder();
+
 	protected final AbstractRichFunction function;
 
 	public Streamer(AbstractRichFunction function) {
@@ -116,7 +118,7 @@ public abstract class Streamer implements Serializable {
 			} catch (InterruptedException ex) {
 			}
 			throw new RuntimeException(
-					"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely. Check log-files for details.");
+					"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely." + msg);
 		}
 	}
 
@@ -186,7 +188,7 @@ public abstract class Streamer implements Serializable {
 						} catch (InterruptedException ex) {
 						}
 						throw new RuntimeException(
-								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error. Check log-files for details.");
+								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
 					default:
 						receiver.collectBuffer(c, sig);
 						sendReadConfirmation();
@@ -231,7 +233,7 @@ public abstract class Streamer implements Serializable {
 						} catch (InterruptedException ex) {
 						}
 						throw new RuntimeException(
-								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error. Check log-files for details.");
+								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
 					default:
 						receiver.collectBuffer(c, sig);
 						sendReadConfirmation();
