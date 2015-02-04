@@ -31,11 +31,11 @@ from flink.functions.MapPartitionFunction import MapPartitionFunction
 from flink.functions.ReduceFunction import ReduceFunction
 
 
-def deduct_output_type(set):
-    skip = {_Identifier.GROUP, _Identifier.SORT, _Identifier.UNION}
-    source = {_Identifier.SOURCE_CSV, _Identifier.SOURCE_TEXT, _Identifier.SOURCE_VALUE}
-    default = {_Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST, _Identifier.JOINT, _Identifier.JOINH, _Identifier.JOIN}
-    parent = set[_Fields.PARENT]
+def deduct_output_type(dataset):
+    skip = set([_Identifier.GROUP, _Identifier.SORT, _Identifier.UNION])
+    source = set([_Identifier.SOURCE_CSV, _Identifier.SOURCE_TEXT, _Identifier.SOURCE_VALUE])
+    default = set([_Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST, _Identifier.JOINT, _Identifier.JOINH, _Identifier.JOIN])
+    parent = dataset[_Fields.PARENT]
     while True:
         parent_type = parent[_Fields.IDENTIFIER]
         if parent_type in skip:
