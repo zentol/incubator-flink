@@ -238,7 +238,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					keys2 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
 					operator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
-					types = receiver.getRecord();
+					types = getForObject(receiver.getRecord());
 					name = (String) receiver.getRecord();
 					break;
 				case CROSS:
@@ -247,7 +247,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					otherID = (Integer) receiver.getNormalizedRecord();
 					operator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
-					types = receiver.getRecord();
+					types = getForObject(receiver.getRecord());
 					int cProjectCount = (Integer) receiver.getNormalizedRecord();
 					projections = new ProjectionEntry[cProjectCount];
 					for (int x = 0; x < cProjectCount; x++) {
@@ -262,7 +262,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					operator = (byte[]) receiver.getRecord();
 					combineOperator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
-					types = receiver.getRecord();
+					types = getForObject(receiver.getRecord());
 					combine = (Boolean) receiver.getRecord();
 					name = (String) receiver.getRecord();
 					break;
@@ -274,7 +274,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					otherID = (Integer) receiver.getNormalizedRecord();
 					operator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
-					types = receiver.getRecord();
+					types = getForObject(receiver.getRecord());
 					int jProjectCount = (Integer) receiver.getNormalizedRecord();
 					projections = new ProjectionEntry[jProjectCount];
 					for (int x = 0; x < jProjectCount; x++) {
@@ -290,7 +290,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 				case FILTER:
 					operator = (byte[]) receiver.getRecord();
 					meta = (String) receiver.getRecord();
-					types = receiver.getRecord();
+					types = getForObject(receiver.getRecord());
 					name = (String) receiver.getRecord();
 					break;
 				case PROJECTION:

@@ -16,7 +16,6 @@ import java.io.IOException;
 import org.apache.flink.api.common.functions.RichMapPartitionFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
-import static org.apache.flink.api.java.typeutils.TypeExtractor.getForObject;
 import org.apache.flink.configuration.Configuration;
 import static org.apache.flink.languagebinding.api.java.python.PythonPlanBinder.usePython3;
 import org.apache.flink.languagebinding.api.java.python.streaming.PythonStreamer;
@@ -31,9 +30,9 @@ import org.apache.flink.util.Collector;
  */
 public class PythonMapPartition<IN, OUT> extends RichMapPartitionFunction<IN, OUT> implements ResultTypeQueryable {
 	private final PythonStreamer streamer;
-	private final Object typeInformation;
+	private transient final TypeInformation<OUT> typeInformation;
 
-	public PythonMapPartition(int id, byte[] operator, Object typeInformation, String metaInformation) {
+	public PythonMapPartition(int id, byte[] operator, TypeInformation<OUT> typeInformation, String metaInformation) {
 		this.typeInformation = typeInformation;
 		streamer = new PythonStreamer(this, id, operator, metaInformation, usePython3);
 	}
@@ -66,7 +65,7 @@ public class PythonMapPartition<IN, OUT> extends RichMapPartitionFunction<IN, OU
 	}
 
 	@Override
-	public TypeInformation getProducedType() {
-		return getForObject(typeInformation);
+	public TypeInformation<OUT> getProducedType() {
+		return typeInformation;
 	}
 }

@@ -12,6 +12,8 @@
  */
 package org.apache.flink.languagebinding.api.java.common;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+
 /**
  * Container for all generic information related to operations. This class contains the absolute minimum fields that are
  * required for all operations. This class should be extended to contain any additional fields required on a
@@ -25,7 +27,7 @@ public abstract class OperationInfo {
 	public int[] keys2; //grouping keys
 	public int[] projectionKeys1; //projection keys
 	public int[] projectionKeys2; //projection keys
-	public Object types; //an object that is of the same type as the output type
+	public TypeInformation<?> types; //typeinformation about output type
 	public int field; //sort key
 	public int order; //sort order
 	public int count; //first count
