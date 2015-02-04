@@ -51,6 +51,8 @@ def deduct_output_type(dataset):
         if parent_type == _Identifier.PROJECTION:
             return [deduct_output_type(parent)[k] for k in parent[_Fields.KEYS]]
         if parent_type in default:
+            if parent[_Fields.OPERATOR] is not None: #udf-join/cross
+                return parent[_Fields.TYPES]
             if len(parent[_Fields.PROJECTIONS]) == 0: #defaultjoin/-cross
                 return (deduct_output_type(parent[_Fields.PARENT]), deduct_output_type(parent[_Fields.OTHER]))
             else: #projectjoin/-cross
