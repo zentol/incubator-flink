@@ -58,11 +58,17 @@ def deduct_output_type(dataset):
                 t2 = deduct_output_type(parent[_Fields.OTHER])
                 out_type = []
                 for prj in parent[_Fields.PROJECTIONS]:
-                    for key in prj[1]:
+                    if len(prj[1]) == 0: #projection on non-tuple dataset
                         if prj[0] == "first":
-                            out_type.append(t1[key])
+                            out_type.append(t1)
                         else:
-                            out_type.append(t2[key])
+                            out_type.append(t2)
+                    else: #projection on tuple dataset
+                        for key in prj[1]:
+                            if prj[0] == "first":
+                                out_type.append(t1[key])
+                            else:
+                                out_type.append(t2[key])
                 return out_type
         return parent[_Fields.TYPES]
 
