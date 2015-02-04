@@ -49,6 +49,7 @@ class Function(object):
                 self._chain_operator = self._chain_operator.replace(b"__main__", b"plan")
                 exec("from plan import " + frag[1])
             self._collector = dill.loads(self._chain_operator)
+            self._collector.context = self.context
             self._collector._configure_chain(collector)
             self._collector._open()
         else:
