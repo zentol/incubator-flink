@@ -51,7 +51,19 @@ def deduct_output_type(dataset):
         if parent_type == _Identifier.PROJECTION:
             return [deduct_output_type(parent)[k] for k in parent[_Fields.KEYS]]
         if parent_type in default:
-            return (deduct_output_type(parent[_Fields.PARENT]), deduct_output_type(parent[_Fields.OTHER]))
+            if len(parent[_Fields.PROJECTIONS]) == 0: #defaultjoin/-cross
+                return (deduct_output_type(parent[_Fields.PARENT]), deduct_output_type(parent[_Fields.OTHER]))
+            else: #projectjoin/-cross
+                t1 = deduct_output_type(parent[_Fields.PARENT])
+                t2 = deduct_output_type(parent[_Fields.OTHER])
+                out_type = []
+                for prj in parent[_Fields.PROJECTIONS]:
+                    for key in prj[1]:
+                        if prj[0] == "first":
+                            out_type.append(t1[key])
+                        else:
+                            out_type.append(t2[key])
+                return out_type
         return parent[_Fields.TYPES]
 
 
