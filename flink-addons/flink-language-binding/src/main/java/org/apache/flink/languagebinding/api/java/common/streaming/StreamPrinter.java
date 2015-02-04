@@ -31,7 +31,7 @@ public class StreamPrinter extends Thread {
 
 	public StreamPrinter(InputStream stream, boolean wrapInException, StringBuilder msg) {
 		this.reader = new BufferedReader(new InputStreamReader(stream));
-		this.wrapInException = true;
+		this.wrapInException = wrapInException;
 		this.msg = msg;
 	}
 
