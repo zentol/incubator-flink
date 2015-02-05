@@ -156,7 +156,7 @@ class Environment(object):
                                 child[_Fields.COMBINE] = False
                                 parent[_Fields.NAME] += " -> PythonCombine"
                     else:
-                        if parent_type in udf and len(parent[_Fields.CHILDREN]) == 1:
+                        if parent_type in udf and parent[_Fields.OPERATOR] is not None and len(parent[_Fields.CHILDREN]) == 1:
                             parent_op = parent[_Fields.OPERATOR]
                             if parent_op is not None:
                                 function = child[_Fields.OPERATOR]
