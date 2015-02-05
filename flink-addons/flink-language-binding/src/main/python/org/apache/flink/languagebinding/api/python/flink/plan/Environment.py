@@ -22,6 +22,7 @@ from flink.plan.DataSet import DataSet
 from flink.plan.Constants import _Fields, _Identifier
 from flink.utilities.Switch import Switch
 import dill
+import copy
 
 
 def get_environment():
@@ -156,6 +157,10 @@ class Environment(object):
                                     parent[_Fields.OPERATOR]._chain(_dump(function), meta)
                                     child[_Fields.COMBINE] = False
                                     parent[_Fields.NAME] += " -> PythonCombine"
+                                    for bcvar in child[_Fields.BCVARS]:
+                                        bcvar_copy = copy.deepcopy(bcvar)
+                                        bcvar_copy[_Fields.PARENT] = parent
+                                        self._broadcast.append(bcvar_copy)
                     else:
                         if parent_type in udf and len(parent[_Fields.CHILDREN]) == 1:
                             parent_op = parent[_Fields.OPERATOR]
@@ -308,10 +313,7 @@ class Environment(object):
     def _send_broadcast(self):
         collect = self._collector.collect
         for entry in self._broadcast:
-            set = entry[_Fields.PARENT]
-            other = entry[_Fields.OTHER]
-            name = entry[_Fields.NAME]
             collect(_Identifier.BROADCAST)
-            collect(set[_Fields.ID])
-            collect(other[_Fields.ID])
-            collect(name)
+            collect(entry[_Fields.PARENT][_Fields.ID])
+            collect(entry[_Fields.OTHER][_Fields.ID])
+            collect(entry[_Fields.NAME])
