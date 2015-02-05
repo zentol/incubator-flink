@@ -150,13 +150,14 @@ class Environment(object):
                                 parent = parent[_Fields.PARENT]
                                 parent_type = parent[_Fields.IDENTIFIER]
                             if parent_type in udf and len(parent[_Fields.CHILDREN]) == 1:
-                                function = child[_Fields.COMBINEOP]
-                                meta = str(inspect.getmodule(function)) + "|" + str(function.__class__.__name__)
-                                parent[_Fields.OPERATOR]._chain(_dump(function), meta)
-                                child[_Fields.COMBINE] = False
-                                parent[_Fields.NAME] += " -> PythonCombine"
+                                if parent[_Fields.OPERATOR] is not None:
+                                    function = child[_Fields.COMBINEOP]
+                                    meta = str(inspect.getmodule(function)) + "|" + str(function.__class__.__name__)
+                                    parent[_Fields.OPERATOR]._chain(_dump(function), meta)
+                                    child[_Fields.COMBINE] = False
+                                    parent[_Fields.NAME] += " -> PythonCombine"
                     else:
-                        if parent_type in udf and parent[_Fields.OPERATOR] is not None and len(parent[_Fields.CHILDREN]) == 1:
+                        if parent_type in udf and len(parent[_Fields.CHILDREN]) == 1:
                             parent_op = parent[_Fields.OPERATOR]
                             if parent_op is not None:
                                 function = child[_Fields.OPERATOR]
