@@ -90,8 +90,17 @@ public class Receiver implements Serializable {
 	 * @throws IOException
 	 */
 	private void loadBuffer() throws IOException {
-		while (fileBuffer.get(0) == 0) {
+		int count = 0;
+		while (fileBuffer.get(0) == 0 && count < 10) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException ie) {
+			}
 			fileBuffer.load();
+			count++;
+		}
+		if (fileBuffer.get(0) == 0) {
+			throw new RuntimeException("External process not respoonding.");
 		}
 		fileBuffer.position(1);
 	}
@@ -357,7 +366,7 @@ public class Receiver implements Serializable {
 			return null;
 		}
 	}
-	
+
 	private class BytesDeserializer implements Deserializer<byte[]> {
 		@Override
 		public byte[] deserialize() {
@@ -366,7 +375,7 @@ public class Receiver implements Serializable {
 			fileBuffer.get(result);
 			return result;
 		}
-		
+
 	}
 
 	private class TupleDeserializer implements Deserializer<Tuple> {

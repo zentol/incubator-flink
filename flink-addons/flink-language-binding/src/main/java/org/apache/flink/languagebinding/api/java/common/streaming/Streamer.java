@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.util.Iterator;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 import org.apache.flink.configuration.Configuration;
@@ -63,8 +64,14 @@ public abstract class Streamer implements Serializable {
 		host = InetAddress.getLocalHost();
 		packet = new DatagramPacket(buffer, 0, 4);
 		socket = new DatagramSocket(0);
-		setupProcess();
-		setupPorts();
+		socket.setSoTimeout(10000);
+		try {
+			setupProcess();
+			setupPorts();
+		} catch (SocketTimeoutException ste) {
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " stopped responding." + msg);
+		}
+		socket.setSoTimeout(300000);
 	}
 
 	/**
@@ -91,7 +98,7 @@ public abstract class Streamer implements Serializable {
 	 *
 	 * @throws IOException
 	 */
-	private void setupPorts() throws IOException {
+	private void setupPorts() throws IOException, SocketTimeoutException {
 		socket.receive(new DatagramPacket(buffer, 0, 4));
 		checkForError();
 		port1 = getInt(buffer, 0);
@@ -129,34 +136,38 @@ public abstract class Streamer implements Serializable {
 	 * @throws IOException
 	 */
 	public final void sendBroadCastVariables(Configuration config) throws IOException {
-		int broadcastCount = config.getInteger(PLANBINDER_CONFIG_BCVAR_COUNT, 0);
+		try {
+			int broadcastCount = config.getInteger(PLANBINDER_CONFIG_BCVAR_COUNT, 0);
 
-		String[] names = new String[broadcastCount];
+			String[] names = new String[broadcastCount];
 
-		for (int x = 0; x < names.length; x++) {
-			names[x] = config.getString(PLANBINDER_CONFIG_BCVAR_NAME_PREFIX + x, null);
-		}
-
-		socket.receive(packet);
-		checkForError();
-		int size = sender.sendRecord(broadcastCount);
-		sendWriteNotification(size, false);
-
-		for (String name : names) {
-			Iterator bcv = function.getRuntimeContext().getBroadcastVariable(name).iterator();
+			for (int x = 0; x < names.length; x++) {
+				names[x] = config.getString(PLANBINDER_CONFIG_BCVAR_NAME_PREFIX + x, null);
+			}
 
 			socket.receive(packet);
 			checkForError();
-			size = sender.sendRecord(name);
+			int size = sender.sendRecord(broadcastCount);
 			sendWriteNotification(size, false);
 
-			while (bcv.hasNext()) {
+			for (String name : names) {
+				Iterator bcv = function.getRuntimeContext().getBroadcastVariable(name).iterator();
+
 				socket.receive(packet);
 				checkForError();
-				size = sender.sendBuffer(bcv, 0);
-				sendWriteNotification(size, bcv.hasNext());
+				size = sender.sendRecord(name);
+				sendWriteNotification(size, false);
+
+				while (bcv.hasNext()) {
+					socket.receive(packet);
+					checkForError();
+					size = sender.sendBuffer(bcv, 0);
+					sendWriteNotification(size, bcv.hasNext());
+				}
+				sender.reset();
 			}
-			sender.reset();
+		} catch (SocketTimeoutException ste) {
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " stopped responding." + msg);
 		}
 	}
 
@@ -168,33 +179,37 @@ public abstract class Streamer implements Serializable {
 	 * @throws IOException
 	 */
 	public final void streamBufferWithoutGroups(Iterator i, Collector c) throws IOException {
-		int size;
-		if (i.hasNext()) {
-			while (true) {
-				socket.receive(packet);
-				int sig = getInt(buffer, 0);
-				switch (sig) {
-					case SIGNAL_BUFFER_REQUEST:
-						if (i.hasNext()) {
-							size = sender.sendBuffer(i, 0);
-							sendWriteNotification(size, i.hasNext());
-						}
-						break;
-					case SIGNAL_FINISHED:
-						return;
-					case SIGNAL_ERROR:
-						try { //wait before terminating to ensure that the complete error message is printed
-							Thread.sleep(2000);
-						} catch (InterruptedException ex) {
-						}
-						throw new RuntimeException(
-								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
-					default:
-						receiver.collectBuffer(c, sig);
-						sendReadConfirmation();
-						break;
+		try {
+			int size;
+			if (i.hasNext()) {
+				while (true) {
+					socket.receive(packet);
+					int sig = getInt(buffer, 0);
+					switch (sig) {
+						case SIGNAL_BUFFER_REQUEST:
+							if (i.hasNext()) {
+								size = sender.sendBuffer(i, 0);
+								sendWriteNotification(size, i.hasNext());
+							}
+							break;
+						case SIGNAL_FINISHED:
+							return;
+						case SIGNAL_ERROR:
+							try { //wait before terminating to ensure that the complete error message is printed
+								Thread.sleep(2000);
+							} catch (InterruptedException ex) {
+							}
+							throw new RuntimeException(
+									"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
+						default:
+							receiver.collectBuffer(c, sig);
+							sendReadConfirmation();
+							break;
+					}
 				}
 			}
+		} catch (SocketTimeoutException ste) {
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " stopped responding." + msg);
 		}
 	}
 
@@ -207,39 +222,43 @@ public abstract class Streamer implements Serializable {
 	 * @throws IOException
 	 */
 	public final void streamBufferWithGroups(Iterator i1, Iterator i2, Collector c) throws IOException {
-		int size;
-		if (i1.hasNext() || i2.hasNext()) {
-			while (true) {
-				socket.receive(packet);
-				int sig = getInt(buffer, 0);
-				switch (sig) {
-					case SIGNAL_BUFFER_REQUEST_G0:
-						if (i1.hasNext()) {
-							size = sender.sendBuffer(i1, 0);
-							sendWriteNotification(size, i1.hasNext());
-						}
-						break;
-					case SIGNAL_BUFFER_REQUEST_G1:
-						if (i2.hasNext()) {
-							size = sender.sendBuffer(i2, 1);
-							sendWriteNotification(size, i2.hasNext());
-						}
-						break;
-					case SIGNAL_FINISHED:
-						return;
-					case SIGNAL_ERROR:
-						try { //wait before terminating to ensure that the complete error message is printed
-							Thread.sleep(2000);
-						} catch (InterruptedException ex) {
-						}
-						throw new RuntimeException(
-								"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
-					default:
-						receiver.collectBuffer(c, sig);
-						sendReadConfirmation();
-						break;
+		try {
+			int size;
+			if (i1.hasNext() || i2.hasNext()) {
+				while (true) {
+					socket.receive(packet);
+					int sig = getInt(buffer, 0);
+					switch (sig) {
+						case SIGNAL_BUFFER_REQUEST_G0:
+							if (i1.hasNext()) {
+								size = sender.sendBuffer(i1, 0);
+								sendWriteNotification(size, i1.hasNext());
+							}
+							break;
+						case SIGNAL_BUFFER_REQUEST_G1:
+							if (i2.hasNext()) {
+								size = sender.sendBuffer(i2, 1);
+								sendWriteNotification(size, i2.hasNext());
+							}
+							break;
+						case SIGNAL_FINISHED:
+							return;
+						case SIGNAL_ERROR:
+							try { //wait before terminating to ensure that the complete error message is printed
+								Thread.sleep(2000);
+							} catch (InterruptedException ex) {
+							}
+							throw new RuntimeException(
+									"External process for task " + function.getRuntimeContext().getTaskName() + " terminated prematurely due to an error." + msg);
+						default:
+							receiver.collectBuffer(c, sig);
+							sendReadConfirmation();
+							break;
+					}
 				}
 			}
+		} catch (SocketTimeoutException ste) {
+			throw new RuntimeException("External process for task " + function.getRuntimeContext().getTaskName() + " stopped responding." + msg);
 		}
 	}
 

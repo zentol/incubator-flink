@@ -68,6 +68,7 @@ class BufferingUDPMappedFileConnection(object):
         self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
         self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self._socket.bind((socket.gethostname(), 0))
+        self._socket.settimeout(300)
         self._destination = (socket.gethostname(), port)
 
         self._socket.sendto(pack(">I", self._socket.getsockname()[1]), self._destination)
@@ -136,6 +137,7 @@ class TwinBufferingUDPMappedFileConnection(object):
         self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
         self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self._socket.bind((socket.gethostname(), 0))
+        self._socket.settimeout(300)
         self._destination = (socket.gethostname(), port)
 
         self._socket.sendto(pack(">I", self._socket.getsockname()[1]), self._destination)
