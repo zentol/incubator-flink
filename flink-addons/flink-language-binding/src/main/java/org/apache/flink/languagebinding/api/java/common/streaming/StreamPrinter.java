@@ -50,7 +50,6 @@ public class StreamPrinter extends Thread {
 				}
 			}
 		} catch (IOException ex) {
-			throw new RuntimeException(msg.toString(), ex);
 		}
 	}
 }
