@@ -271,6 +271,7 @@ class DataSet(ReduceSet):
         """
         child = dict()
         self._info[_Fields.CHILDREN].append(child)
+        other_set[_Fields.CHILDREN].append(child)
         child_set = CoGroupOperatorWhere(self._env, child)
         child[_Fields.IDENTIFIER] = _Identifier.COGROUP
         child[_Fields.PARENT] = self._info
@@ -317,6 +318,7 @@ class DataSet(ReduceSet):
     def _cross(self, other_set, identifier):
         child = dict()
         self._info[_Fields.CHILDREN].append(child)
+        other_set[_Fields.CHILDREN].append(child)
         child_set = CrossOperator(self._env, child)
         child[_Fields.IDENTIFIER] = identifier
         child[_Fields.PARENT] = self._info
@@ -420,6 +422,7 @@ class DataSet(ReduceSet):
     def _join(self, other_set, identifier):
         child = dict()
         self._info[_Fields.CHILDREN].append(child)
+        other_set[_Fields.CHILDREN].append(child)
         child_set = JoinOperatorWhere(self._env, child)
         child[_Fields.IDENTIFIER] = identifier
         child[_Fields.PARENT] = self._info
@@ -499,6 +502,7 @@ class DataSet(ReduceSet):
         """
         child = dict()
         self._info[_Fields.CHILDREN].append(child)
+        other_set[_Fields.CHILDREN].append(child)
         child_set = DataSet(self._env, child)
         child[_Fields.IDENTIFIER] = _Identifier.UNION
         child[_Fields.PARENT] = self._info
