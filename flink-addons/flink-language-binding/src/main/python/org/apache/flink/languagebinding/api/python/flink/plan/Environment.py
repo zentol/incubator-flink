@@ -137,6 +137,7 @@ class Environment(object):
                    _Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST,
                    _Identifier.JOIN, _Identifier.JOINH, _Identifier.JOINT])
         chainable = set([_Identifier.MAP, _Identifier.FILTER, _Identifier.FLATMAP, _Identifier.GROUPREDUCE, _Identifier.REDUCE])
+        multi_input = set([_Identifier.JOIN, _Identifier.JOINH, _Identifier.JOINT, _Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST, _Identifier.COGROUP, _Identifier.UNION])
         x = len(self._sets) - 1
         while x > -1:
             child = self._sets[x]
@@ -171,8 +172,15 @@ class Environment(object):
                                 parent[_Fields.NAME] += " -> " + child[_Fields.NAME]
                                 parent[_Fields.TYPES] = child[_Fields.TYPES]
                                 for grand_child in child[_Fields.CHILDREN]:
-                                    grand_child[_Fields.PARENT] = parent
-                                    parent[_Fields.CHILDREN].append(grand_child)
+                                    if child in multi_input:
+                                        if grand_child[_Fields.PARENT][_Fields.ID] == child[_Fields.ID]:
+                                            grand_child[_Fields.PARENT] = parent
+                                        else:
+                                            grand_child[_Fields.OTHER] = parent
+                                    else:
+                                        grand_child[_Fields.PARENT] = parent
+                                        parent[_Fields.CHILDREN].append(grand_child)
+                                        parent[_Fields.CHILDREN].remove(child)
                                 for sink in child[_Fields.SINKS]:
                                     sink[_Fields.PARENT] = parent
                                 for bcvar in child[_Fields.BCVARS]:
