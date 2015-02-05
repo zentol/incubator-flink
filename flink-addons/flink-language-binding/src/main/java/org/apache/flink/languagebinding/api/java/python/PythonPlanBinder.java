@@ -88,9 +88,6 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 
 	protected void runPlan(String[] args) throws Exception {
 		env = ExecutionEnvironment.getExecutionEnvironment();
-		FLINK_HDFS_PATH = env instanceof LocalEnvironment 
-				? "file:/tmp/flink"  //local mode
-				: "hdfs:/tmp/flink"; //cluster mode
 
 		int split = 0;
 		for (int x = 0; x < args.length; x++) {
@@ -102,6 +99,11 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 			prepareFiles(Arrays.copyOfRange(args, 0, split == 0 ? 1 : split));
 			startPython(Arrays.copyOfRange(args, split == 0 ? args.length : split + 1, args.length));
 			receivePlan();
+
+			if (env instanceof LocalEnvironment) {
+				FLINK_HDFS_PATH = "file:/tmp/flink";
+			}
+
 			distributeFiles(env);
 			env.execute();
 			close();
