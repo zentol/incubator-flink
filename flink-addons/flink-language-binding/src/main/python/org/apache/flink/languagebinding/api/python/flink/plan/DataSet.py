@@ -35,6 +35,16 @@ def deduct_output_type(dataset):
     skip = set([_Identifier.GROUP, _Identifier.SORT, _Identifier.UNION])
     source = set([_Identifier.SOURCE_CSV, _Identifier.SOURCE_TEXT, _Identifier.SOURCE_VALUE])
     default = set([_Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST, _Identifier.JOINT, _Identifier.JOINH, _Identifier.JOIN])
+
+    dataset_type = dataset[_Fields.IDENTIFIER]
+    if dataset_type in source:
+        if dataset_type == _Identifier.SOURCE_TEXT:
+            return STRING
+        if dataset_type == _Identifier.SOURCE_VALUE:
+            return dataset[_Fields.VALUES][0]
+        if dataset_type == _Identifier.SOURCE_CSV:
+            return dataset[_Fields.TYPES]
+
     parent = dataset[_Fields.PARENT]
     while True:
         parent_type = parent[_Fields.IDENTIFIER]
@@ -49,7 +59,7 @@ def deduct_output_type(dataset):
             if parent_type == _Identifier.SOURCE_CSV:
                 return parent[_Fields.TYPES]
         if parent_type == _Identifier.PROJECTION:
-            return [deduct_output_type(parent)[k] for k in parent[_Fields.KEYS]]
+            return tuple([deduct_output_type(parent)[k] for k in parent[_Fields.KEYS]])
         if parent_type in default:
             if parent[_Fields.OPERATOR] is not None: #udf-join/cross
                 return parent[_Fields.TYPES]
@@ -71,7 +81,7 @@ def deduct_output_type(dataset):
                                 out_type.append(t1[key])
                             else:
                                 out_type.append(t2[key])
-                return out_type
+                return tuple(out_type)
         return parent[_Fields.TYPES]
 
 
