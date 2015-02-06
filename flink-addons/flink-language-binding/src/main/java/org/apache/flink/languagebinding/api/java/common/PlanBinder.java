@@ -131,8 +131,19 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		Integer operationCount = (Integer) receiver.getNormalizedRecord();
 		for (int x = 0; x < operationCount; x++) {
 			String identifier = (String) receiver.getRecord();
+			Operation op = null;
+			AbstractOperation aop = null;
 			try {
-				switch (Operation.valueOf(identifier.toUpperCase())) {
+				op = Operation.valueOf(identifier.toUpperCase());
+			} catch (IllegalArgumentException iae) {
+				try {
+					aop = AbstractOperation.valueOf(identifier.toUpperCase());
+				} catch (IllegalArgumentException iae2) {
+					throw new IllegalArgumentException("Invalid operation specified: " + identifier);
+				}
+			}
+			if (op != null) {
+				switch (op) {
 					case SOURCE_CSV:
 						createCsvSource();
 						break;
@@ -185,52 +196,48 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 						createUnionOperation();
 						break;
 				}
-			} catch (IllegalArgumentException iae) {
-				try {
-					AbstractOperation opType = AbstractOperation.valueOf(identifier.toUpperCase());
-					switch (opType) {
-						case COGROUP:
-							createCoGroupOperation(createOperationInfo(opType));
-							break;
-						case CROSS:
-							createCrossOperation(0, createOperationInfo(opType));
-							break;
-						case CROSS_H:
-							createCrossOperation(1, createOperationInfo(opType));
-							break;
-						case CROSS_T:
-							createCrossOperation(2, createOperationInfo(opType));
-							break;
-						case FILTER:
-							createFilterOperation(createOperationInfo(opType));
-							break;
-						case FLATMAP:
-							createFlatMapOperation(createOperationInfo(opType));
-							break;
-						case GROUPREDUCE:
-							createGroupReduceOperation(createOperationInfo(opType));
-							break;
-						case JOIN:
-							createJoinOperation(0, createOperationInfo(opType));
-							break;
-						case JOIN_H:
-							createJoinOperation(1, createOperationInfo(opType));
-							break;
-						case JOIN_T:
-							createJoinOperation(2, createOperationInfo(opType));
-							break;
-						case MAP:
-							createMapOperation(createOperationInfo(opType));
-							break;
-						case MAPPARTITION:
-							createMapPartitionOperation(createOperationInfo(opType));
-							break;
-						case REDUCE:
-							createReduceOperation(createOperationInfo(opType));
-							break;
-					}
-				} catch (IllegalArgumentException iae2) {
-					throw new IllegalArgumentException("Invalid operation specified: " + identifier);
+			}
+			if (aop != null) {
+				switch (aop) {
+					case COGROUP:
+						createCoGroupOperation(createOperationInfo(aop));
+						break;
+					case CROSS:
+						createCrossOperation(0, createOperationInfo(aop));
+						break;
+					case CROSS_H:
+						createCrossOperation(1, createOperationInfo(aop));
+						break;
+					case CROSS_T:
+						createCrossOperation(2, createOperationInfo(aop));
+						break;
+					case FILTER:
+						createFilterOperation(createOperationInfo(aop));
+						break;
+					case FLATMAP:
+						createFlatMapOperation(createOperationInfo(aop));
+						break;
+					case GROUPREDUCE:
+						createGroupReduceOperation(createOperationInfo(aop));
+						break;
+					case JOIN:
+						createJoinOperation(0, createOperationInfo(aop));
+						break;
+					case JOIN_H:
+						createJoinOperation(1, createOperationInfo(aop));
+						break;
+					case JOIN_T:
+						createJoinOperation(2, createOperationInfo(aop));
+						break;
+					case MAP:
+						createMapOperation(createOperationInfo(aop));
+						break;
+					case MAPPARTITION:
+						createMapPartitionOperation(createOperationInfo(aop));
+						break;
+					case REDUCE:
+						createReduceOperation(createOperationInfo(aop));
+						break;
 				}
 			}
 		}
