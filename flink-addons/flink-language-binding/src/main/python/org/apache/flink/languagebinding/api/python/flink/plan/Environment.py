@@ -180,7 +180,7 @@ class Environment(object):
                                     else:
                                         grand_child[_Fields.PARENT] = parent
                                         parent[_Fields.CHILDREN].append(grand_child)
-                                        parent[_Fields.CHILDREN].remove(child)
+                                    parent[_Fields.CHILDREN].remove(child)
                                 for sink in child[_Fields.SINKS]:
                                     sink[_Fields.PARENT] = parent
                                 for bcvar in child[_Fields.BCVARS]:
