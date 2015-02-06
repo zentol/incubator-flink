@@ -251,7 +251,7 @@ class Environment(object):
                     collect(set[_Fields.TYPES])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.CROSS) or case(_Identifier.CROSSH) or case(_Identifier.CROSST):
+                if case(_Identifier.CROSS, _Identifier.CROSSH, _Identifier.CROSST):
                     collect(set[_Fields.OTHER][_Fields.ID])
                     collectBytes(_dump(set[_Fields.OPERATOR]))
                     collect(set[_Fields.META])
@@ -262,7 +262,7 @@ class Environment(object):
                         collect(p[1])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.REDUCE) or case(_Identifier.GROUPREDUCE):
+                if case(_Identifier.REDUCE, _Identifier.GROUPREDUCE):
                     collectBytes(_dump(set[_Fields.OPERATOR]))
                     collectBytes(_dump(set[_Fields.COMBINEOP]))
                     collect(set[_Fields.META])
@@ -270,7 +270,7 @@ class Environment(object):
                     collect(set[_Fields.COMBINE])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.JOIN) or case(_Identifier.JOINH) or case(_Identifier.JOINT):
+                if case(_Identifier.JOIN, _Identifier.JOINH, _Identifier.JOINT):
                     collect(set[_Fields.KEY1])
                     collect(set[_Fields.KEY2])
                     collect(set[_Fields.OTHER][_Fields.ID])
@@ -283,7 +283,7 @@ class Environment(object):
                         collect(p[1])
                     collect(set[_Fields.NAME])
                     break
-                if case(_Identifier.MAP) or case(_Identifier.MAPPARTITION) or case(_Identifier.FLATMAP) or case(_Identifier.FILTER):
+                if case(_Identifier.MAP, _Identifier.MAPPARTITION, _Identifier.FLATMAP, _Identifier.FILTER):
                     collectBytes(_dump(set[_Fields.OPERATOR]))
                     collect(set[_Fields.META])
                     collect(set[_Fields.TYPES])
