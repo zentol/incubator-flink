@@ -81,7 +81,8 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 */
 	private enum Parameters {
 		DOP,
-		MODE
+		MODE,
+		RETRY
 	}
 
 	private void receiveParameters() throws IOException {
@@ -96,6 +97,10 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 					break;
 				case MODE:
 					FLINK_HDFS_PATH = (Boolean) value.getField(1) ? "file:/tmp/flink" : "hdfs:/tmp/flink";
+					break;
+				case RETRY:
+					int retry = (Integer) value.getField(1);
+					env.setNumberOfExecutionRetries(retry);
 					break;
 			}
 		}
