@@ -129,43 +129,13 @@ class BufferingUDPMappedFileConnection(object):
         self._input = ""
 
 
-class TwinBufferingUDPMappedFileConnection(object):
+class TwinBufferingUDPMappedFileConnection(BufferingUDPMappedFileConnection):
     def __init__(self, input_file=tempfile.gettempdir() + "/flink/data/input", output_file=tempfile.gettempdir() + "/flink/data/output", port=25000):
-        self._input_file = open(input_file, "rb+")
-        self._output_file = open(output_file, "rb+")
-        self._file_input_buffer = mmap.mmap(self._input_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_READ)
-        self._file_output_buffer = mmap.mmap(self._output_file.fileno(), MAPPED_FILE_SIZE, mmap.MAP_SHARED, mmap.ACCESS_WRITE)
-        self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        self._socket.bind((socket.gethostname(), 0))
-        self._socket.settimeout(300)
-        self._destination = (socket.gethostname(), port)
-
-        self._socket.sendto(pack(">I", self._socket.getsockname()[1]), self._destination)
-        self._socket.sendto(pack(">I", self._socket.getsockname()[1]), self._destination)
-
-        self._out = deque()
-        self._out_size = 0
-
+        super(TwinBufferingUDPMappedFileConnection, self).__init__(input_file, output_file, port)
         self._input = ["", ""]
         self._input_offset = [0, 0]
         self._input_size = [0, 0]
         self._was_last = [False, False]
-
-        self._offset_limit = MAPPED_FILE_SIZE - 1024 * 1024 * 3
-
-    def write(self, msg):
-        self._out.append(msg)
-        self._out_size += len(msg)
-        if self._out_size > self._offset_limit:
-            self._write_buffer()
-
-    def _write_buffer(self):
-        self._file_output_buffer.seek(0, 0)
-        self._file_output_buffer.write(b"".join(self._out))
-        self._socket.sendto(pack(">i", self._out_size), self._destination)
-        self._out.clear()
-        self._out_size = 0
-        self._socket.recvfrom(1)
 
     def read(self, des_size, group):
         if self._input_size[group] == self._input_offset[group]:
@@ -185,11 +155,6 @@ class TwinBufferingUDPMappedFileConnection(object):
         self._input_size[group] = unpack(">I", meta_size[:4])[0]
         self._was_last[group] = meta_size[4] == SIGNAL_WAS_LAST
         self._input[group] = self._file_input_buffer.read(self._input_size[group])
-
-    def send_end_signal(self):
-        if self._out_size:
-            self._write_buffer()
-        self._socket.sendto(SIGNAL_FINISHED, self._destination)
 
     def has_next(self, group):
         return not self._was_last[group] or not self._input_size[group] == self._input_offset[group]
