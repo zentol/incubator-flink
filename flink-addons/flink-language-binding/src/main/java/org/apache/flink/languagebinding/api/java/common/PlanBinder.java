@@ -407,8 +407,15 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	private void createDistinctOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
+		Object keysArrayOrTuple = receiver.getNormalizedRecord();
+		int[] keys;
+		if (keysArrayOrTuple instanceof Tuple) {
+			keys = tupleToIntArray((Tuple) keysArrayOrTuple);
+		} else {
+			keys = (int[]) keysArrayOrTuple;
+		}
 		DataSet op = (DataSet) sets.get(parentID);
-		sets.put(setID, op.distinct().name("Distinct"));
+		sets.put(setID, (keys.length == 0 ? op.distinct() : op.distinct(keys)).name("Distinct"));
 	}
 
 	private void createFilterOperation(INFO info) {
