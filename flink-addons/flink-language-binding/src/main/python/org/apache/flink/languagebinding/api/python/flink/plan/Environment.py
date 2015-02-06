@@ -172,7 +172,7 @@ class Environment(object):
                                 parent[_Fields.NAME] += " -> " + child[_Fields.NAME]
                                 parent[_Fields.TYPES] = child[_Fields.TYPES]
                                 for grand_child in child[_Fields.CHILDREN]:
-                                    if child in multi_input:
+                                    if grand_child[_Fields.IDENTIFIER] in multi_input:
                                         if grand_child[_Fields.PARENT][_Fields.ID] == child[_Fields.ID]:
                                             grand_child[_Fields.PARENT] = parent
                                         else:
