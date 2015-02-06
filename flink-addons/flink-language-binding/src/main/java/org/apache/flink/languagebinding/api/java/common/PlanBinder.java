@@ -110,7 +110,8 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 */
 	private enum Operation {
 		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SINK_CSV, SINK_TEXT, SINK_PRINT,
-		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, REBALANCE, AGGREGATE,
+		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, AGGREGATE,
+		REBALANCE, PARTITION_HASH,
 		BROADCAST
 	}
 
@@ -156,6 +157,9 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 						break;
 					case FIRST:
 						createFirstOperation();
+						break;
+					case PARTITION_HASH:
+						createHashPartitionOperation();
 						break;
 					case PROJECTION:
 						createProjectOperation();
@@ -474,6 +478,21 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	protected abstract DataSet applyGroupReduceOperation(UnsortedGrouping op1, INFO info);
 
 	protected abstract DataSet applyGroupReduceOperation(SortedGrouping op1, INFO info);
+
+	private void createHashPartitionOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		Object keysArrayOrTuple = receiver.getNormalizedRecord();
+		int[] keys;
+		if (keysArrayOrTuple instanceof Tuple) {
+			keys = tupleToIntArray((Tuple) keysArrayOrTuple);
+		} else {
+			keys = (int[]) keysArrayOrTuple;
+		}
+		DataSet op1 = (DataSet) sets.get(parentID);
+		sets.put(setID, op1.partitionByHash(keys));
+
+	}
 
 	private void createJoinOperation(int mode, INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
