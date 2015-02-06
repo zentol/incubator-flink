@@ -17,7 +17,9 @@ import java.util.HashMap;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.CsvInputFormat;
+import org.apache.flink.api.java.operators.AggregateOperator;
 import org.apache.flink.api.java.operators.CrossOperator.DefaultCross;
 import org.apache.flink.api.java.operators.CrossOperator.ProjectCross;
 import org.apache.flink.api.java.operators.Grouping;
@@ -48,23 +50,23 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	public static final long LONG = 1L;
 	public static final int SHORT = new Integer(1).shortValue();
 	public static final String STRING = "type";
-	
+
 	public static final String PLANBINDER_CONFIG_BCVAR_COUNT = "PLANBINDER_BCVAR_COUNT";
 	public static final String PLANBINDER_CONFIG_BCVAR_NAME_PREFIX = "PLANBINDER_BCVAR_";
-	
+
 	protected static String FLINK_HDFS_PATH = "hdfs:/tmp";
 	public static final String FLINK_TMP_DATA_DIR = System.getProperty("java.io.tmpdir") + "/flink_data";
-	
+
 	public static void setLocalMode() {
 		FLINK_HDFS_PATH = System.getProperty("java.io.tmpdir") + "/flink";
 	}
-	
+
 	protected HashMap<Integer, Object> sets;
 	public static ExecutionEnvironment env;
 	protected Receiver receiver;
-	
+
 	public static final int MAPPED_FILE_SIZE = 1024 * 1024 * 64;
-	
+
 	public static int ID = 0;
 
 	//====Plan==========================================================================================================
@@ -81,10 +83,10 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DOP,
 		MODE
 	}
-	
+
 	private void receiveParameters() throws IOException {
 		Integer parameterCount = (Integer) receiver.getNormalizedRecord();
-		
+
 		for (int x = 0; x < parameterCount; x++) {
 			Tuple value = (Tuple) receiver.getNormalizedRecord();
 			switch (Parameters.valueOf(((String) value.getField(0)).toUpperCase())) {
@@ -108,7 +110,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 */
 	private enum Operation {
 		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SINK_CSV, SINK_TEXT, SINK_PRINT,
-		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, REBALANCE,
+		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, REBALANCE, AGGREGATE,
 		BROADCAST
 	}
 
@@ -118,7 +120,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	protected enum AbstractOperation {
 		COGROUP, CROSS, CROSS_H, CROSS_T, FILTER, FLATMAP, GROUPREDUCE, JOIN, JOIN_H, JOIN_T, MAP, REDUCE, MAPPARTITION,
 	}
-	
+
 	protected void receiveOperations() throws IOException {
 		Integer operationCount = (Integer) receiver.getNormalizedRecord();
 		for (int x = 0; x < operationCount; x++) {
@@ -145,6 +147,9 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 						break;
 					case BROADCAST:
 						createBroadcastVariable();
+						break;
+					case AGGREGATE:
+						createAggregationOperation();
 						break;
 					case DISTINCT:
 						createDistinctOperation();
@@ -218,27 +223,27 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			}
 		}
 	}
-	
+
 	private void createCsvSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
 		String fieldDelimiter = (String) receiver.getRecord();
 		String lineDelimiter = (String) receiver.getRecord();
 		Tuple types = (Tuple) receiver.getRecord();
-		
+
 		Class[] classes = new Class[types.getArity()];
 		for (int x = 0; x < types.getArity(); x++) {
 			classes[x] = types.getField(x).getClass();
 		}
 		sets.put(id, env.createInput(new CsvInputFormat(new Path(path), lineDelimiter, fieldDelimiter.charAt(0), classes), getForObject(types)).name("CsvSource"));
 	}
-	
+
 	private void createTextSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
 		sets.put(id, env.readTextFile(path).name("TextSource"));
 	}
-	
+
 	private void createValueSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		int valueCount = (Integer) receiver.getNormalizedRecord();
@@ -248,7 +253,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		}
 		sets.put(id, env.fromElements(values).name("ValueSource"));
 	}
-	
+
 	private void createCsvSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
@@ -260,7 +265,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.writeAsCsv(path, lineDelimiter, fieldDelimiter, writeMode).name("CsvSink");
 	}
-	
+
 	private void createTextSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
@@ -270,31 +275,31 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.writeAsText(path, writeMode).name("TextSink");
 	}
-	
+
 	private void createPrintSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.print().name("PrintSink");
 	}
-	
+
 	private void createBroadcastVariable() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		int otherID = (Integer) receiver.getNormalizedRecord();
 		String name = (String) receiver.getRecord();
 		UdfOperator op1 = (UdfOperator) sets.get(parentID);
 		DataSet op2 = (DataSet) sets.get(otherID);
-		
+
 		op1.withBroadcastSet(op2, name);
 		Configuration c = ((UdfOperator) op1).getParameters();
-		
+
 		if (c == null) {
 			c = new Configuration();
 		}
-		
+
 		int count = c.getInteger(PLANBINDER_CONFIG_BCVAR_COUNT, 0);
 		c.setInteger(PLANBINDER_CONFIG_BCVAR_COUNT, count + 1);
 		c.setString(PLANBINDER_CONFIG_BCVAR_NAME_PREFIX + count, name);
-		
+
 		op1.withParameters(c);
 	}
 
@@ -306,19 +311,61 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 * @throws IOException
 	 */
 	protected abstract INFO createOperationInfo(AbstractOperation operationIdentifier) throws IOException;
-	
+
+	private void createAggregationOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		int count = (Integer) receiver.getNormalizedRecord();
+
+		int encodedAgg = (Integer) receiver.getNormalizedRecord();
+		int field = (Integer) receiver.getNormalizedRecord();
+
+		Aggregations agg = null;
+		switch (encodedAgg) {
+			case 0:
+				agg = Aggregations.MAX;
+				break;
+			case 1:
+				agg = Aggregations.MIN;
+				break;
+			case 2:
+				agg = Aggregations.SUM;
+				break;
+		}
+		DataSet op = (DataSet) sets.get(parentID);
+		AggregateOperator ao = op.aggregate(agg, field);
+
+		for (int x = 1; x < count; x++) {
+			encodedAgg = (Integer) receiver.getNormalizedRecord();
+			field = (Integer) receiver.getNormalizedRecord();
+			switch (encodedAgg) {
+				case 0:
+					ao = ao.andMax(field);
+					break;
+				case 1:
+					ao = ao.andMin(field);
+					break;
+				case 2:
+					ao = ao.andSum(field);
+					break;
+			}
+		}
+
+		sets.put(setID, ao.name("Aggregation"));
+	}
+
 	private void createCoGroupOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
 		sets.put(info.setID, applyCoGroupOperation(op1, op2, info.keys1, info.keys2, info));
 	}
-	
+
 	protected abstract DataSet applyCoGroupOperation(DataSet op1, DataSet op2, int[] firstKeys, int[] secondKeys, INFO info);
-	
+
 	private void createCrossOperation(int mode, INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
-		
+
 		if (info.types != null && (info.projections == null || info.projections.length == 0)) {
 			sets.put(info.setID, applyCrossOperation(op1, op2, mode, info));
 		} else {
@@ -354,30 +401,30 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			}
 		}
 	}
-	
+
 	protected abstract DataSet applyCrossOperation(DataSet op1, DataSet op2, int mode, INFO info);
-	
+
 	private void createDistinctOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		DataSet op = (DataSet) sets.get(parentID);
 		sets.put(setID, op.distinct().name("Distinct"));
 	}
-	
+
 	private void createFilterOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyFilterOperation(op1, info));
 	}
-	
+
 	protected abstract DataSet applyFilterOperation(DataSet op1, INFO info);
-	
+
 	private void createFlatMapOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyFlatMapOperation(op1, info));
 	}
-	
+
 	protected abstract DataSet applyFlatMapOperation(DataSet op1, INFO info);
-	
+
 	private void createFirstOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
@@ -385,7 +432,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet op = (DataSet) sets.get(parentID);
 		sets.put(setID, op.first(count).name("First"));
 	}
-	
+
 	private void createGroupOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
@@ -399,7 +446,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet op1 = (DataSet) sets.get(parentID);
 		sets.put(setID, op1.groupBy(keys));
 	}
-	
+
 	private void createGroupReduceOperation(INFO info) {
 		Object op1 = sets.get(info.parentID);
 		if (op1 instanceof DataSet) {
@@ -414,17 +461,17 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			sets.put(info.setID, applyGroupReduceOperation((SortedGrouping) op1, info));
 		}
 	}
-	
+
 	protected abstract DataSet applyGroupReduceOperation(DataSet op1, INFO info);
-	
+
 	protected abstract DataSet applyGroupReduceOperation(UnsortedGrouping op1, INFO info);
-	
+
 	protected abstract DataSet applyGroupReduceOperation(SortedGrouping op1, INFO info);
-	
+
 	private void createJoinOperation(int mode, INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
-		
+
 		if (info.types != null && (info.projections == null || info.projections.length == 0)) {
 			sets.put(info.setID, applyJoinOperation(op1, op2, info.keys1, info.keys2, mode, info));
 		} else {
@@ -460,23 +507,23 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			}
 		}
 	}
-	
+
 	protected abstract DataSet applyJoinOperation(DataSet op1, DataSet op2, int[] firstKeys, int[] secondKeys, int mode, INFO info);
-	
+
 	private void createMapOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyMapOperation(op1, info));
 	}
-	
+
 	protected abstract DataSet applyMapOperation(DataSet op1, INFO info);
-	
+
 	private void createMapPartitionOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyMapPartitionOperation(op1, info));
 	}
-	
+
 	protected abstract DataSet applyMapPartitionOperation(DataSet op1, INFO info);
-	
+
 	protected void createProjectOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
@@ -490,14 +537,14 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet op1 = (DataSet) sets.get(parentID);
 		sets.put(setID, op1.project(keys).name("Projection"));
 	}
-	
+
 	private void createRebalanceOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		DataSet op = (DataSet) sets.get(parentID);
 		sets.put(setID, op.rebalance().name("Rebalance"));
 	}
-	
+
 	private void createReduceOperation(INFO info) {
 		Object op1 = sets.get(info.parentID);
 		if (op1 instanceof DataSet) {
@@ -508,11 +555,11 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			sets.put(info.setID, applyReduceOperation((UnsortedGrouping) op1, info));
 		}
 	}
-	
+
 	protected abstract DataSet applyReduceOperation(DataSet op1, INFO info);
-	
+
 	protected abstract DataSet applyReduceOperation(UnsortedGrouping op1, INFO info);
-	
+
 	protected void createSortOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
@@ -545,7 +592,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			sets.put(setID, ((SortedGrouping) op1).sortGroup(field, order));
 		}
 	}
-	
+
 	protected void createUnionOperation() throws IOException {
 		int setID = (Integer) receiver.getNormalizedRecord();
 		int parentID = (Integer) receiver.getNormalizedRecord();
