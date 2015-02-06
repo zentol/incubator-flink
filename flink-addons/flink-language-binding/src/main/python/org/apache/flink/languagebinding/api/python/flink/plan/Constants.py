@@ -72,6 +72,7 @@ class _Fields(object):
     BCVARS = "bcvars"
     PROJECTIONS = "projections"
     ID = "id"
+    TO_ERR = "to_error"
 
 
 class WriteMode(object):

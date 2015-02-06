@@ -96,13 +96,14 @@ class Set(object):
         self._info[_Fields.NAME] = None
         env._counter += 1
 
-    def output(self):
+    def output(self, to_error=False):
         """
         Writes a DataSet to the standard output stream (stdout).
         """
         child = dict()
         child[_Fields.IDENTIFIER] = _Identifier.SINK_PRINT
         child[_Fields.PARENT] = self._info
+        child[_Fields.TO_ERR] = to_error
         self._info[_Fields.SINKS].append(child)
         self._env._sinks.append(child)
 

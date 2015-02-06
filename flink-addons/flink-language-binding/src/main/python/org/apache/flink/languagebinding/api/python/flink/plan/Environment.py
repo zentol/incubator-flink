@@ -316,6 +316,7 @@ class Environment(object):
                     collect(sink[_Fields.WRITE_MODE])
                     break
                 if case(_Identifier.SINK_PRINT):
+                    collect(sink[_Fields.TO_ERR])
                     break
 
     def _send_broadcast(self):

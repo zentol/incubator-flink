@@ -298,7 +298,8 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	private void createPrintSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		DataSet parent = (DataSet) sets.get(parentID);
-		parent.print().name("PrintSink");
+		boolean toError = (Boolean) receiver.getRecord();
+		(toError ? parent.printToErr() : parent.print()).name("PrintSink");
 	}
 
 	private void createBroadcastVariable() throws IOException {
