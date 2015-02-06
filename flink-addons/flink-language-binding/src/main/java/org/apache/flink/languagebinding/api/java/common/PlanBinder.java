@@ -109,7 +109,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 * This enum contains the identifiers for all supported non-UDF DataSet operations.
 	 */
 	private enum Operation {
-		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SINK_CSV, SINK_TEXT, SINK_PRINT,
+		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SOURCE_SEQ, SINK_CSV, SINK_TEXT, SINK_PRINT,
 		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, AGGREGATE,
 		REBALANCE, PARTITION_HASH,
 		BROADCAST
@@ -136,6 +136,9 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 						break;
 					case SOURCE_VALUE:
 						createValueSource();
+						break;
+					case SOURCE_SEQ:
+						createSequenceSource();
 						break;
 					case SINK_CSV:
 						createCsvSink();
@@ -256,6 +259,13 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			values[x] = receiver.getRecord();
 		}
 		sets.put(id, env.fromElements(values).name("ValueSource"));
+	}
+
+	private void createSequenceSource() throws IOException {
+		int id = (Integer) receiver.getNormalizedRecord();
+		long from = (Long) receiver.getRecord();
+		long to = (Long) receiver.getRecord();
+		sets.put(id, env.generateSequence(from, to).name("SequenceSource"));
 	}
 
 	private void createCsvSink() throws IOException {
