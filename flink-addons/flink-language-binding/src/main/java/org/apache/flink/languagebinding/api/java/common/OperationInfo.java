@@ -23,14 +23,9 @@ public abstract class OperationInfo {
 	public int parentID; //DataSet that an operation is applied on
 	public int otherID; //secondary DataSet
 	public int setID; //ID for new DataSet
-	public int[] keys1; //grouping keys
-	public int[] keys2; //grouping keys
-	public int[] projectionKeys1; //projection keys
-	public int[] projectionKeys2; //projection keys
+	public int[] keys1; //join/cogroup keys
+	public int[] keys2; //join/cogroup keys
 	public TypeInformation<?> types; //typeinformation about output type
-	public int field; //sort key
-	public int order; //sort order
-	public int count; //first count
 	public ProjectionEntry[] projections; //projectFirst/projectSecond
 
 	public class ProjectionEntry {

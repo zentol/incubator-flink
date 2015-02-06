@@ -222,19 +222,11 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 		protected byte[] combineOperator;
 		protected String name;
 
-		private int[] tupleToIntArray(Tuple tuple) {
-			int[] keys = new int[tuple.getArity()];
-			for (int y = 0; y < tuple.getArity(); y++) {
-				keys[y] = (Integer) tuple.getField(y);
-			}
-			return keys;
-		}
-
-		protected PythonOperationInfo(Operations mode) throws IOException {
+		protected PythonOperationInfo(AbstractOperation identifier) throws IOException {
 			Object tmpType;
-			parentID = (Integer) receiver.getNormalizedRecord();
 			setID = (Integer) receiver.getNormalizedRecord();
-			switch (mode) {
+			parentID = (Integer) receiver.getNormalizedRecord();
+			switch (identifier) {
 				case COGROUP:
 					otherID = (Integer) receiver.getNormalizedRecord();
 					keys1 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
@@ -301,28 +293,15 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 					types = tmpType == null ? null : getForObject(tmpType);
 					name = (String) receiver.getRecord();
 					break;
-				case PROJECTION:
-					keys1 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
-					break;
-				case GROUPBY:
-					keys1 = tupleToIntArray((Tuple) receiver.getNormalizedRecord());
-					break;
-				case SORT:
-					field = (Integer) receiver.getNormalizedRecord();
-					order = (Integer) receiver.getNormalizedRecord();
-					break;
-				case UNION:
-					otherID = (Integer) receiver.getNormalizedRecord();
-					break;
 				default:
-					throw new UnsupportedOperationException("This operation is not implemented in the Python API: " + mode);
+					throw new UnsupportedOperationException("This operation is not implemented in the Python API: " + identifier);
 			}
 		}
 	}
 
 	@Override
-	protected PythonOperationInfo createOperationInfo(String identifier) throws IOException {
-		return new PythonOperationInfo(Operations.valueOf(identifier.toUpperCase()));
+	protected PythonOperationInfo createOperationInfo(AbstractOperation identifier) throws IOException {
+		return new PythonOperationInfo(identifier);
 	}
 
 	@Override

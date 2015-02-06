@@ -48,23 +48,23 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	public static final long LONG = 1L;
 	public static final int SHORT = new Integer(1).shortValue();
 	public static final String STRING = "type";
-
+	
 	public static final String PLANBINDER_CONFIG_BCVAR_COUNT = "PLANBINDER_BCVAR_COUNT";
 	public static final String PLANBINDER_CONFIG_BCVAR_NAME_PREFIX = "PLANBINDER_BCVAR_";
-
+	
 	protected static String FLINK_HDFS_PATH = "hdfs:/tmp";
 	public static final String FLINK_TMP_DATA_DIR = System.getProperty("java.io.tmpdir") + "/flink_data";
-
+	
 	public static void setLocalMode() {
 		FLINK_HDFS_PATH = System.getProperty("java.io.tmpdir") + "/flink";
 	}
-
+	
 	protected HashMap<Integer, Object> sets;
 	public static ExecutionEnvironment env;
 	protected Receiver receiver;
-
+	
 	public static final int MAPPED_FILE_SIZE = 1024 * 1024 * 64;
-
+	
 	public static int ID = 0;
 
 	//====Plan==========================================================================================================
@@ -81,10 +81,10 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DOP,
 		MODE
 	}
-
+	
 	private void receiveParameters() throws IOException {
 		Integer parameterCount = (Integer) receiver.getNormalizedRecord();
-
+		
 		for (int x = 0; x < parameterCount; x++) {
 			Tuple value = (Tuple) receiver.getNormalizedRecord();
 			switch (Parameters.valueOf(((String) value.getField(0)).toUpperCase())) {
@@ -104,123 +104,141 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 
 	//====Operations====================================================================================================
 	/**
-	 * This enum contains the identifiers for all supported DataSet operations.
+	 * This enum contains the identifiers for all supported non-UDF DataSet operations.
 	 */
-	protected enum Operations {
+	private enum Operation {
 		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SINK_CSV, SINK_TEXT, SINK_PRINT,
-		COGROUP, CROSS, CROSS_H, CROSS_T, FILTER, FLATMAP, GROUPREDUCE, JOIN, JOIN_H, JOIN_T, MAP, REDUCE, MAPPARTITION,
 		PROJECTION, SORT, UNION, FIRST, DISTINCT, GROUPBY, REBALANCE,
 		BROADCAST
 	}
 
+	/**
+	 * This enum contains the identifiers for all supported UDF DataSet operations.
+	 */
+	protected enum AbstractOperation {
+		COGROUP, CROSS, CROSS_H, CROSS_T, FILTER, FLATMAP, GROUPREDUCE, JOIN, JOIN_H, JOIN_T, MAP, REDUCE, MAPPARTITION,
+	}
+	
 	protected void receiveOperations() throws IOException {
 		Integer operationCount = (Integer) receiver.getNormalizedRecord();
 		for (int x = 0; x < operationCount; x++) {
 			String identifier = (String) receiver.getRecord();
-			switch (Operations.valueOf(identifier.toUpperCase())) {
-				case SOURCE_CSV:
-					createCsvSource();
-					break;
-				case SOURCE_TEXT:
-					createTextSource();
-					break;
-				case SOURCE_VALUE:
-					createValueSource();
-					break;
-				case SINK_CSV:
-					createCsvSink();
-					break;
-				case SINK_TEXT:
-					createTextSink();
-					break;
-				case SINK_PRINT:
-					createPrintSink();
-					break;
-				case BROADCAST:
-					createBroadcastVariable();
-					break;
-				case COGROUP:
-					createCoGroupOperation(createOperationInfo(identifier));
-					break;
-				case CROSS:
-					createCrossOperation(0, createOperationInfo(identifier));
-					break;
-				case CROSS_H:
-					createCrossOperation(1, createOperationInfo(identifier));
-					break;
-				case CROSS_T:
-					createCrossOperation(2, createOperationInfo(identifier));
-					break;
-				case DISTINCT:
-					createDistinctOperation(createOperationInfo(identifier));
-				case FILTER:
-					createFilterOperation(createOperationInfo(identifier));
-					break;
-				case FIRST:
-					createFirstOperation(createOperationInfo(identifier));
-					break;
-				case FLATMAP:
-					createFlatMapOperation(createOperationInfo(identifier));
-					break;
-				case GROUPREDUCE:
-					createGroupReduceOperation(createOperationInfo(identifier));
-					break;
-				case JOIN:
-					createJoinOperation(0, createOperationInfo(identifier));
-					break;
-				case JOIN_H:
-					createJoinOperation(1, createOperationInfo(identifier));
-					break;
-				case JOIN_T:
-					createJoinOperation(2, createOperationInfo(identifier));
-					break;
-				case MAP:
-					createMapOperation(createOperationInfo(identifier));
-					break;
-				case MAPPARTITION:
-					createMapPartitionOperation(createOperationInfo(identifier));
-					break;
-				case PROJECTION:
-					createProjectOperation(createOperationInfo(identifier));
-					break;
-				case REBALANCE:
-					createRebalanceOperation(createOperationInfo(identifier));
-				case REDUCE:
-					createReduceOperation(createOperationInfo(identifier));
-					break;
-				case GROUPBY:
-					createGroupOperation(createOperationInfo(identifier));
-					break;
-				case SORT:
-					createSortOperation(createOperationInfo(identifier));
-					break;
-				case UNION:
-					createUnionOperation(createOperationInfo(identifier));
-					break;
+			try {
+				switch (Operation.valueOf(identifier.toUpperCase())) {
+					case SOURCE_CSV:
+						createCsvSource();
+						break;
+					case SOURCE_TEXT:
+						createTextSource();
+						break;
+					case SOURCE_VALUE:
+						createValueSource();
+						break;
+					case SINK_CSV:
+						createCsvSink();
+						break;
+					case SINK_TEXT:
+						createTextSink();
+						break;
+					case SINK_PRINT:
+						createPrintSink();
+						break;
+					case BROADCAST:
+						createBroadcastVariable();
+						break;
+					case DISTINCT:
+						createDistinctOperation();
+						break;
+					case FIRST:
+						createFirstOperation();
+						break;
+					case PROJECTION:
+						createProjectOperation();
+						break;
+					case REBALANCE:
+						createRebalanceOperation();
+						break;
+					case GROUPBY:
+						createGroupOperation();
+						break;
+					case SORT:
+						createSortOperation();
+						break;
+					case UNION:
+						createUnionOperation();
+						break;
+				}
+			} catch (IllegalArgumentException iae) {
+				try {
+					AbstractOperation opType = AbstractOperation.valueOf(identifier.toUpperCase());
+					switch (opType) {
+						case COGROUP:
+							createCoGroupOperation(createOperationInfo(opType));
+							break;
+						case CROSS:
+							createCrossOperation(0, createOperationInfo(opType));
+							break;
+						case CROSS_H:
+							createCrossOperation(1, createOperationInfo(opType));
+							break;
+						case CROSS_T:
+							createCrossOperation(2, createOperationInfo(opType));
+							break;
+						case FILTER:
+							createFilterOperation(createOperationInfo(opType));
+							break;
+						case FLATMAP:
+							createFlatMapOperation(createOperationInfo(opType));
+							break;
+						case GROUPREDUCE:
+							createGroupReduceOperation(createOperationInfo(opType));
+							break;
+						case JOIN:
+							createJoinOperation(0, createOperationInfo(opType));
+							break;
+						case JOIN_H:
+							createJoinOperation(1, createOperationInfo(opType));
+							break;
+						case JOIN_T:
+							createJoinOperation(2, createOperationInfo(opType));
+							break;
+						case MAP:
+							createMapOperation(createOperationInfo(opType));
+							break;
+						case MAPPARTITION:
+							createMapPartitionOperation(createOperationInfo(opType));
+							break;
+						case REDUCE:
+							createReduceOperation(createOperationInfo(opType));
+							break;
+					}
+				} catch (IllegalArgumentException iae2) {
+					throw new IllegalArgumentException("Invalid operation specified: " + identifier);
+				}
 			}
 		}
 	}
-
+	
 	private void createCsvSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
 		String fieldDelimiter = (String) receiver.getRecord();
 		String lineDelimiter = (String) receiver.getRecord();
 		Tuple types = (Tuple) receiver.getRecord();
-
+		
 		Class[] classes = new Class[types.getArity()];
 		for (int x = 0; x < types.getArity(); x++) {
 			classes[x] = types.getField(x).getClass();
 		}
 		sets.put(id, env.createInput(new CsvInputFormat(new Path(path), lineDelimiter, fieldDelimiter.charAt(0), classes), getForObject(types)).name("CsvSource"));
 	}
-
+	
 	private void createTextSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
 		sets.put(id, env.readTextFile(path).name("TextSource"));
 	}
-
+	
 	private void createValueSource() throws IOException {
 		int id = (Integer) receiver.getNormalizedRecord();
 		int valueCount = (Integer) receiver.getNormalizedRecord();
@@ -230,7 +248,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		}
 		sets.put(id, env.fromElements(values).name("ValueSource"));
 	}
-
+	
 	private void createCsvSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
@@ -242,7 +260,7 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.writeAsCsv(path, lineDelimiter, fieldDelimiter, writeMode).name("CsvSink");
 	}
-
+	
 	private void createTextSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		String path = (String) receiver.getRecord();
@@ -252,31 +270,31 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.writeAsText(path, writeMode).name("TextSink");
 	}
-
+	
 	private void createPrintSink() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		DataSet parent = (DataSet) sets.get(parentID);
 		parent.print().name("PrintSink");
 	}
-
+	
 	private void createBroadcastVariable() throws IOException {
 		int parentID = (Integer) receiver.getNormalizedRecord();
 		int otherID = (Integer) receiver.getNormalizedRecord();
 		String name = (String) receiver.getRecord();
 		UdfOperator op1 = (UdfOperator) sets.get(parentID);
 		DataSet op2 = (DataSet) sets.get(otherID);
-
+		
 		op1.withBroadcastSet(op2, name);
 		Configuration c = ((UdfOperator) op1).getParameters();
-
+		
 		if (c == null) {
 			c = new Configuration();
 		}
-
+		
 		int count = c.getInteger(PLANBINDER_CONFIG_BCVAR_COUNT, 0);
 		c.setInteger(PLANBINDER_CONFIG_BCVAR_COUNT, count + 1);
 		c.setString(PLANBINDER_CONFIG_BCVAR_NAME_PREFIX + count, name);
-
+		
 		op1.withParameters(c);
 	}
 
@@ -287,22 +305,21 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 	 * @return
 	 * @throws IOException
 	 */
-	protected abstract INFO createOperationInfo(String operationIdentifier) throws IOException;
-
+	protected abstract INFO createOperationInfo(AbstractOperation operationIdentifier) throws IOException;
+	
 	private void createCoGroupOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
 		sets.put(info.setID, applyCoGroupOperation(op1, op2, info.keys1, info.keys2, info));
 	}
-
+	
 	protected abstract DataSet applyCoGroupOperation(DataSet op1, DataSet op2, int[] firstKeys, int[] secondKeys, INFO info);
-
+	
 	private void createCrossOperation(int mode, INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
-
-		if (info.types != null && info.projectionKeys1 == null && info.projectionKeys2 == null) {
-			//UDF-Cross
+		
+		if (info.types != null && (info.projections == null || info.projections.length == 0)) {
 			sets.put(info.setID, applyCrossOperation(op1, op2, mode, info));
 		} else {
 			DefaultCross defaultResult;
@@ -337,38 +354,52 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			}
 		}
 	}
-
+	
 	protected abstract DataSet applyCrossOperation(DataSet op1, DataSet op2, int mode, INFO info);
-
-	private void createDistinctOperation(INFO info) {
-		DataSet op = (DataSet) sets.get(info.parentID);
-		sets.put(info.setID, op.distinct());
+	
+	private void createDistinctOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		DataSet op = (DataSet) sets.get(parentID);
+		sets.put(setID, op.distinct().name("Distinct"));
 	}
-
+	
 	private void createFilterOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyFilterOperation(op1, info));
 	}
-
+	
 	protected abstract DataSet applyFilterOperation(DataSet op1, INFO info);
-
+	
 	private void createFlatMapOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyFlatMapOperation(op1, info));
 	}
-
+	
 	protected abstract DataSet applyFlatMapOperation(DataSet op1, INFO info);
-
-	private void createFirstOperation(INFO info) {
-		DataSet op = (DataSet) sets.get(info.parentID);
-		sets.put(info.setID, op.first(info.count));
+	
+	private void createFirstOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		int count = (Integer) receiver.getNormalizedRecord();
+		DataSet op = (DataSet) sets.get(parentID);
+		sets.put(setID, op.first(count).name("First"));
 	}
-
-	private void createGroupOperation(INFO info) {
-		DataSet op1 = (DataSet) sets.get(info.parentID);
-		sets.put(info.setID, op1.groupBy(info.keys1));
+	
+	private void createGroupOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		Object keysArrayOrTuple = receiver.getNormalizedRecord();
+		int[] keys;
+		if (keysArrayOrTuple instanceof Tuple) {
+			keys = tupleToIntArray((Tuple) keysArrayOrTuple);
+		} else {
+			keys = (int[]) keysArrayOrTuple;
+		}
+		DataSet op1 = (DataSet) sets.get(parentID);
+		sets.put(setID, op1.groupBy(keys));
 	}
-
+	
 	private void createGroupReduceOperation(INFO info) {
 		Object op1 = sets.get(info.parentID);
 		if (op1 instanceof DataSet) {
@@ -383,22 +414,20 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			sets.put(info.setID, applyGroupReduceOperation((SortedGrouping) op1, info));
 		}
 	}
-
+	
 	protected abstract DataSet applyGroupReduceOperation(DataSet op1, INFO info);
-
+	
 	protected abstract DataSet applyGroupReduceOperation(UnsortedGrouping op1, INFO info);
-
+	
 	protected abstract DataSet applyGroupReduceOperation(SortedGrouping op1, INFO info);
-
+	
 	private void createJoinOperation(int mode, INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		DataSet op2 = (DataSet) sets.get(info.otherID);
-
-		if (info.types != null && info.projectionKeys1 == null & info.projectionKeys2 == null) {
-			//UDF-Join
+		
+		if (info.types != null && (info.projections == null || info.projections.length == 0)) {
 			sets.put(info.setID, applyJoinOperation(op1, op2, info.keys1, info.keys2, mode, info));
 		} else {
-			//Key-Join
 			DefaultJoin defaultResult;
 			switch (mode) {
 				case 0:
@@ -416,7 +445,6 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			if (info.projections.length == 0) {
 				sets.put(info.setID, defaultResult.name("DefaultJoin"));
 			} else {
-				//Project-Join
 				ProjectJoin project = null;
 				for (ProjectionEntry pe : info.projections) {
 					switch (pe.side) {
@@ -432,33 +460,44 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			}
 		}
 	}
-
+	
 	protected abstract DataSet applyJoinOperation(DataSet op1, DataSet op2, int[] firstKeys, int[] secondKeys, int mode, INFO info);
-
+	
 	private void createMapOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyMapOperation(op1, info));
 	}
-
+	
 	protected abstract DataSet applyMapOperation(DataSet op1, INFO info);
-
+	
 	private void createMapPartitionOperation(INFO info) {
 		DataSet op1 = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, applyMapPartitionOperation(op1, info));
 	}
-
+	
 	protected abstract DataSet applyMapPartitionOperation(DataSet op1, INFO info);
-
-	protected void createProjectOperation(INFO info) {
-		DataSet op1 = (DataSet) sets.get(info.parentID);
-		sets.put(info.setID, op1.project(info.keys1));
+	
+	protected void createProjectOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		Object keysArrayOrTuple = receiver.getNormalizedRecord();
+		int[] keys;
+		if (keysArrayOrTuple instanceof Tuple) {
+			keys = tupleToIntArray((Tuple) keysArrayOrTuple);
+		} else {
+			keys = (int[]) keysArrayOrTuple;
+		}
+		DataSet op1 = (DataSet) sets.get(parentID);
+		sets.put(setID, op1.project(keys).name("Projection"));
 	}
-
-	private void createRebalanceOperation(INFO info) {
-		DataSet op = (DataSet) sets.get(info.parentID);
-		sets.put(info.setID, op.rebalance());
+	
+	private void createRebalanceOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		DataSet op = (DataSet) sets.get(parentID);
+		sets.put(setID, op.rebalance().name("Rebalance"));
 	}
-
+	
 	private void createReduceOperation(INFO info) {
 		Object op1 = sets.get(info.parentID);
 		if (op1 instanceof DataSet) {
@@ -469,43 +508,59 @@ public abstract class PlanBinder<INFO extends OperationInfo> {
 			sets.put(info.setID, applyReduceOperation((UnsortedGrouping) op1, info));
 		}
 	}
-
+	
 	protected abstract DataSet applyReduceOperation(DataSet op1, INFO info);
-
+	
 	protected abstract DataSet applyReduceOperation(UnsortedGrouping op1, INFO info);
-
-	protected void createSortOperation(INFO info) {
-		Grouping op1 = (Grouping) sets.get(info.parentID);
-		Order o;
-		switch (info.order) {
+	
+	protected void createSortOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		int field = (Integer) receiver.getNormalizedRecord();
+		int encodedOrder = (Integer) receiver.getNormalizedRecord();
+		Order order;
+		switch (encodedOrder) {
 			case 0:
-				o = Order.NONE;
+				order = Order.NONE;
 				break;
 			case 1:
-				o = Order.ASCENDING;
+				order = Order.ASCENDING;
 				break;
 			case 2:
-				o = Order.DESCENDING;
+				order = Order.DESCENDING;
 				break;
 			case 3:
-				o = Order.ANY;
+				order = Order.ANY;
 				break;
 			default:
-				o = Order.NONE;
+				order = Order.NONE;
 				break;
 		}
+		Grouping op1 = (Grouping) sets.get(parentID);
 		if (op1 instanceof UnsortedGrouping) {
-			sets.put(info.setID, ((UnsortedGrouping) op1).sortGroup(info.field, o));
+			sets.put(setID, ((UnsortedGrouping) op1).sortGroup(field, order));
 			return;
 		}
 		if (op1 instanceof SortedGrouping) {
-			sets.put(info.setID, ((SortedGrouping) op1).sortGroup(info.field, o));
+			sets.put(setID, ((SortedGrouping) op1).sortGroup(field, order));
 		}
 	}
+	
+	protected void createUnionOperation() throws IOException {
+		int setID = (Integer) receiver.getNormalizedRecord();
+		int parentID = (Integer) receiver.getNormalizedRecord();
+		int otherID = (Integer) receiver.getNormalizedRecord();
+		DataSet op1 = (DataSet) sets.get(parentID);
+		DataSet op2 = (DataSet) sets.get(otherID);
+		sets.put(setID, op1.union(op2).name("Union"));
+	}
 
-	protected void createUnionOperation(INFO info) {
-		DataSet op1 = (DataSet) sets.get(info.parentID);
-		DataSet op2 = (DataSet) sets.get(info.otherID);
-		sets.put(info.setID, op1.union(op2).name("Union"));
+	//====Utility=======================================================================================================
+	protected int[] tupleToIntArray(Tuple tuple) {
+		int[] keys = new int[tuple.getArity()];
+		for (int y = 0; y < tuple.getArity(); y++) {
+			keys[y] = (Integer) tuple.getField(y);
+		}
+		return keys;
 	}
 }

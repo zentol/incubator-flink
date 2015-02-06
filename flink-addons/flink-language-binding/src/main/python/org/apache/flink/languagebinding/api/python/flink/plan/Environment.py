@@ -232,8 +232,8 @@ class Environment(object):
         for set in self._sets:
             identifier = set.get(_Fields.IDENTIFIER)
             collect(set[_Fields.IDENTIFIER])
-            collect(set[_Fields.PARENT][_Fields.ID])
             collect(set[_Fields.ID])
+            collect(set[_Fields.PARENT][_Fields.ID])
             for case in Switch(identifier):
                 if case(_Identifier.SORT):
                     collect(set[_Fields.FIELD])
