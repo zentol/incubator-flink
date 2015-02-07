@@ -312,7 +312,7 @@ public class PythonPlanBinder extends PlanBinder<PythonOperationInfo> {
 				new Keys.ExpressionKeys(firstKeys, op1.getType()),
 				new Keys.ExpressionKeys(secondKeys, op2.getType()),
 				new PythonCoGroup(info.setID, info.operator, info.types, info.meta),
-				getForObject(info.types), info.name);
+				info.types, info.name);
 	}
 
 	@Override
