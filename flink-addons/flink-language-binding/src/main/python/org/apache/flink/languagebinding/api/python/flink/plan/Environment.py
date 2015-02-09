@@ -183,8 +183,10 @@ class Environment(object):
                                     parent[_Fields.CHILDREN].remove(child)
                                 for sink in child[_Fields.SINKS]:
                                     sink[_Fields.PARENT] = parent
+                                    parent[_Fields.SINKS].append(sink)
                                 for bcvar in child[_Fields.BCVARS]:
                                     bcvar[_Fields.PARENT] = parent
+                                    parent[_Fields.BCVARS].append(bcvar)
                                 self._remove_set((child))
             x -= 1
 
