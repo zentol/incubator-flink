@@ -114,6 +114,16 @@ object TaskManagerMessages {
     */
   case class JobManagerLeaderAddress(jobManagerAddress: String, leaderSessionID: UUID)
 
+  sealed trait LogTypeRequest
+
+  case object LogFileRequest extends LogTypeRequest
+
+  case object StdOutFileRequest extends LogTypeRequest
+
+  case class RequestTaskManagerLog(requestType : LogTypeRequest)
+
+  case class IsBlobServiceDefined()
+
 
   // --------------------------------------------------------------------------
   //  Utility getters for case objects to simplify access from Java
@@ -133,4 +143,15 @@ object TaskManagerMessages {
   def getRegisteredAtJobManagerMessage:
             RegisteredAtJobManager.type = RegisteredAtJobManager
 
+  def getRequestTaskManagerLog(): AnyRef = {
+    RequestTaskManagerLog(LogFileRequest)
+  }
+
+  def getRequestTaskManagerStdout(): AnyRef = {
+    RequestTaskManagerLog(StdOutFileRequest)
+  }
+
+  def getIsBlobServiceDefined(): AnyRef = {
+    IsBlobServiceDefined()
+  }
 }

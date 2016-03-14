@@ -46,6 +46,15 @@ public interface LibraryCacheManager {
 	File getFile(BlobKey blobKey) throws IOException;
 
 	/**
+	 * Deletes the file identified by the blob key.
+	 *
+	 * @param blobKey identifying the requested file
+	 * @return File handle
+	 * @throws IOException
+	 */
+	void removeFile(BlobKey blobKey) throws IOException;
+
+	/**
 	 * Registers a job with its required jar files and classpaths. The jar files are identified by their blob keys.
 	 *
 	 * @param id job ID

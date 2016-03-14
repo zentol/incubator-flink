@@ -35,7 +35,7 @@ import org.apache.flink.core.fs.FileSystem
 import org.apache.flink.core.io.InputSplitAssigner
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot
 import org.apache.flink.runtime.akka.{AkkaUtils, ListeningBehaviour}
-import org.apache.flink.runtime.blob.BlobServer
+import org.apache.flink.runtime.blob.{BlobKey, BlobServer}
 import org.apache.flink.runtime.checkpoint._
 import org.apache.flink.runtime.client._
 import org.apache.flink.runtime.execution.UnrecoverableException
@@ -893,6 +893,12 @@ class JobManager(
 
     case RequestWebMonitorPort =>
       sender() ! ResponseWebMonitorPort(webMonitorPort)
+
+    case RequestTaskManagerLog(blobkey : BlobKey) =>
+      sender() ! libraryCacheManager.getFile(blobkey).getAbsolutePath()
+
+    case DeleteTaskManagerLog(blobkey : BlobKey) =>
+      libraryCacheManager.removeFile(blobkey)
   }
 
   /**

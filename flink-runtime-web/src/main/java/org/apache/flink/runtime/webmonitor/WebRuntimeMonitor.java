@@ -65,6 +65,7 @@ import org.apache.flink.runtime.webmonitor.handlers.SubtaskExecutionAttemptAccum
 import org.apache.flink.runtime.webmonitor.handlers.SubtaskExecutionAttemptDetailsHandler;
 import org.apache.flink.runtime.webmonitor.handlers.SubtasksAllAccumulatorsHandler;
 import org.apache.flink.runtime.webmonitor.handlers.SubtasksTimesHandler;
+import org.apache.flink.runtime.webmonitor.handlers.TaskManagerLogHandler;
 import org.apache.flink.runtime.webmonitor.handlers.TaskManagersHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,7 +235,9 @@ public class WebRuntimeMonitor implements WebMonitor {
 			.GET("/jobs/:jobid/checkpoints", handler(new JobCheckpointsHandler(currentGraphs)))
 
 			.GET("/taskmanagers", handler(new TaskManagersHandler(DEFAULT_REQUEST_TIMEOUT)))
-			.GET("/taskmanagers/:" + TaskManagersHandler.TASK_MANAGER_ID_KEY, handler(new TaskManagersHandler(DEFAULT_REQUEST_TIMEOUT)))
+			.GET("/taskmanagers/:" + TaskManagersHandler.TASK_MANAGER_ID_KEY + "/metrics", handler(new TaskManagersHandler(DEFAULT_REQUEST_TIMEOUT)))
+			.GET("/taskmanagers/:" + TaskManagersHandler.TASK_MANAGER_ID_KEY + "/log", new TaskManagerLogHandler(retriever, actorSystem.dispatcher(), jobManagerAddressPromise.future(), timeout, true))
+			.GET("/taskmanagers/:" + TaskManagersHandler.TASK_MANAGER_ID_KEY + "/stdout", new TaskManagerLogHandler(retriever, actorSystem.dispatcher(), jobManagerAddressPromise.future(), timeout, false))
 
 			// log and stdout
 			.GET("/jobmanager/log", logFiles.logFile == null ? new ConstantTextHandler("(log file unavailable)") :

@@ -23,6 +23,7 @@ import java.util.UUID
 import akka.actor.ActorRef
 import org.apache.flink.api.common.JobID
 import org.apache.flink.runtime.akka.ListeningBehaviour
+import org.apache.flink.runtime.blob.BlobKey
 import org.apache.flink.runtime.client.{JobStatusMessage, SerializedJobExecutionResult}
 import org.apache.flink.runtime.executiongraph.{ExecutionAttemptID, ExecutionGraph}
 import org.apache.flink.runtime.instance.{Instance, InstanceID}
@@ -460,6 +461,10 @@ object JobManagerMessages {
     */
   case class DisposeSavepointFailure(cause: Throwable)
 
+  case class RequestTaskManagerLog(blobKey: BlobKey)
+
+  case class DeleteTaskManagerLog(blobKey: BlobKey)
+
   // --------------------------------------------------------------------------
   // Utility methods to allow simpler case object access from Java
   // --------------------------------------------------------------------------
@@ -518,5 +523,13 @@ object JobManagerMessages {
 
   def getDisposeSavepointSuccess: AnyRef = {
     DisposeSavepointSuccess
+  }
+
+  def getRequestTaskManagerLog(blobKey: BlobKey): AnyRef = {
+    RequestTaskManagerLog(blobKey)
+  }
+
+  def getDeleteTaskManagerLog(blobKey: BlobKey): AnyRef = {
+    DeleteTaskManagerLog(blobKey)
   }
 }

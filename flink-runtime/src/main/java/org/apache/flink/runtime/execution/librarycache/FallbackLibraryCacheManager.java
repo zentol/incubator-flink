@@ -44,6 +44,11 @@ public class FallbackLibraryCacheManager implements LibraryCacheManager {
 	}
 
 	@Override
+	public void removeFile(BlobKey blobKey) throws IOException {
+		throw new IOException("There is no file associated to the blob key " + blobKey);
+	}
+
+	@Override
 	public void registerJob(JobID id, Collection<BlobKey> requiredJarFiles, Collection<URL> requiredClasspaths) {
 		LOG.warn("FallbackLibraryCacheManager cannot download files associated with blob keys.");
 	}

@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.taskmanager
 
-import java.io.{File, IOException}
+import java.io.{FileInputStream, File, IOException}
 import java.lang.management.{ManagementFactory, OperatingSystemMXBean}
 import java.lang.reflect.Method
 import java.net.{InetAddress, InetSocketAddress}
@@ -39,7 +39,7 @@ import org.apache.flink.core.fs.FileSystem
 import org.apache.flink.core.memory.{HybridMemorySegment, HeapMemorySegment, MemorySegmentFactory, MemoryType}
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot
 import org.apache.flink.runtime.akka.AkkaUtils
-import org.apache.flink.runtime.blob.{BlobCache, BlobService}
+import org.apache.flink.runtime.blob.{BlobKey, BlobClient, BlobCache, BlobService}
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager
 import org.apache.flink.runtime.deployment.{InputChannelDeploymentDescriptor, TaskDeploymentDescriptor}
 import org.apache.flink.runtime.execution.ExecutionState
@@ -310,6 +310,12 @@ class TaskManager(
 
     case FatalError(message, cause) =>
       killTaskManagerFatal(message, cause)
+
+    case RequestTaskManagerLog(requestType : LogTypeRequest) =>
+      handleRequestTaskManagerLog(sender(), requestType, currentJobManager.get)
+
+    case IsBlobServiceDefined() =>
+      sender() ! (blobService.isDefined && currentJobManager.get.path.address.host.isDefined)
   }
 
   /**
@@ -778,6 +784,32 @@ class TaskManager(
       } else {
         Option.empty
       }
+    }
+  }
+
+  private def handleRequestTaskManagerLog
+  (sender: ActorRef, requestType: LogTypeRequest, jobManager: ActorRef):
+  Unit = {
+    if (blobService.isDefined && jobManager.path.address.host.isDefined) {
+      //create new Thread to upload log, to not block the TM for too long
+      new Thread() {
+        override def run(): Unit = {
+          val jmHost = jobManager.path.address.host.get
+          val port = blobService.get.getPort
+          val logFilePath = System.getProperty("log.file");
+          val file: File = requestType match {
+            case LogFileRequest => new File(logFilePath);
+            case StdOutFileRequest =>
+              new File(logFilePath.substring(0, logFilePath.length - 4) + ".out");
+          }
+
+          val client: BlobClient = new BlobClient(new InetSocketAddress(jmHost, port))
+
+          sender ! client.put(new FileInputStream(file))
+        }
+      }.run()
+    } else {
+      throw new IOException("No BlobService defined, cannot upload TaskManager logs.")
     }
   }
 

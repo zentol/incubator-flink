@@ -43,3 +43,20 @@ angular.module('flinkApp')
     $scope.$on '$destroy', ->
       $interval.cancel(refresh)
 
+.controller 'SingleTaskManagerLogsController', ($scope, $stateParams, SingleTaskManagerService, $interval, flinkConfig) ->
+  $scope.log = {}
+  SingleTaskManagerService.loadLogs($stateParams.taskmanagerid).then (data) ->
+    $scope.log = data
+
+  $scope.reloadData = () ->
+    SingleTaskManagerService.loadLogs($stateParams.taskmanagerid).then (data) ->
+      $scope.log = data
+
+.controller 'SingleTaskManagerStdoutController', ($scope, $stateParams, SingleTaskManagerService, $interval, flinkConfig) ->
+  $scope.stdout = {}
+  SingleTaskManagerService.loadStdout($stateParams.taskmanagerid).then (data) ->
+    $scope.stdout = data
+
+  $scope.reloadData = () ->
+    SingleTaskManagerService.loadStdout($stateParams.taskmanagerid).then (data) ->
+      $scope.stdout = data

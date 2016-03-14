@@ -194,6 +194,11 @@ public final class BlobLibraryCacheManager extends TimerTask implements LibraryC
 		return new File(blobService.getURL(blobKey).getFile());
 	}
 
+	@Override
+	public void removeFile(BlobKey blobKey) throws IOException {
+		blobService.delete(blobKey);
+	}
+
 	public int getBlobServerPort() {
 		return blobService.getPort();
 	}
