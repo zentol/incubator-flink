@@ -16,32 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.flink.types;
+package org.apache.flink.metrics.datadog;
 
-import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.NothingTypeInfo;
-import org.apache.flink.util.TestLogger;
-import org.junit.Test;
+import org.apache.flink.metrics.Counter;
 
-import static org.junit.Assert.*;
+import java.util.List;
 
-public class NothingTypeInfoTest extends TestLogger {
+/**
+ * Mapping of counter between Flink and Datadog
+ * */
+public class DCounter extends DMetric {
+	private final Counter counter;
 
-	@Test
-	public void testNothingTypeInfoEquality() {
-		NothingTypeInfo tpeInfo1 = new NothingTypeInfo();
-		NothingTypeInfo tpeInfo2 = new NothingTypeInfo();
-
-		assertEquals(tpeInfo1, tpeInfo2);
-		assertEquals(tpeInfo1.hashCode(), tpeInfo2.hashCode());
+	public DCounter(Counter c, String metricName, String host, List<String> tags) {
+		super(MetricType.counter, metricName, host, tags);
+		counter = c;
 	}
 
-	@Test
-	public void testNothingTypeInfoInequality() {
-		NothingTypeInfo tpeInfo1 = new NothingTypeInfo();
-		BasicTypeInfo<Integer> tpeInfo2 = BasicTypeInfo.getInfoFor(Integer.class);
-
-		assertNotEquals(tpeInfo1, tpeInfo2);
-		assertNotEquals(tpeInfo2, tpeInfo1);
+	/**
+	 * Visibility of this method must not be changed
+	 * since we deliberately not map it to json object in a Datadog-defined format
+	 * */
+	@Override
+	public Number getMetricValue() {
+		return counter.getCount();
 	}
 }
