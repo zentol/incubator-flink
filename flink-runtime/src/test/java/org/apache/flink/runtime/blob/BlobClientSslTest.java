@@ -69,7 +69,7 @@ public class BlobClientSslTest {
 			Configuration config = new Configuration();
 			config.setBoolean(SecurityOptions.SSL_ENABLED, true);
 			config.setString(SecurityOptions.SSL_KEYSTORE, "src/test/resources/local127.keystore");
-			config.setString(ConfigConstants.SECURITY_SSL_KEYSTORE_PASSWORD, "password");
+			config.setString(SecurityOptions.SSL_KEYSTORE_PASSWORD, "password");
 			config.setString(ConfigConstants.SECURITY_SSL_KEY_PASSWORD, "password");
 			BLOB_SSL_SERVER = new BlobServer(config);
 		}
@@ -94,7 +94,7 @@ public class BlobClientSslTest {
 			config.setBoolean(SecurityOptions.SSL_ENABLED, true);
 			config.setBoolean(ConfigConstants.BLOB_SERVICE_SSL_ENABLED, false);
 			config.setString(SecurityOptions.SSL_KEYSTORE, "src/test/resources/local127.keystore");
-			config.setString(ConfigConstants.SECURITY_SSL_KEYSTORE_PASSWORD, "password");
+			config.setString(SecurityOptions.SSL_KEYSTORE_PASSWORD, "password");
 			config.setString(ConfigConstants.SECURITY_SSL_KEY_PASSWORD, "password");
 			BLOB_SERVER = new BlobServer(config);
 		}
