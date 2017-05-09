@@ -81,7 +81,7 @@ public class BlobClientSslTest {
 		sslClientConfig = new Configuration();
 		sslClientConfig.setBoolean(SecurityOptions.SSL_ENABLED, true);
 		sslClientConfig.setString(SecurityOptions.SSL_TRUSTSTORE, "src/test/resources/local127.truststore");
-		sslClientConfig.setString(ConfigConstants.SECURITY_SSL_TRUSTSTORE_PASSWORD, "password");
+		sslClientConfig.setString(SecurityOptions.SSL_TRUSTSTORE_PASSWORD, "password");
 	}
 
 	/**
@@ -107,7 +107,7 @@ public class BlobClientSslTest {
 		clientConfig.setBoolean(SecurityOptions.SSL_ENABLED, true);
 		clientConfig.setBoolean(ConfigConstants.BLOB_SERVICE_SSL_ENABLED, false);
 		clientConfig.setString(SecurityOptions.SSL_TRUSTSTORE, "src/test/resources/local127.truststore");
-		clientConfig.setString(ConfigConstants.SECURITY_SSL_TRUSTSTORE_PASSWORD, "password");
+		clientConfig.setString(SecurityOptions.SSL_TRUSTSTORE_PASSWORD, "password");
 	}
 
 	/**
