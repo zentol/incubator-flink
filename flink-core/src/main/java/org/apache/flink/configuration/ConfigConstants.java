@@ -786,8 +786,9 @@ public final class ConfigConstants {
 	// ----------------------------- Transport SSL Settings--------------------
 
 	/**
-	 * Enable SSL support
+	 * @deprecated use {@link SecurityOptions#SSL_ENABLED} instead
 	 */
+	@Deprecated
 	public static final String SECURITY_SSL_ENABLED = "security.ssl.enabled";
 
 	/** The Java keystore file containing the flink endpoint key and certificate */
@@ -1397,6 +1398,10 @@ public final class ConfigConstants {
 
 	// ----------------------------- SSL Values --------------------------------
 
+	/**
+	 * @deprecated use {@link SecurityOptions#SSL_ENABLED} instead
+	 */
+	@Deprecated
 	public static boolean DEFAULT_SECURITY_SSL_ENABLED = false;
 
 	public static String DEFAULT_SECURITY_SSL_PROTOCOL = "TLSv1.2";
