@@ -23,16 +23,22 @@ package org.apache.flink.runtime.metrics.scope;
  */
 public class TaskManagerScopeFormat extends ScopeFormat {
 
-	public TaskManagerScopeFormat(String format) {
+	private final boolean shortIds;
+
+	TaskManagerScopeFormat(String format, boolean shortIds) {
 		super(format, null, new String[] {
 				SCOPE_HOST,
 				SCOPE_TASKMANAGER_ID
 		});
+		this.shortIds = shortIds;
 	}
 
 	public String[] formatScope(String hostname, String taskManagerId) {
 		final String[] template = copyTemplate();
-		final String[] values = { hostname, taskManagerId };
+		final String[] values = {
+			hostname,
+			shortIds ? taskManagerId.substring(0, 8) : taskManagerId
+		};
 		return bindVariables(template, values);
 	}
 }

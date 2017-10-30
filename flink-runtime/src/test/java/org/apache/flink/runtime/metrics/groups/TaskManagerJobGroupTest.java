@@ -21,6 +21,7 @@ package org.apache.flink.runtime.metrics.groups;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
@@ -73,6 +74,29 @@ public class TaskManagerJobGroupTest extends TestLogger {
 		assertEquals(
 				"some-constant.myJobName.name",
 				jmGroup.getMetricIdentifier("name"));
+		registry.shutdown();
+	}
+
+	@Test
+	public void testGenerateScopeShortIds() {
+		Configuration cfg = new Configuration();
+		cfg.setBoolean(MetricOptions.SCOPE_SHORT_IDS, true);
+		cfg.setString(MetricOptions.SCOPE_NAMING_TM_JOB, "<tm_id>.<job_id>");
+		MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(cfg));
+
+		String tmId = ResourceID.generate().toString();
+		JobID jobID = new JobID();
+		
+		TaskManagerMetricGroup tmGroup = new TaskManagerMetricGroup(registry, "theHostName", tmId);
+		JobMetricGroup jmGroup = new TaskManagerJobMetricGroup(registry, tmGroup, jobID, "myJobName");
+
+		assertArrayEquals(
+			new String[] { tmId.substring(0, 8), jobID.toString().substring(0, 8)},
+			jmGroup.getScopeComponents());
+
+		assertEquals(
+			tmId.substring(0, 8) + '.' + jobID.toString().substring(0, 8) + ".name",
+			jmGroup.getMetricIdentifier("name"));
 		registry.shutdown();
 	}
 

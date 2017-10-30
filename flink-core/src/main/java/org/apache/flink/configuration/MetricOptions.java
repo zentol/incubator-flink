@@ -78,6 +78,11 @@ public class MetricOptions {
 		key("metrics.scope.operator")
 			.defaultValue("<host>.taskmanager.<tm_id>.<job_name>.<operator_name>.<subtask_index>");
 
+	/** Enables the truncation of all IDs to 8 characters. */
+	public static final ConfigOption<Boolean> SCOPE_SHORT_IDS =
+		key("metrics.scope.short-ids")
+			.defaultValue(false);
+
 	/** The number of measured latencies to maintain at each operator */
 	public static final ConfigOption<Integer> LATENCY_HISTORY_SIZE =
 		key("metrics.latency.history-size")

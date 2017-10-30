@@ -102,6 +102,31 @@ public class JobManagerJobGroupTest extends TestLogger {
 	}
 
 	@Test
+	public void testShortIds() {
+		Configuration cfg = new Configuration();
+		cfg.setString(MetricOptions.SCOPE_NAMING_JM, "peter");
+		cfg.setString(MetricOptions.SCOPE_NAMING_JM_JOB, "*.some-constant.<job_id>");
+		cfg.setBoolean(MetricOptions.SCOPE_SHORT_IDS, true);
+		MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(cfg));
+
+		JobID jid = new JobID();
+
+		JobManagerMetricGroup tmGroup = new JobManagerMetricGroup(registry, "theHostName");
+		JobMetricGroup jmGroup = new JobManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+
+		assertArrayEquals(
+			new String[] { "peter", "some-constant", jid.toString().substring(0, 8) },
+			jmGroup.getScopeComponents());
+
+		assertEquals(
+			"peter.some-constant." + jid.toString().substring(0, 8) + ".name",
+			jmGroup.getMetricIdentifier("name"));
+
+		registry.shutdown();
+		
+	}
+
+	@Test
 	public void testCreateQueryServiceMetricInfo() {
 		JobID jid = new JobID();
 		MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.defaultMetricRegistryConfiguration());

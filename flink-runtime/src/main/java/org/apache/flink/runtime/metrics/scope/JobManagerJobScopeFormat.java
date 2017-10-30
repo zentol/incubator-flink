@@ -26,19 +26,22 @@ import org.apache.flink.runtime.metrics.groups.JobManagerMetricGroup;
  */
 public class JobManagerJobScopeFormat extends ScopeFormat {
 
-	public JobManagerJobScopeFormat(String format, JobManagerScopeFormat parentFormat) {
+	private final boolean shortIds;
+
+	JobManagerJobScopeFormat(String format, JobManagerScopeFormat parentFormat, boolean shortIds) {
 		super(format, parentFormat, new String[] {
 				SCOPE_HOST,
 				SCOPE_JOB_ID,
 				SCOPE_JOB_NAME
 		});
+		this.shortIds = shortIds;
 	}
 
 	public String[] formatScope(JobManagerMetricGroup parent, JobID jid, String jobName) {
 		final String[] template = copyTemplate();
 		final String[] values = {
 				parent.hostname(),
-				valueOrNull(jid),
+				shortIds ? truncatedIdOrNull(jid) : valueOrNull(jid),
 				valueOrNull(jobName)
 		};
 		return bindVariables(template, values);

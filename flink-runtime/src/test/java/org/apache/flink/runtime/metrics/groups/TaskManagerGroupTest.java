@@ -21,6 +21,7 @@ package org.apache.flink.runtime.metrics.groups;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
@@ -169,6 +170,20 @@ public class TaskManagerGroupTest extends TestLogger {
 
 		assertArrayEquals(new String[]{"constant", "host", "foo", "host"}, group.getScopeComponents());
 		assertEquals("constant.host.foo.host.name", group.getMetricIdentifier("name"));
+		registry.shutdown();
+	}
+
+	@Test
+	public void testGenerateScopeShortIds() {
+		Configuration cfg = new Configuration();
+		cfg.setBoolean(MetricOptions.SCOPE_SHORT_IDS, true);
+		MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(cfg));
+
+		String id = ResourceID.generate().toString();
+		TaskManagerMetricGroup group = new TaskManagerMetricGroup(registry, "localhost", id);
+
+		assertArrayEquals(new String[]{"localhost", "taskmanager", id.substring(0, 8)}, group.getScopeComponents());
+		assertEquals("localhost.taskmanager." + id.substring(0, 8) + ".name", group.getMetricIdentifier("name"));
 		registry.shutdown();
 	}
 

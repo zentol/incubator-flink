@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.metrics.scope;
 
 import org.apache.flink.metrics.CharacterFilter;
+import org.apache.flink.util.AbstractID;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -238,6 +239,12 @@ public abstract class ScopeFormat {
 	protected static String valueOrNull(Object value) {
 		return (value == null || (value instanceof String && ((String) value).isEmpty())) ?
 				"null" : value.toString();
+	}
+
+	protected static String truncatedIdOrNull(AbstractID value) {
+		return value == null
+			? "null"
+			: value.toString().substring(0, 8);
 	}
 
 	protected static HashMap<String, Integer> arrayToMap(String[] array) {

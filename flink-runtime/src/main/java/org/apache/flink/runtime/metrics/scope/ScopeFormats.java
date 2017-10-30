@@ -44,13 +44,14 @@ public final class ScopeFormats {
 			String taskManagerFormat,
 			String taskManagerJobFormat,
 			String taskFormat,
-			String operatorFormat) {
+			String operatorFormat,
+			boolean shortIds) {
 		this.jobManagerFormat = new JobManagerScopeFormat(jobManagerFormat);
-		this.jobManagerJobFormat = new JobManagerJobScopeFormat(jobManagerJobFormat, this.jobManagerFormat);
-		this.taskManagerFormat = new TaskManagerScopeFormat(taskManagerFormat);
-		this.taskManagerJobFormat = new TaskManagerJobScopeFormat(taskManagerJobFormat, this.taskManagerFormat);
-		this.taskFormat = new TaskScopeFormat(taskFormat, this.taskManagerJobFormat);
-		this.operatorFormat = new OperatorScopeFormat(operatorFormat, this.taskFormat);
+		this.jobManagerJobFormat = new JobManagerJobScopeFormat(jobManagerJobFormat, this.jobManagerFormat, shortIds);
+		this.taskManagerFormat = new TaskManagerScopeFormat(taskManagerFormat, shortIds);
+		this.taskManagerJobFormat = new TaskManagerJobScopeFormat(taskManagerJobFormat, this.taskManagerFormat, shortIds);
+		this.taskFormat = new TaskScopeFormat(taskFormat, this.taskManagerJobFormat, shortIds);
+		this.operatorFormat = new OperatorScopeFormat(operatorFormat, this.taskFormat, shortIds);
 	}
 
 	// ------------------------------------------------------------------------
@@ -92,6 +93,7 @@ public final class ScopeFormats {
 	 * @return The ScopeFormats parsed from the configuration
 	 */
 	public static ScopeFormats fromConfig(Configuration config) {
+		boolean shortIds = config.getBoolean(MetricOptions.SCOPE_SHORT_IDS);
 		String jmFormat = config.getString(MetricOptions.SCOPE_NAMING_JM);
 		String jmJobFormat = config.getString(MetricOptions.SCOPE_NAMING_JM_JOB);
 		String tmFormat = config.getString(MetricOptions.SCOPE_NAMING_TM);
@@ -99,6 +101,6 @@ public final class ScopeFormats {
 		String taskFormat = config.getString(MetricOptions.SCOPE_NAMING_TASK);
 		String operatorFormat = config.getString(MetricOptions.SCOPE_NAMING_OPERATOR);
 
-		return new ScopeFormats(jmFormat, jmJobFormat, tmFormat, tmJobFormat, taskFormat, operatorFormat);
+		return new ScopeFormats(jmFormat, jmJobFormat, tmFormat, tmJobFormat, taskFormat, operatorFormat, shortIds);
 	}
 }

@@ -26,7 +26,9 @@ import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
  */
 public class OperatorScopeFormat extends ScopeFormat {
 
-	public OperatorScopeFormat(String format, TaskScopeFormat parentFormat) {
+	private final boolean shortIds;
+
+	OperatorScopeFormat(String format, TaskScopeFormat parentFormat, boolean shortIds) {
 		super(format, parentFormat, new String[] {
 				SCOPE_HOST,
 				SCOPE_TASKMANAGER_ID,
@@ -40,6 +42,7 @@ public class OperatorScopeFormat extends ScopeFormat {
 				SCOPE_OPERATOR_ID,
 				SCOPE_OPERATOR_NAME
 		});
+		this.shortIds = shortIds;
 	}
 
 	public String[] formatScope(TaskMetricGroup parent, OperatorID operatorID, String operatorName) {
@@ -47,15 +50,15 @@ public class OperatorScopeFormat extends ScopeFormat {
 		final String[] template = copyTemplate();
 		final String[] values = {
 				parent.parent().parent().hostname(),
-				parent.parent().parent().taskManagerId(),
-				valueOrNull(parent.parent().jobId()),
+				shortIds ? parent.parent().parent().taskManagerId().substring(0, 8) : parent.parent().parent().taskManagerId(),
+				shortIds ? truncatedIdOrNull(parent.parent().jobId()) : valueOrNull(parent.parent().jobId()),
 				valueOrNull(parent.parent().jobName()),
-				valueOrNull(parent.vertexId()),
-				valueOrNull(parent.executionId()),
+				shortIds ? truncatedIdOrNull(parent.vertexId()) : valueOrNull(parent.vertexId()),
+				shortIds ? truncatedIdOrNull(parent.executionId()) : valueOrNull(parent.executionId()),
 				valueOrNull(parent.taskName()),
 				String.valueOf(parent.subtaskIndex()),
 				String.valueOf(parent.attemptNumber()),
-				valueOrNull(operatorID),
+				shortIds ? truncatedIdOrNull(operatorID) : valueOrNull(operatorID),
 				valueOrNull(operatorName)
 		};
 		return bindVariables(template, values);

@@ -26,7 +26,9 @@ import org.apache.flink.util.AbstractID;
  */
 public class TaskScopeFormat extends ScopeFormat {
 
-	public TaskScopeFormat(String format, TaskManagerJobScopeFormat parentFormat) {
+	private final boolean shortIds;
+
+	TaskScopeFormat(String format, TaskManagerJobScopeFormat parentFormat, boolean shortIds) {
 		super(format, parentFormat, new String[] {
 				SCOPE_HOST,
 				SCOPE_TASKMANAGER_ID,
@@ -38,6 +40,7 @@ public class TaskScopeFormat extends ScopeFormat {
 				SCOPE_TASK_SUBTASK_INDEX,
 				SCOPE_TASK_ATTEMPT_NUM
 		});
+		this.shortIds = shortIds;
 	}
 
 	public String[] formatScope(
@@ -48,11 +51,11 @@ public class TaskScopeFormat extends ScopeFormat {
 		final String[] template = copyTemplate();
 		final String[] values = {
 				parent.parent().hostname(),
-				parent.parent().taskManagerId(),
-				valueOrNull(parent.jobId()),
+				shortIds ? parent.parent().taskManagerId().substring(0, 8) : parent.parent().taskManagerId(),
+				shortIds ? truncatedIdOrNull(parent.jobId()) : valueOrNull(parent.jobId()),
 				valueOrNull(parent.jobName()),
-				valueOrNull(vertexId),
-				valueOrNull(attemptId),
+				shortIds ? truncatedIdOrNull(vertexId) : valueOrNull(vertexId),
+				shortIds ? truncatedIdOrNull(attemptId) : valueOrNull(attemptId),
 				valueOrNull(taskName),
 				String.valueOf(subtask),
 				String.valueOf(attemptNumber)
