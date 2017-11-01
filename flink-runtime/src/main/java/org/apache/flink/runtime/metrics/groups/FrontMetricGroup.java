@@ -47,11 +47,23 @@ public class FrontMetricGroup<P extends AbstractMetricGroup<?>> extends ProxyMet
 		return parentMetricGroup.getMetricIdentifier(metricName, filter, this.reporterIndex);
 	}
 
-	public String getLogicalScope(CharacterFilter filter) {
-		return parentMetricGroup.getLogicalScope(filter);
+	@Override
+	public String getLogicalScope() {
+		return parentMetricGroup.getLogicalScope(null, reporterIndex);
 	}
 
-	public String getLogicalScope(CharacterFilter filter, char delimiter) {
-		return parentMetricGroup.getLogicalScope(filter, delimiter);
+	@Override
+	public String getLogicalScope(CharacterFilter filter) {
+		return parentMetricGroup.getLogicalScope(filter, reporterIndex);
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName) {
+		return parentMetricGroup.getLogicalMetricIdentifier(metricName, null, reporterIndex);
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+		return parentMetricGroup.getLogicalMetricIdentifier(metricName, filter, reporterIndex);
 	}
 }

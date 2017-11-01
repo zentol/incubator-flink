@@ -90,9 +90,9 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	 * For example: "host-7.taskmanager-2.window_word_count.my-mapper" */
 	private final String[] scopeStrings;
 
-	/** The logical metrics scope represented by this group, as a concatenated string, lazily computed.
+	/** Array containing the logical metric scopes represented by this group for each reporter, as a concatenated string, lazily computed.
 	 * For example: "taskmanager.job.task" */
-	private String logicalScopeString;
+	private final String[] logicalScopeStrings;
 
 	/** The metrics query service scope represented by this group, lazily computed. */
 	protected QueryScopeInfo queryServiceScopeInfo;
@@ -107,6 +107,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 		this.scopeComponents = checkNotNull(scope);
 		this.parent = parent;
 		this.scopeStrings = new String[registry.getReporters() == null ? 0 : registry.getReporters().size()];
+		this.logicalScopeStrings = new String[registry.getReporters() == null ? 0 : registry.getReporters().size()];
 	}
 
 	public Map<String, String> getAllVariables() {
@@ -122,35 +123,6 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 			}
 		}
 		return variables;
-	}
-
-	/**
-	 * Returns the logical scope of this group, for example
-	 * {@code "taskmanager.job.task"}.
-	 *
-	 * @param filter character filter which is applied to the scope components
-	 * @return logical scope
-	 */
-	public String getLogicalScope(CharacterFilter filter) {
-		return getLogicalScope(filter, registry.getDelimiter());
-	}
-
-	/**
-	 * Returns the logical scope of this group, for example
-	 * {@code "taskmanager.job.task"}.
-	 *
-	 * @param filter character filter which is applied to the scope components
-	 * @return logical scope
-	 */
-	public String getLogicalScope(CharacterFilter filter, char delimiter) {
-		if (logicalScopeString == null) {
-			if (parent == null) {
-				logicalScopeString = getGroupName(filter);
-			} else {
-				logicalScopeString = parent.getLogicalScope(filter, delimiter) + delimiter + getGroupName(filter);
-			}
-		}
-		return logicalScopeString;
 	}
 
 	/**
@@ -191,6 +163,66 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	 * @return query service scope
      */
 	protected abstract QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter);
+
+	@Override
+	public String getLogicalScope() {
+		return getLogicalScope(null, -1);
+	}
+	
+	public String getLogicalScope(CharacterFilter filter) {
+		return getLogicalScope(filter, -1);
+	}
+	
+	String getLogicalScope(CharacterFilter filter, int reporterIndex) {
+		return generateLogicalScope(filter, reporterIndex);
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName) {
+		return getLogicalMetricIdentifier(metricName, null);
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+		return getLogicalMetricIdentifier(metricName, filter, -1);
+	}
+
+	String getLogicalMetricIdentifier(String metricName, CharacterFilter filter, int reporterIndex) {
+		if (filter != null) {
+			metricName = filter.filterCharacters(metricName);
+		}
+		char delimiter;
+		if (logicalScopeStrings.length == 0 || (reporterIndex < 0 || reporterIndex >= scopeStrings.length)) {
+			delimiter = registry.getDelimiter();
+		} else {
+			delimiter = registry.getDelimiter(reporterIndex);
+		}
+		return generateLogicalScope(filter, reporterIndex) + delimiter + metricName;
+	}
+
+	protected String generateLogicalScope(CharacterFilter filter, int reporterIndex) {
+		if (logicalScopeStrings.length == 0 || (reporterIndex < 0 || reporterIndex >= scopeStrings.length)) {
+			char delimiter = registry.getDelimiter();
+			String newLogicalScopeString;
+			if (parent == null) {
+				newLogicalScopeString = getGroupName(filter);
+			} else {
+				newLogicalScopeString = parent.generateLogicalScope(filter, reporterIndex) + delimiter + getGroupName(filter);
+			}
+			return newLogicalScopeString;
+		} else {
+			char delimiter = registry.getDelimiter(reporterIndex);
+
+			if (logicalScopeStrings[reporterIndex] == null) {
+				if (parent == null) {
+					logicalScopeStrings[reporterIndex] = getGroupName(filter);
+				} else {
+					logicalScopeStrings[reporterIndex] = parent.generateLogicalScope(filter, reporterIndex) + delimiter + getGroupName(filter);
+				}
+			}
+			return logicalScopeStrings[reporterIndex];
+		}
+	}
 
 	/**
 	 * Returns the fully qualified metric name, for example

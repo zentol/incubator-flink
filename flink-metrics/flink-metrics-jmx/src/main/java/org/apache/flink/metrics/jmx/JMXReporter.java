@@ -28,8 +28,6 @@ import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.reporter.DelimiterProvider;
 import org.apache.flink.metrics.reporter.MetricReporter;
-import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
-import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
 import org.apache.flink.util.NetUtils;
 
 import org.slf4j.Logger;
@@ -236,8 +234,8 @@ public class JMXReporter implements MetricReporter, DelimiterProvider {
 		return ht;
 	}
 
-	static String generateJmxDomain(String metricName, MetricGroup group) {
-		return JMX_DOMAIN_PREFIX + ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER) + '.' + metricName;
+	private static String generateJmxDomain(String metricName, MetricGroup group) {
+		return JMX_DOMAIN_PREFIX + group.getLogicalMetricIdentifier(metricName, CHARACTER_FILTER);
 	}
 
 	/**

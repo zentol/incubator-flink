@@ -197,4 +197,53 @@ public class AbstractMetricGroupTest {
 			testRegistry.shutdown();
 		}
 	}
+
+	@Test
+	public void testLogicalScopeGenerationWithoutReporter() {
+		Configuration config = new Configuration();
+		MetricRegistry testRegistry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(config));
+
+		try {
+			TaskManagerMetricGroup taskManagerMetricGroup = new TaskManagerMetricGroup(testRegistry, "host", "id");
+			MetricGroup group = taskManagerMetricGroup.addGroup("generic");
+
+			assertEquals("taskmanager.generic", group.getLogicalScope());
+			assertEquals("taskmanager.filtered", group.getLogicalScope(name -> name.equals("generic") ? "filtered" : name));
+
+			assertEquals("taskmanager.generic.counter", group.getLogicalMetricIdentifier("counter"));
+			assertEquals("taskmanager.generic.filtered", group.getLogicalMetricIdentifier("counter", name -> name.equals("counter") ? "filtered" : name));
+			assertEquals("taskmanager.filtered.counter", group.getLogicalMetricIdentifier("counter", name -> name.equals("generic") ? "filtered" : name));
+		} finally {
+			testRegistry.shutdown();
+		}
+	}
+
+	@Test
+	public void testLogicalScopeGenerationWithReporter() {
+		Configuration config = new Configuration();
+		config.setString(MetricOptions.REPORTERS_LIST, "rep");
+		config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "rep." + ConfigConstants.METRICS_REPORTER_CLASS_SUFFIX, LogicalReporter.class.getName());
+		config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "rep." + ConfigConstants.METRICS_REPORTER_SCOPE_DELIMITER, "-");
+		MetricRegistry testRegistry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(config));
+
+		try {
+			TaskManagerMetricGroup taskManagerMetricGroup = new TaskManagerMetricGroup(testRegistry, "host", "id");
+			MetricGroup group = taskManagerMetricGroup.addGroup("generic");
+			group.counter("counter");
+			assertEquals("taskmanager-generic-counter", LogicalReporter.string);
+		} finally {
+			testRegistry.shutdown();
+		}
+	}
+
+	public static class LogicalReporter extends TestReporter {
+		static String string;
+
+		@Override
+		public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
+			if (string == null) {
+				string = group.getLogicalMetricIdentifier(metricName);
+			}
+		}
+	}
 }

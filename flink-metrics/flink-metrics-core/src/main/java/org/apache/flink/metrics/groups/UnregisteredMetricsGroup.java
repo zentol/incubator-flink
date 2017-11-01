@@ -106,6 +106,26 @@ public class UnregisteredMetricsGroup implements MetricGroup {
 	}
 
 	@Override
+	public String getLogicalScope() {
+		return "";
+	}
+
+	@Override
+	public String getLogicalScope(CharacterFilter filter) {
+		return "";
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName) {
+		return metricName;
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+		return metricName;
+	}
+
+	@Override
 	public String getMetricIdentifier(String metricName) {
 		return metricName;
 	}

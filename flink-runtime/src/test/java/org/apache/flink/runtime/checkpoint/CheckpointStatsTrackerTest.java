@@ -395,6 +395,26 @@ public class CheckpointStatsTrackerTest {
 			}
 
 			@Override
+			public String getLogicalScope() {
+				throw new UnsupportedOperationException("Not expected in this test");
+			}
+
+			@Override
+			public String getLogicalScope(CharacterFilter filter) {
+				throw new UnsupportedOperationException("Not expected in this test");
+			}
+
+			@Override
+			public String getLogicalMetricIdentifier(String metricName) {
+				throw new UnsupportedOperationException("Not expected in this test");
+			}
+
+			@Override
+			public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+				throw new UnsupportedOperationException("Not expected in this test");
+			}
+
+			@Override
 			public String getMetricIdentifier(String metricName) {
 				throw new UnsupportedOperationException("Not expected in this test");
 			}

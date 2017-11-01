@@ -172,6 +172,45 @@ public interface MetricGroup {
 	Map<String, String> getAllVariables();
 
 	/**
+	 * Returns the logical scope as a concatenated string, for example
+	 * {@code "taskmanager.job.task"}.
+	 *
+	 * @see #getLogicalMetricIdentifier(String)
+	 * @see #getLogicalMetricIdentifier(String, CharacterFilter)
+	 */
+	String getLogicalScope();
+
+	/**
+	 * Returns the logical scope as a concatenated string, for example
+	 * {@code "taskmanager.job.task"}.
+	 *
+	 * @param filter which is applied to the scope components
+	 *
+	 * @see #getLogicalMetricIdentifier(String)
+	 * @see #getLogicalMetricIdentifier(String, CharacterFilter)
+	 */
+	String getLogicalScope(CharacterFilter filter);
+
+	/**
+	 * Returns the logical metric identifier, for example
+	 * {@code "taskmanager.job.task.metricName"}.
+	 *
+	 * @param metricName of the metric
+	 * @return logical metric identifier
+	 */
+	String getLogicalMetricIdentifier(String metricName);
+
+	/**
+	 * Returns the logical metric identifier, for example
+	 * {@code "taskmanager.job.task.metricName"}.
+	 *
+	 * @param metricName of the metric
+	 * @param filter which is applied to the scope components
+	 * @return logical metric identifier
+	 */
+	String getLogicalMetricIdentifier(String metricName, CharacterFilter filter);
+
+	/**
 	 * Returns the fully qualified metric name, for example
 	 * {@code "host-7.taskmanager-2.window_word_count.my-mapper.metricName"}.
 	 *
