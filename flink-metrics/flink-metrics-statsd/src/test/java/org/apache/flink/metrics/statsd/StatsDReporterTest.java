@@ -31,6 +31,7 @@ import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.util.TestMeter;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
+import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
@@ -188,36 +189,11 @@ public class StatsDReporterTest extends TestLogger {
 
 			TaskManagerMetricGroup metricGroup = new TaskManagerMetricGroup(registry, "localhost", "tmId");
 
-			Gauge<Integer> negOne = new Gauge<Integer>() {
-				@Override
-				public Integer getValue() {
-					return -1;
-				}
-			};
-			Gauge <Long> negMin = new Gauge<Long>() {
-				@Override
-				public Long getValue() {
-					return Long.MIN_VALUE;
-				}
-			};
-			Gauge <String> na = new Gauge<String>() {
-				@Override
-				public String getValue() {
-					return "n/a";
-				}
-			};
-			Gauge <Double> nan = new Gauge<Double>() {
-				@Override
-				public Double getValue() {
-					return Double.NaN;
-				}
-			};
-			Gauge <Double> valid = new Gauge<Double>() {
-				@Override
-				public Double getValue() {
-					return 1.23;
-				}
-			};
+			Gauge<Integer> negOne = () -> -1;
+			Gauge <Long> negMin = () -> Long.MIN_VALUE;
+			Gauge <String> na = () -> "n/a";
+			Gauge <Double> nan = () -> Double.NaN;
+			Gauge <Double> valid = () -> 1.23;
 
 			// these should be ignored
 			metricGroup.gauge("negOne", negOne);
@@ -280,20 +256,16 @@ public class StatsDReporterTest extends TestLogger {
 			registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(config));
 
 			JobID jobID = new JobID();
-			AbstractID taskId = new AbstractID();
+			JobVertexID taskId = new JobVertexID();
 			AbstractID attemptId = new AbstractID();
+			OperatorID operatorId = new OperatorID();
 
 			TaskManagerMetricGroup mg = new TaskManagerMetricGroup(registry, "hostName", "taskManagerId");
 			TaskManagerJobMetricGroup jmg = new TaskManagerJobMetricGroup(registry, mg, jobID, "jobName");
 			TaskMetricGroup tmg = new TaskMetricGroup(registry, jmg, taskId, attemptId, "taskName", 1, 2);
-			OperatorMetricGroup omg = new OperatorMetricGroup(registry, tmg, "operatorName");
+			OperatorMetricGroup omg = new OperatorMetricGroup(registry, tmg, operatorId, "operatorName");
 
-			Gauge <Double> sample = new Gauge<Double>() {
-				@Override
-				public Double getValue() {
-					return 1.23;
-				}
-			};
+			Gauge <Double> sample = () -> 1.23;
 
 			omg.gauge("sample", sample);
 
@@ -341,77 +313,6 @@ public class StatsDReporterTest extends TestLogger {
 			}
 		}
 	}
-
-
-	/**
-	 * Tests that latency is properly reported via the StatsD reporter.
-	 */
-	@Test
-	public void testStatsDLatencyReporting() throws Exception {
-		MetricRegistry registry = null;
-		DatagramSocketReceiver receiver = null;
-		Thread receiverThread = null;
-		long timeout = 5000;
-		long joinTimeout = 30000;
-
-		String latencyName = "latency";
-
-		try {
-			receiver = new DatagramSocketReceiver();
-
-			receiverThread = new Thread(receiver);
-
-			receiverThread.start();
-
-			int port = receiver.getPort();
-
-			Configuration config = new Configuration();
-			config.setString(MetricOptions.REPORTERS_LIST, "test");
-			config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test." + ConfigConstants.METRICS_REPORTER_CLASS_SUFFIX, StatsDReporter.class.getName());
-			config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test." + ConfigConstants.METRICS_REPORTER_INTERVAL_SUFFIX, "1 SECONDS");
-			config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test.host", "localhost");
-			config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test.port", "" + port);
-
-			registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(config));
-
-			TaskManagerMetricGroup metricGroup = new TaskManagerMetricGroup(registry, "localhost", "tmId");
-
-			LatencyGauge latency = new LatencyGauge();
-
-			metricGroup.gauge(latencyName, latency);
-
-			receiver.waitUntilNumLines(6, timeout);
-
-			Set<String> lines = receiver.getLines();
-
-			String prefix = metricGroup.getMetricIdentifier(latencyName);
-
-			Set<String> expectedLines = new HashSet<>();
-
-			expectedLines.add(prefix + ".min:1.0|g");
-			expectedLines.add(prefix + ".mean:51.0|g");
-			expectedLines.add(prefix + ".p50:50.0|g");
-			expectedLines.add(prefix + ".p95:95.0|g");
-			expectedLines.add(prefix + ".p99:99.0|g");
-			expectedLines.add(prefix + ".max:999.0|g");
-
-			assertEquals(expectedLines, lines);
-
-		} finally {
-			if (registry != null) {
-				registry.shutdown();
-			}
-
-			if (receiver != null) {
-				receiver.stop();
-			}
-
-			if (receiverThread != null) {
-				receiverThread.join(joinTimeout);
-			}
-		}
-	}
-
 
 	/**
 	 * Tests that histograms are properly reported via the StatsD reporter.
@@ -559,26 +460,6 @@ public class StatsDReporterTest extends TestLogger {
 
 		public Map<Counter, TaggedMetric> getCounters() {
 			return counters;
-		}
-	}
-
-	/**
-	 * Imitate a LatencyGauge.
-	 * eg: {LatencySourceDescriptor{vertexID=1, subtaskIndex=-1}={p99=79.0, p50=79.0, min=79.0, max=79.0, p95=79.0, mean=79.0}}
-	 */
-	public static class LatencyGauge implements Gauge<Map<String, HashMap<String, Double>>> {
-		@Override
-		public Map<String, HashMap<String, Double>> getValue() {
-			Map<String, HashMap<String, Double>> ret = new HashMap<>();
-			HashMap<String, Double> v = new HashMap<>();
-			v.put("max", 999.);
-			v.put("mean", 51.);
-			v.put("min", 1.);
-			v.put("p50", 50.);
-			v.put("p95", 95.);
-			v.put("p99", 99.);
-			ret.put("{LatencySourceDescriptor{vertexID=1, subtaskIndex=-1}", v);
-			return ret;
 		}
 	}
 

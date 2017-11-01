@@ -27,7 +27,7 @@ import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
-import org.apache.flink.metrics.reporter.AbstractReporterV2;
+import org.apache.flink.metrics.reporter.AbstractReporterWithMetaData;
 import org.apache.flink.metrics.reporter.Scheduled;
 import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
 import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
@@ -55,24 +55,7 @@ import java.util.regex.Pattern;
  * <p>Ported since it was not present in maven central.
  */
 @PublicEvolving
-public class StatsDReporter extends AbstractReporterV2<StatsDReporter.TaggedMetric> implements Scheduled {
-
-	class TaggedMetric {
-		private final String name;
-		private final String tags;
-		TaggedMetric(String name, String tags) {
-			this.name = name;
-			this.tags = tags;
-		}
-
-		String getName() {
-			return name;
-		}
-
-		String getTags() {
-			return tags;
-		}
-	}
+public class StatsDReporter extends AbstractReporterWithMetaData<StatsDReporter.TaggedMetric> implements Scheduled {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StatsDReporter.class);
 
@@ -209,20 +192,7 @@ public class StatsDReporter extends AbstractReporterV2<StatsDReporter.TaggedMetr
 		if (value == null) {
 			return;
 		}
-		if (value instanceof Map && gauge.getClass().getSimpleName().equals("LatencyGauge")) {
-			// LatencyGauge is a Map<String, HashMap<String,Double>>
-			for (Object m: ((Map<?, ?>) value).values()) {
-				if (m instanceof Map) {
-					for (Map.Entry<?, ?> entry: ((Map<?, ?>) m).entrySet()) {
-						String k = String.valueOf(entry.getKey());
-						String v = String.valueOf(entry.getValue());
-						send(prefix(metric.getName(), k), v, metric.getTags());
-					}
-				}
-			}
-		} else {
-			send(metric.getName(), value.toString(), metric.getTags());
-		}
+		send(metric.getName(), value.toString(), metric.getTags());
 	}
 
 	private void reportHistogram(final TaggedMetric metric, final Histogram histogram) {
@@ -392,5 +362,22 @@ public class StatsDReporter extends AbstractReporterV2<StatsDReporter.TaggedMetr
 			limit = 8;
 		}
 		return filterNCharacters(input, limit);
+	}
+
+	class TaggedMetric {
+		private final String name;
+		private final String tags;
+		private TaggedMetric(String name, String tags) {
+			this.name = name;
+			this.tags = tags;
+		}
+
+		String getName() {
+			return name;
+		}
+
+		String getTags() {
+			return tags;
+		}
 	}
 }

@@ -35,7 +35,7 @@ import java.util.Map;
 /**
  * Base interface for custom metric reporters.
  */
-public abstract class AbstractReporterV2<T> implements MetricReporter, CharacterFilter {
+public abstract class AbstractReporterWithMetaData<T> implements MetricReporter, CharacterFilter {
 	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	protected final Map<Gauge<?>, T> gauges = new HashMap<>();

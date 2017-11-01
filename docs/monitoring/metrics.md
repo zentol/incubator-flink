@@ -469,8 +469,6 @@ and a short hash signature of the original name.  For example, you might see `Tr
 Trigger Window name.  Readable names can be provided by your application where needed, this compression strategy is more for
 dealing with long and complex default names.
 
-This reporter handles latency metrics, in addition to the usual types.
-
 Parameters:
 
 - `host` - the StatsD server host
