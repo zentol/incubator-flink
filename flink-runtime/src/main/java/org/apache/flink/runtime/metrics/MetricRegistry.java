@@ -22,10 +22,12 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.View;
+import org.apache.flink.metrics.reporter.DelimiterProvider;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.reporter.Scheduled;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
@@ -139,10 +141,22 @@ public class MetricRegistry {
 					}
 					reporters.add(reporterInstance);
 
-					String delimiterForReporter = reporterConfig.getString(ConfigConstants.METRICS_REPORTER_SCOPE_DELIMITER, String.valueOf(globalDelimiter));
-					if (delimiterForReporter.length() != 1) {
-						LOG.warn("Failed to parse delimiter '{}' for reporter '{}', using global delimiter '{}'.", delimiterForReporter, namedReporter, globalDelimiter);
-						delimiterForReporter = String.valueOf(globalDelimiter);
+					String delimiterForReporter = reporterConfig.getString(ConfigConstants.METRICS_REPORTER_SCOPE_DELIMITER, null);
+					if (delimiterForReporter == null) {
+						char delimiter;
+						if (reporterInstance instanceof DelimiterProvider) {
+							delimiter = ((DelimiterProvider) reporterInstance).getDelimiter();
+							LOG.debug("No delimiter configured for reporter {}, default to reporter-provided delimiter {}.", namedReporter, delimiter);
+						} else {
+							delimiter = globalDelimiter;
+							LOG.debug("No delimiter configured for reporter {}, defaulting to global delimiter {}.", namedReporter, globalDelimiter);
+						}
+						delimiterForReporter = String.valueOf(delimiter);
+					} else {
+						if (delimiterForReporter.length() != 1) {
+							LOG.warn("Failed to parse delimiter '{}' for reporter '{}', using global delimiter '{}'.", delimiterForReporter, namedReporter, globalDelimiter);
+							delimiterForReporter = String.valueOf(globalDelimiter);
+						}
 					}
 					this.delimiters.add(delimiterForReporter.charAt(0));
 				}

@@ -28,6 +28,7 @@ import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.metrics.reporter.DelimiterProvider;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
 import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
@@ -56,7 +57,7 @@ import java.util.regex.Pattern;
  * {@link MetricReporter} that exports {@link Metric Metrics} via Prometheus.
  */
 @PublicEvolving
-public class PrometheusReporter implements MetricReporter {
+public class PrometheusReporter implements MetricReporter, DelimiterProvider {
 	private static final Logger LOG = LoggerFactory.getLogger(PrometheusReporter.class);
 
 	static final String ARG_PORT = "port";
@@ -88,6 +89,11 @@ public class PrometheusReporter implements MetricReporter {
 		// https://prometheus.io/docs/instrumenting/writing_exporters/
 		// Only [a-zA-Z0-9:_] are valid in metric names, any other characters should be sanitized to an underscore.
 		return UNALLOWED_CHAR_PATTERN.matcher(input).replaceAll("_");
+	}
+
+	@Override
+	public char getDelimiter() {
+		return SCOPE_SEPARATOR;
 	}
 
 	@Override
@@ -214,7 +220,7 @@ public class PrometheusReporter implements MetricReporter {
 
 	@SuppressWarnings("unchecked")
 	private static String getLogicalScope(MetricGroup group) {
-		return ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER, SCOPE_SEPARATOR);
+		return ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER);
 	}
 
 	@VisibleForTesting

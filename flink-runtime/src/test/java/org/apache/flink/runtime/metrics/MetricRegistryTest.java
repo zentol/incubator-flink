@@ -26,9 +26,11 @@ import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.SimpleCounter;
+import org.apache.flink.metrics.reporter.DelimiterProvider;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.reporter.Scheduled;
 import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.metrics.groups.MetricGroupTest;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.metrics.scope.ScopeFormats;
@@ -491,6 +493,40 @@ public class MetricRegistryTest extends TestLogger {
 		@Override
 		public void notifyOfRemovedMetric(Metric metric, String metricName, MetricGroup group) {
 			throw new RuntimeException();
+		}
+	}
+
+	@Test
+	public void testDelimiterOverride() throws Exception {
+		Configuration config = new Configuration();
+		config.setString(MetricOptions.REPORTERS_LIST, "test");
+		config.setString(MetricOptions.SCOPE_NAMING_TM, "<tm_id>");
+		config.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test." + ConfigConstants.METRICS_REPORTER_CLASS_SUFFIX, DelimiterOverridingReporter.class.getName());
+
+		MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(config));
+
+		String taskManagerId = ResourceID.generate().toString();
+		TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", taskManagerId);
+		
+		Counter metric = new SimpleCounter();
+		registry.register(metric, "counter", tm);
+
+		assertEquals(taskManagerId + "-counter", DelimiterOverridingReporter.reportedName);
+
+		registry.shutdown();
+	}
+
+	protected static class DelimiterOverridingReporter extends TestReporter implements DelimiterProvider {
+		public static String reportedName;
+
+		@Override
+		public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
+			reportedName = group.getMetricIdentifier(metricName);
+		}
+
+		@Override
+		public char getDelimiter() {
+			return '-';
 		}
 	}
 }
