@@ -50,14 +50,14 @@ public class JobAccumulatorsInfo implements ResponseBody {
 	private List<UserTaskAccumulator> userAccumulators;
 
 	@JsonProperty(FIELD_NAME_SERIALIZED_USER_TASK_ACCUMULATORS)
-	@JsonSerialize(contentUsing = SerializedValueSerializer.class)
+	@JsonSerialize(contentConverter = SerializedValueSerializer.class)
 	private Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators;
 
 	@JsonCreator
 	public JobAccumulatorsInfo(
 			@JsonProperty(FIELD_NAME_JOB_ACCUMULATORS) List<JobAccumulator> jobAccumulators,
 			@JsonProperty(FIELD_NAME_USER_TASK_ACCUMULATORS) List<UserTaskAccumulator> userAccumulators,
-			@JsonDeserialize(contentUsing = SerializedValueDeserializer.class) @JsonProperty(FIELD_NAME_SERIALIZED_USER_TASK_ACCUMULATORS) Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators) {
+			@JsonDeserialize(contentConverter = SerializedValueDeserializer.class) @JsonProperty(FIELD_NAME_SERIALIZED_USER_TASK_ACCUMULATORS) Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators) {
 		this.jobAccumulators = Preconditions.checkNotNull(jobAccumulators);
 		this.userAccumulators = Preconditions.checkNotNull(userAccumulators);
 		this.serializedUserAccumulators = Preconditions.checkNotNull(serializedUserAccumulators);

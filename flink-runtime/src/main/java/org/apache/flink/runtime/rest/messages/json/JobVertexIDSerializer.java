@@ -20,25 +20,15 @@ package org.apache.flink.runtime.rest.messages.json;
 
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonGenerator;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializerProvider;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import java.io.IOException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.util.StdConverter;
 
 /**
  * Jackson serializer for {@link JobVertexID}.
  */
-public class JobVertexIDSerializer extends StdSerializer<JobVertexID> {
-
-	private static final long serialVersionUID = -2339350570828548335L;
-
-	public JobVertexIDSerializer() {
-		super(JobVertexID.class);
-	}
+public class JobVertexIDSerializer extends StdConverter<JobVertexID, String> {
 
 	@Override
-	public void serialize(JobVertexID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(value.toString());
+	public String convert(JobVertexID jobVertexID) {
+		return jobVertexID.toString();
 	}
 }

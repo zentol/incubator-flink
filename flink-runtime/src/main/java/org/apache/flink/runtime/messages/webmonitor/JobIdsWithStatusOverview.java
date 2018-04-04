@@ -118,7 +118,7 @@ public class JobIdsWithStatusOverview implements ResponseBody, InfoMessage {
 		public static final String FIELD_NAME_JOB_STATUS = "status";
 
 		@JsonProperty(FIELD_NAME_JOB_ID)
-		@JsonSerialize(using = JobIDSerializer.class)
+		@JsonSerialize(converter = JobIDSerializer.class)
 		private final JobID jobId;
 
 		@JsonProperty(FIELD_NAME_JOB_STATUS)
@@ -126,7 +126,7 @@ public class JobIdsWithStatusOverview implements ResponseBody, InfoMessage {
 
 		@JsonCreator
 		public JobIdWithStatus(
-			@JsonProperty(FIELD_NAME_JOB_ID) @JsonDeserialize(using = JobIDDeserializer.class) JobID jobId,
+			@JsonProperty(FIELD_NAME_JOB_ID) @JsonDeserialize(converter = JobIDDeserializer.class) JobID jobId,
 			@JsonProperty(FIELD_NAME_JOB_STATUS) JobStatus jobStatus) {
 			this.jobId = Preconditions.checkNotNull(jobId);
 			this.jobStatus = Preconditions.checkNotNull(jobStatus);

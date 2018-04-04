@@ -46,7 +46,7 @@ public class JobVertexTaskManagersInfo implements ResponseBody {
 	public static final String VERTEX_TASK_FIELD_TASK_MANAGERS = "taskmanagers";
 
 	@JsonProperty(VERTEX_TASK_FIELD_ID)
-	@JsonSerialize(using = JobVertexIDSerializer.class)
+	@JsonSerialize(converter = JobVertexIDSerializer.class)
 	private final JobVertexID jobVertexID;
 
 	@JsonProperty(VERTEX_TASK_FIELD_NAME)
@@ -60,7 +60,7 @@ public class JobVertexTaskManagersInfo implements ResponseBody {
 
 	@JsonCreator
 	public JobVertexTaskManagersInfo(
-			@JsonDeserialize(using = JobVertexIDDeserializer.class) @JsonProperty(VERTEX_TASK_FIELD_ID) JobVertexID jobVertexID,
+			@JsonDeserialize(converter = JobVertexIDDeserializer.class) @JsonProperty(VERTEX_TASK_FIELD_ID) JobVertexID jobVertexID,
 			@JsonProperty(VERTEX_TASK_FIELD_NAME) String name,
 			@JsonProperty(VERTEX_TASK_FIELD_NOW) long now,
 			@JsonProperty(VERTEX_TASK_FIELD_TASK_MANAGERS) Collection<TaskManagersInfo> taskManagerInfos) {

@@ -47,7 +47,7 @@ public class JobVertexDetailsInfo implements ResponseBody {
 	public static final String FIELD_NAME_SUBTASKS = "subtasks";
 
 	@JsonProperty(FIELD_NAME_VERTEX_ID)
-	@JsonSerialize(using = JobVertexIDSerializer.class)
+	@JsonSerialize(converter = JobVertexIDSerializer.class)
 	private final JobVertexID id;
 
 	@JsonProperty(FIELD_NAME_VERTEX_NAME)
@@ -64,7 +64,7 @@ public class JobVertexDetailsInfo implements ResponseBody {
 
 	@JsonCreator
 	public JobVertexDetailsInfo(
-			@JsonDeserialize(using = JobVertexIDDeserializer.class) @JsonProperty(FIELD_NAME_VERTEX_ID) JobVertexID id,
+			@JsonDeserialize(converter = JobVertexIDDeserializer.class) @JsonProperty(FIELD_NAME_VERTEX_ID) JobVertexID id,
 			@JsonProperty(FIELD_NAME_VERTEX_NAME) String name,
 			@JsonProperty(FIELD_NAME_PARALLELISM) int parallelism,
 			@JsonProperty(FIELD_NAME_NOW) long now,

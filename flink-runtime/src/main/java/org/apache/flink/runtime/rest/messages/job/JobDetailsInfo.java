@@ -73,7 +73,7 @@ public class JobDetailsInfo implements ResponseBody {
 	public static final String FIELD_NAME_JSON_PLAN = "plan";
 
 	@JsonProperty(FIELD_NAME_JOB_ID)
-	@JsonSerialize(using = JobIDSerializer.class)
+	@JsonSerialize(converter = JobIDSerializer.class)
 	private final JobID jobId;
 
 	@JsonProperty(FIELD_NAME_JOB_NAME)
@@ -112,7 +112,7 @@ public class JobDetailsInfo implements ResponseBody {
 
 	@JsonCreator
 	public JobDetailsInfo(
-			@JsonDeserialize(using = JobIDDeserializer.class) @JsonProperty(FIELD_NAME_JOB_ID) JobID jobId,
+			@JsonDeserialize(converter = JobIDDeserializer.class) @JsonProperty(FIELD_NAME_JOB_ID) JobID jobId,
 			@JsonProperty(FIELD_NAME_JOB_NAME) String name,
 			@JsonProperty(FIELD_NAME_IS_STOPPABLE) boolean isStoppable,
 			@JsonProperty(FIELD_NAME_JOB_STATUS) JobStatus jobStatus,
@@ -254,7 +254,7 @@ public class JobDetailsInfo implements ResponseBody {
 		public static final String FIELD_NAME_JOB_VERTEX_METRICS = "metrics";
 
 		@JsonProperty(FIELD_NAME_JOB_VERTEX_ID)
-		@JsonSerialize(using = JobVertexIDSerializer.class)
+		@JsonSerialize(converter = JobVertexIDSerializer.class)
 		private final JobVertexID jobVertexID;
 
 		@JsonProperty(FIELD_NAME_JOB_VERTEX_NAME)
@@ -283,7 +283,7 @@ public class JobDetailsInfo implements ResponseBody {
 
 		@JsonCreator
 		public JobVertexDetailsInfo(
-				@JsonDeserialize(using = JobVertexIDDeserializer.class) @JsonProperty(FIELD_NAME_JOB_VERTEX_ID) JobVertexID jobVertexID,
+				@JsonDeserialize(converter = JobVertexIDDeserializer.class) @JsonProperty(FIELD_NAME_JOB_VERTEX_ID) JobVertexID jobVertexID,
 				@JsonProperty(FIELD_NAME_JOB_VERTEX_NAME) String name,
 				@JsonProperty(FIELD_NAME_PARALLELISM) int parallelism,
 				@JsonProperty(FIELD_NAME_JOB_VERTEX_STATE) ExecutionState executionState,

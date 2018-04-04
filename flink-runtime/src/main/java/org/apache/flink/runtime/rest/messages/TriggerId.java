@@ -21,22 +21,15 @@ package org.apache.flink.runtime.rest.messages;
 import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.StringUtils;
 
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonGenerator;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonParser;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationContext;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializerProvider;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import java.io.IOException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.util.StdConverter;
 
 /**
  * Identifies a savepoint trigger request.
  */
-@JsonSerialize(using = TriggerId.TriggerIdSerializer.class)
-@JsonDeserialize(using = TriggerId.TriggerIdDeserializer.class)
+@JsonSerialize(converter = TriggerId.TriggerIdSerializer.class)
+@JsonDeserialize(converter = TriggerId.TriggerIdDeserializer.class)
 public final class TriggerId extends AbstractID {
 
 	private static final long serialVersionUID = 1L;
@@ -55,39 +48,22 @@ public final class TriggerId extends AbstractID {
 	/**
 	 * JSON serializer for {@link TriggerId}.
 	 */
-	public static class TriggerIdSerializer extends StdSerializer<TriggerId> {
-
-		private static final long serialVersionUID = 1L;
-
-		protected TriggerIdSerializer() {
-			super(TriggerId.class);
-		}
+	public static class TriggerIdSerializer extends StdConverter<TriggerId, String> {
 
 		@Override
-		public void serialize(
-				final TriggerId value,
-				final JsonGenerator gen,
-				final SerializerProvider provider) throws IOException {
-			gen.writeString(value.toString());
+		public String convert(TriggerId triggerId) {
+			return triggerId.toString();
 		}
 	}
 
 	/**
 	 * JSON deserializer for {@link TriggerId}.
 	 */
-	public static class TriggerIdDeserializer extends StdDeserializer<TriggerId> {
-
-		private static final long serialVersionUID = 1L;
-
-		protected TriggerIdDeserializer() {
-			super(TriggerId.class);
-		}
+	public static class TriggerIdDeserializer extends StdConverter<String, TriggerId> {
 
 		@Override
-		public TriggerId deserialize(
-				final JsonParser p,
-				final DeserializationContext ctxt) throws IOException {
-			return TriggerId.fromHexString(p.getValueAsString());
+		public TriggerId convert(String s) {
+			return TriggerId.fromHexString(s);
 		}
 	}
 }

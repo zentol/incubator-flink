@@ -20,26 +20,15 @@ package org.apache.flink.runtime.rest.messages.json;
 
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonParser;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationContext;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-
-import java.io.IOException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.util.StdConverter;
 
 /**
  * Json deserializer for {@link ResourceID}.
  */
-public class ResourceIDDeserializer extends StdDeserializer<ResourceID> {
-
-	private static final long serialVersionUID = -9058463293913469849L;
-
-	protected ResourceIDDeserializer() {
-		super(ResourceID.class);
-	}
+public class ResourceIDDeserializer extends StdConverter<String, ResourceID> {
 
 	@Override
-	public ResourceID deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-		return new ResourceID(p.getValueAsString());
+	public ResourceID convert(String s) {
+		return new ResourceID(s);
 	}
-
 }

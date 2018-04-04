@@ -21,26 +21,15 @@ package org.apache.flink.runtime.rest.messages.json;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.instance.InstanceID;
 
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonGenerator;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializerProvider;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import java.io.IOException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.util.StdConverter;
 
 /**
  * Json serializer for {@link InstanceID}.
  */
-public class ResourceIDSerializer extends StdSerializer<ResourceID> {
-
-	private static final long serialVersionUID = 5798852092159615938L;
-
-	protected ResourceIDSerializer() {
-		super(ResourceID.class);
-	}
+public class ResourceIDSerializer extends StdConverter<ResourceID, String> {
 
 	@Override
-	public void serialize(ResourceID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(value.getResourceIdString());
+	public String convert(ResourceID resourceID) {
+		return resourceID.getResourceIdString();
 	}
-
 }

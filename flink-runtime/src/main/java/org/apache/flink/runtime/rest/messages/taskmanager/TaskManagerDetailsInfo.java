@@ -45,7 +45,7 @@ public class TaskManagerDetailsInfo extends TaskManagerInfo {
 
 	@JsonCreator
 	public TaskManagerDetailsInfo(
-			@JsonDeserialize(using = ResourceIDDeserializer.class) @JsonProperty(FIELD_NAME_RESOURCE_ID) ResourceID resourceId,
+			@JsonDeserialize(converter = ResourceIDDeserializer.class) @JsonProperty(FIELD_NAME_RESOURCE_ID) ResourceID resourceId,
 			@JsonProperty(FIELD_NAME_ADDRESS) String address,
 			@JsonProperty(FIELD_NAME_DATA_PORT) int dataPort,
 			@JsonProperty(FIELD_NAME_JMX_PORT) int jmxPort,

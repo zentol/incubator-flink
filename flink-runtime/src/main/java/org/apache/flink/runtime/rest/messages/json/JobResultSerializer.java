@@ -24,11 +24,8 @@ import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.SerializedValue;
 
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonGenerator;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JavaType;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializerProvider;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.type.TypeFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -54,17 +51,13 @@ public class JobResultSerializer extends StdSerializer<JobResult> {
 
 	private final JobIDSerializer jobIdSerializer = new JobIDSerializer();
 
-	private final SerializedValueSerializer serializedValueSerializer;
+	private final SerializedValueSerializer<OptionalFailure<Object>> serializedValueSerializer;
 
 	private final SerializedThrowableSerializer serializedThrowableSerializer = new SerializedThrowableSerializer();
 
 	public JobResultSerializer() {
 		super(JobResult.class);
-
-		final JavaType objectSerializedValueType = TypeFactory.defaultInstance()
-			.constructType(new TypeReference<SerializedValue<Object>>() {
-			});
-		serializedValueSerializer = new SerializedValueSerializer(objectSerializedValueType);
+		serializedValueSerializer = new SerializedValueSerializer<>();
 	}
 
 	@Override
@@ -76,7 +69,7 @@ public class JobResultSerializer extends StdSerializer<JobResult> {
 		gen.writeStartObject();
 
 		gen.writeFieldName(FIELD_NAME_JOB_ID);
-		jobIdSerializer.serialize(result.getJobId(), gen, provider);
+		gen.writeString(jobIdSerializer.convert(result.getJobId()));
 
 		gen.writeFieldName(FIELD_NAME_APPLICATION_STATUS);
 		gen.writeString(result.getApplicationStatus().name());
@@ -89,7 +82,7 @@ public class JobResultSerializer extends StdSerializer<JobResult> {
 			final SerializedValue<OptionalFailure<Object>> value = nameValue.getValue();
 
 			gen.writeFieldName(name);
-			serializedValueSerializer.serialize(value, gen, provider);
+			gen.writeBinary(serializedValueSerializer.convert(value));
 		}
 		gen.writeEndObject();
 
