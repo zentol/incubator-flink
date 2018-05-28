@@ -56,6 +56,16 @@ under the License.
 			<version>${hadoop.version}</version>
 			<exclusions>
 				<exclusion>
+					<!-- use version from avro instead -->
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-core-asl</artifactId>
+				</exclusion>
+				<exclusion>
+					<!-- use version from avro instead -->
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-mapper-asl</artifactId>
+				</exclusion>
+				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
 				</exclusion>
@@ -180,6 +190,16 @@ under the License.
 			<artifactId>hadoop-hdfs</artifactId>
 			<version>${hadoop.version}</version>
 			<exclusions>
+				<exclusion>
+					<!-- use version from avro instead -->
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-core-asl</artifactId>
+				</exclusion>
+				<exclusion>
+					<!-- use version from avro instead -->
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-mapper-asl</artifactId>
+				</exclusion>
 				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
@@ -540,6 +560,11 @@ under the License.
 			<artifactId>hadoop-yarn-common</artifactId>
 			<version>${hadoop.version}</version>
 			<exclusions>
+				<exclusion>
+					<!-- use version from avro instead -->
+					<groupId>org.codehaus.jackson</groupId>
+					<artifactId>jackson-mapper-asl</artifactId>
+				</exclusion>
 				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>

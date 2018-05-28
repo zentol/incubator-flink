@@ -151,7 +151,15 @@ under the License.
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>${guava.version}</version>
+			<version>18.0</version>
+		</dependency>
+
+		<dependency>
+			<!-- dependency convergence -->
+			<!-- cassandra-all exposes both 0.9.1 and 0.9.2 -->
+			<groupId>org.apache.thrift</groupId>
+			<artifactId>libthrift</artifactId>
+			<version>0.9.2</version>
 		</dependency>
 
 		<dependency>
@@ -194,6 +202,16 @@ under the License.
 					<groupId>ch.qos.logback</groupId>
 					<artifactId>logback-classic</artifactId>
 				</exclusion>
+				<exclusion>
+					<!-- cassandra-all exposes both 0.9.1 and 0.9.2 -->
+					<groupId>org.apache.thrift</groupId>
+					<artifactId>libthrift</artifactId>
+				</exclusion>
+				<exclusion>
+					<!-- use version from cassandra-driver-core instead-->
+					<groupId>io.dropwizard.metrics</groupId>
+					<artifactId>metrics-core</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -203,4 +221,8 @@ under the License.
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies></dependencies>
+	</dependencyManagement>
 </project>

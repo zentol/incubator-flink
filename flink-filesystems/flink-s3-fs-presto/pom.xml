@@ -37,6 +37,16 @@ under the License.
 		<presto.version>0.185</presto.version>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.airlift</groupId>
+				<artifactId>slice</artifactId>
+				<version>0.31</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
 	<dependencies>
 
 		<!-- Flink core -->
