@@ -39,6 +39,11 @@ under the License.
 			<version>${project.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
 		<!-- Hadoop as an optional dependency, so we can hard depend on this without -->
 		<!-- pulling in Hadoop by default -->
 
@@ -65,13 +70,6 @@ under the License.
 			<version>${hadoop.version}</version>
 			<scope>test</scope>
 			<type>test-jar</type>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-common</artifactId>
-			<scope>test</scope>
-			<type>test-jar</type>
-			<version>${hadoop.version}</version><!--$NO-MVN-MAN-VER$-->
 		</dependency>
 
 	</dependencies>

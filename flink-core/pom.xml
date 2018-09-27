@@ -88,8 +88,8 @@ under the License.
 		</dependency>
 
 		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-core</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -132,6 +132,26 @@ under the License.
 				<configuration>
 					<suppressionsLocation combine.self="override">/tools/maven/suppressions-core.xml</suppressionsLocation>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>analyze</id>
+						<configuration>
+							<ignoredUsedUndeclaredDependencies combine.children="append">
+								<ignoredUsedUndeclaredDependency>org.objenesis:objenesis</ignoredUsedUndeclaredDependency>
+								<ignoredUsedUndeclaredDependency>com.esotericsoftware.minlog:minlog</ignoredUsedUndeclaredDependency>
+							</ignoredUsedUndeclaredDependencies>
+							<ignoredUnusedDeclaredDependencies combine.children="append">
+								<ignoredUnusedDeclaredDependency>org.joda:joda-convert</ignoredUnusedDeclaredDependency>
+								<ignoredUnusedDeclaredDependency>org.projectlombok:lombok</ignoredUnusedDeclaredDependency>
+							</ignoredUnusedDeclaredDependencies>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 			<!-- activate API compatibility checks -->

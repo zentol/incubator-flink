@@ -370,6 +370,12 @@ under the License.
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-test-utils-junit</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-core</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- end test dependencies -->
 	</dependencies>
 
@@ -472,6 +478,22 @@ under the License.
 						</goals>
 						<configuration>
 							<skip>true</skip>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>analyze</id>
+						<configuration>
+							<ignoredUnusedDeclaredDependencies combine.children="append">
+								<!-- We only bundle all dependencies -->
+								<ignoredUnusedDeclaredDependency>org.apache.flink:*</ignoredUnusedDeclaredDependency>
+							</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
 				</executions>

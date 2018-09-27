@@ -65,6 +65,12 @@ under the License.
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+		  <groupId>org.apache.hadoop</groupId>
+		  <artifactId>hadoop-common</artifactId>
+		  <version>2.7.0-mapr-1703</version>
+		  <optional>true</optional>
+		</dependency>
 	</dependencies>
 
 </project>
