@@ -66,6 +66,11 @@ under the License.
 			<artifactId>flink-shaded-jackson</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>
