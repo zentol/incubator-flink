@@ -89,6 +89,7 @@ import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.runtime.util.ExecutorThreadFactory;
 import org.apache.flink.runtime.webmonitor.TestingDispatcherGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.util.ConfigurationException;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OptionalFailure;
@@ -154,8 +155,6 @@ public class RestClusterClientTest extends TestLogger {
 
 	private RestServerEndpointConfiguration restServerEndpointConfiguration;
 
-	private RestClient restClient;
-
 	private volatile FailHttpRequestPredicate failHttpRequest = FailHttpRequestPredicate.never();
 
 	private ExecutorService executor;
@@ -181,29 +180,13 @@ public class RestClusterClientTest extends TestLogger {
 		mockGatewayRetriever = () -> CompletableFuture.completedFuture(mockRestfulGateway);
 
 		executor = Executors.newSingleThreadExecutor(new ExecutorThreadFactory(RestClusterClientTest.class.getSimpleName()));
-		restClient = new RestClient(RestClientConfiguration.fromConfiguration(restConfig), executor) {
-			@Override
-			public <M extends MessageHeaders<R, P, U>, U extends MessageParameters, R extends RequestBody, P extends ResponseBody> CompletableFuture<P>
-			sendRequest(
-					final String targetAddress,
-					final int targetPort,
-					final M messageHeaders,
-					final U messageParameters,
-					final R request) throws IOException {
-				if (failHttpRequest.test(messageHeaders, messageParameters, request)) {
-					return FutureUtils.completedExceptionally(new IOException("expected"));
-				} else {
-					return super.sendRequest(targetAddress, targetPort, messageHeaders, messageParameters, request);
-				}
-			}
-		};
 
 		jobGraph = new JobGraph("testjob");
 		jobId = jobGraph.getJobID();
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		if (executor != null) {
 			executor.shutdown();
 		}
@@ -214,10 +197,30 @@ public class RestClusterClientTest extends TestLogger {
 		clientConfig.setInteger(RestOptions.PORT, port);
 		return new RestClusterClient<>(
 			clientConfig,
-			restClient,
+			createRestClient(),
 			StandaloneClusterId.getInstance(),
 			(attempt) -> 0,
 			null);
+	}
+
+	@Nonnull
+	private RestClient createRestClient() throws ConfigurationException {
+		return new RestClient(RestClientConfiguration.fromConfiguration(restConfig), executor) {
+			@Override
+			public <M extends MessageHeaders<R, P, U>, U extends MessageParameters, R extends RequestBody, P extends ResponseBody> CompletableFuture<P>
+			sendRequest(
+				final String targetAddress,
+				final int targetPort,
+				final M messageHeaders,
+				final U messageParameters,
+				final R request) throws IOException {
+				if (failHttpRequest.test(messageHeaders, messageParameters, request)) {
+					return FutureUtils.completedExceptionally(new IOException("expected"));
+				} else {
+					return super.sendRequest(targetAddress, targetPort, messageHeaders, messageParameters, request);
+				}
+			}
+		};
 	}
 
 	@Test
