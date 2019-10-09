@@ -18,14 +18,12 @@
 
 package org.apache.flink.runtime.metrics.groups;
 
-import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Histogram;
 import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.MetricGroup;
-
-import java.util.Map;
+import org.apache.flink.metrics.MetricScope;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -113,17 +111,7 @@ public class ProxyMetricGroup<P extends MetricGroup> implements MetricGroup {
 	}
 
 	@Override
-	public Map<String, String> getAllVariables() {
-		return parentMetricGroup.getAllVariables();
-	}
-
-	@Override
-	public String getMetricIdentifier(String metricName) {
-		return parentMetricGroup.getMetricIdentifier(metricName);
-	}
-
-	@Override
-	public String getMetricIdentifier(String metricName, CharacterFilter filter) {
-		return parentMetricGroup.getMetricIdentifier(metricName, filter);
+	public MetricScope getScope() {
+		return parentMetricGroup.getScope();
 	}
 }

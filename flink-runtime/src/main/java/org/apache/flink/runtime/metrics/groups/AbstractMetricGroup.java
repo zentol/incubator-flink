@@ -29,16 +29,14 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
-import org.apache.flink.runtime.metrics.scope.ScopeFormat;
+import org.apache.flink.runtime.metrics.scope.InternalMetricScope;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -72,9 +70,6 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	/** The parent group containing this group. */
 	protected final A parent;
 
-	/** The map containing all variables and their associated values, lazily computed. */
-	protected volatile Map<String, String>[] variables;
-
 	/** The registry that this metrics group belongs to. */
 	protected final MetricRegistry registry;
 
@@ -83,14 +78,6 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 
 	/** All metric subgroups of this group. */
 	private final Map<String, AbstractMetricGroup> groups = new HashMap<>();
-
-	/** The metrics scope represented by this group.
-	 *  For example ["host-7", "taskmanager-2", "window_word_count", "my-mapper" ]. */
-	private final String[] scopeComponents;
-
-	/** Array containing the metrics scope represented by this group for each reporter, as a concatenated string, lazily computed.
-	 * For example: "host-7.taskmanager-2.window_word_count.my-mapper" */
-	private final String[] scopeStrings;
 
 	/** The logical metrics scope represented by this group for each reporter, as a concatenated string, lazily computed.
 	 * For example: "taskmanager.job.task" */
@@ -102,52 +89,41 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	/** Flag indicating whether this group has been closed. */
 	private volatile boolean closed;
 
+	private final InternalMetricScope scope;
+
 	// ------------------------------------------------------------------------
 
 	@SuppressWarnings("unchecked")
 	public AbstractMetricGroup(MetricRegistry registry, String[] scope, A parent) {
 		this.registry = checkNotNull(registry);
-		this.scopeComponents = checkNotNull(scope);
 		this.parent = parent;
-		this.scopeStrings = new String[registry.getNumberReporters()];
 		this.logicalScopeStrings = new String[registry.getNumberReporters()];
-		this.variables = new Map[registry.getNumberReporters() + 1];
+		this.scope = new InternalMetricScope(
+			registry,
+			scope,
+			this::internalGetAllVariables
+		);
+	}
+
+	@Override
+	public InternalMetricScope getScope() {
+		return scope;
 	}
 
 	@Override
 	public Map<String, String> getAllVariables() {
-		return internalGetAllVariables(0, Collections.emptySet());
+		return scope.getAllVariables();
 	}
 
-	public Map<String, String> getAllVariables(int reporterIndex, Set<String> excludedVariables) {
-		// offset cache location to account for general cache at position 0
-		reporterIndex += 1;
-		if (reporterIndex < 0 || reporterIndex >= logicalScopeStrings.length) {
-			reporterIndex = 0;
+	private Map<String, String> internalGetAllVariables() {
+		Map<String, String> tmpVariables = new HashMap<>();
+
+		putVariables(tmpVariables);
+
+		if (parent != null) { // not true for Job-/TaskManagerMetricGroup
+			tmpVariables.putAll(parent.getScope().getAllVariables());
 		}
-		// if no variables are excluded (which is the default!) we re-use the general variables map to save space
-		return internalGetAllVariables(excludedVariables.isEmpty() ? 0 : reporterIndex, excludedVariables);
-	}
-
-	private Map<String, String> internalGetAllVariables(int cachingIndex, Set<String> excludedVariables) {
-		if (variables[cachingIndex] == null) {
-			Map<String, String> tmpVariables = new HashMap<>();
-
-			putVariables(tmpVariables);
-			excludedVariables.forEach(tmpVariables::remove);
-
-			if (parent != null) { // not true for Job-/TaskManagerMetricGroup
-				// explicitly call getAllVariables() to prevent cascading caching operations upstream, to prevent
-				// caching in groups which are never directly passed to reporters
-				for (Map.Entry<String, String> entry : parent.getAllVariables().entrySet()) {
-					if (!excludedVariables.contains(entry.getKey())) {
-						tmpVariables.put(entry.getKey(), entry.getValue());
-					}
-				}
-			}
-			variables[cachingIndex]  = tmpVariables;
-		}
-		return variables[cachingIndex];
+		return tmpVariables;
 	}
 
 	/**
@@ -223,7 +199,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	 */
 	@Override
 	public String[] getScopeComponents() {
-		return scopeComponents;
+		return scope.geScopeComponents();
 	}
 
 	/**
@@ -283,28 +259,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	 * @return fully qualified metric name
 	 */
 	public String getMetricIdentifier(String metricName, CharacterFilter filter, int reporterIndex, char delimiter) {
-		if (scopeStrings.length == 0 || (reporterIndex < 0 || reporterIndex >= scopeStrings.length)) {
-			String newScopeString;
-			if (filter != null) {
-				newScopeString = ScopeFormat.concat(filter, delimiter, scopeComponents);
-				metricName = filter.filterCharacters(metricName);
-			} else {
-				newScopeString = ScopeFormat.concat(delimiter, scopeComponents);
-			}
-			return newScopeString + delimiter + metricName;
-		} else {
-			if (scopeStrings[reporterIndex] == null) {
-				if (filter != null) {
-					scopeStrings[reporterIndex] = ScopeFormat.concat(filter, delimiter, scopeComponents);
-				} else {
-					scopeStrings[reporterIndex] = ScopeFormat.concat(delimiter, scopeComponents);
-				}
-			}
-			if (filter != null) {
-				metricName = filter.filterCharacters(metricName);
-			}
-			return scopeStrings[reporterIndex] + delimiter + metricName;
-		}
+		return scope.getMetricIdentifier(metricName, filter, reporterIndex);
 	}
 
 	// ------------------------------------------------------------------------
@@ -420,7 +375,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 						// we warn here, rather than failing, because metrics are tools that should not fail the
 						// program when used incorrectly
 						LOG.warn("Name collision: Adding a metric with the same name as a metric subgroup: '" +
-								name + "'. Metric might not get properly reported. " + Arrays.toString(scopeComponents));
+								name + "'. Metric might not get properly reported. " + Arrays.toString(getScopeComponents()));
 					}
 
 					registry.register(metric, name, this);
@@ -432,7 +387,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 					// we warn here, rather than failing, because metrics are tools that should not fail the
 					// program when used incorrectly
 					LOG.warn("Name collision: Group already contains a Metric with the name '" +
-							name + "'. Metric will not be reported." + Arrays.toString(scopeComponents));
+							name + "'. Metric will not be reported." + Arrays.toString(getScopeComponents()));
 				}
 			}
 		}
@@ -465,7 +420,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 				// program when used incorrectly
 				if (metrics.containsKey(name)) {
 					LOG.warn("Name collision: Adding a metric subgroup with the same name as an existing metric: '" +
-							name + "'. Metric might not get properly reported. " + Arrays.toString(scopeComponents));
+							name + "'. Metric might not get properly reported. " + Arrays.toString(getScopeComponents()));
 				}
 
 				AbstractMetricGroup newGroup = createChildGroup(name, childType);
