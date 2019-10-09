@@ -60,7 +60,7 @@ public class MeasurementInfoProviderTest extends TestLogger {
 		MeasurementInfo info = provider.getMetricInfo(metricName, metricGroup);
 		assertNotNull(info);
 		assertEquals(
-			String.join("" + MeasurementInfoProvider.SCOPE_SEPARATOR, logicalScope, metricName),
+			String.join(".", logicalScope, metricName),
 			info.getName());
 		assertThat(info.getTags(), hasEntry("A", "a"));
 		assertThat(info.getTags(), hasEntry("B", "b"));

@@ -106,6 +106,11 @@ public class InfluxdbReporter extends AbstractReporter<MeasurementInfo> implemen
 	}
 
 	@Override
+	public char getDefaultScopeDelimiter() {
+		return '_';
+	}
+
+	@Override
 	public void report() {
 		BatchPoints report = buildReport();
 		if (report != null) {
