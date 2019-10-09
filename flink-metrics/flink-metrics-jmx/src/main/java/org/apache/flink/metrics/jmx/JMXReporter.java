@@ -28,8 +28,6 @@ import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.reporter.InstantiateViaFactory;
 import org.apache.flink.metrics.reporter.MetricReporter;
-import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
-import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
 import org.apache.flink.util.NetUtils;
 
 import org.slf4j.Logger;
@@ -236,7 +234,7 @@ public class JMXReporter implements MetricReporter {
 	}
 
 	static String generateJmxDomain(String metricName, MetricGroup group) {
-		return JMX_DOMAIN_PREFIX + ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER, '.') + '.' + metricName;
+		return JMX_DOMAIN_PREFIX + group.getScope().getLogicalMetricIdentifier(metricName, CHARACTER_FILTER);
 	}
 
 	/**
