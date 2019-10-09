@@ -51,12 +51,18 @@ public class FrontMetricGroup<P extends AbstractMetricGroup<?>> extends ProxyMet
 		return scope.getMetricIdentifier(metricName, filter);
 	}
 
+	/** @deprecated use {@link MetricScope#getLogicalMetricIdentifier(String, CharacterFilter)} instead */
+	@Deprecated
 	public String getLogicalScope(CharacterFilter filter) {
-		return parentMetricGroup.getLogicalScope(filter);
+		final String dummyIdentifier = scope.getLogicalMetricIdentifier("dummy", filter);
+		return dummyIdentifier.substring(0, dummyIdentifier.length() - 6);
 	}
 
+	/** @deprecated use {@link MetricScope#getLogicalMetricIdentifier(String, CharacterFilter)} instead */
+	@Deprecated
 	public String getLogicalScope(CharacterFilter filter, char delimiter) {
-		return parentMetricGroup.getLogicalScope(filter, delimiter);
+		final String dummyIdentifier = scope.getLogicalMetricIdentifier("dummy", filter, delimiter);
+		return dummyIdentifier.substring(0, dummyIdentifier.length() - 6);
 	}
 
 	private static final class ReporterIndexInjectingMetricScope implements MetricScope {
@@ -82,6 +88,20 @@ public class FrontMetricGroup<P extends AbstractMetricGroup<?>> extends ProxyMet
 		@Override
 		public String getMetricIdentifier(String metricName, CharacterFilter filter) {
 			return scope.getMetricIdentifier(metricName, filter, reporterIndex);
+		}
+
+		@Override
+		public String getLogicalMetricIdentifier(String metricName) {
+			return scope.getLogicalMetricIdentifier(metricName, s -> s, reporterIndex);
+		}
+
+		@Override
+		public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+			return scope.getLogicalMetricIdentifier(metricName, filter, reporterIndex);
+		}
+
+		private String getLogicalMetricIdentifier(String metricName, CharacterFilter filter, char delimiter) {
+			return scope.getLogicalMetricIdentifier(metricName, filter, delimiter, reporterIndex);
 		}
 	}
 }

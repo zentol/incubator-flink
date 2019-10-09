@@ -34,11 +34,23 @@ public class InternalMetricScope implements MetricScope {
 	 */
 	private final String[] scopeStrings;
 
-	public InternalMetricScope(MetricRegistry registry, String[] scopeComponents, Supplier<Map<String, String>> variablesProvider) {
+	/**
+	 * The metrics scope represented by this group.
+	 * For example ["host-7", "taskmanager-2", "window_word_count", "my-mapper" ].
+	 */
+	private final String[] logicalScopeComponents;
+
+	/** The logical metrics scope represented by this group for each reporter, as a concatenated string, lazily computed.
+	 * For example: "taskmanager.job.task" */
+	private String[] logicalScopeStrings;
+
+	public InternalMetricScope(MetricRegistry registry, String[] scopeComponents, String[] logicalScopeStrings, Supplier<Map<String, String>> variablesProvider) {
 		this.registry = registry;
 		this.variablesProvider = variablesProvider;
 		this.scopeComponents = scopeComponents;
 		this.scopeStrings = new String[registry.getNumberReporters()];
+		this.logicalScopeComponents = logicalScopeStrings;
+		this.logicalScopeStrings = new String[registry.getNumberReporters()];
 	}
 
 	@Override
@@ -55,6 +67,10 @@ public class InternalMetricScope implements MetricScope {
 
 	public String[] geScopeComponents() {
 		return scopeStrings;
+	}
+
+	public String[] getLogicalScopeComponents() {
+		return logicalScopeStrings;
 	}
 
 	@Override
@@ -84,6 +100,46 @@ public class InternalMetricScope implements MetricScope {
 				scopeStrings[reporterIndex] = ScopeFormat.concat(filter, delimiter, scopeComponents);
 			}
 			return scopeStrings[reporterIndex];
+		}
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName) {
+		return getLogicalMetricIdentifier(metricName, s -> s, registry.getDelimiter(), -1);
+	}
+
+	@Override
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter) {
+		return getLogicalMetricIdentifier(metricName, filter, registry.getDelimiter(), -1);
+	}
+
+	@Internal
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter, int reporterIndex) {
+		return getLogicalMetricIdentifier(metricName, filter, registry.getDelimiter(reporterIndex), reporterIndex);
+	}
+
+	@Internal
+	public String getLogicalMetricIdentifier(String metricName, CharacterFilter filter, char delimiter, int reporterIndex) {
+		return getLogicalIdentifierScope(filter, delimiter, reporterIndex) + delimiter + filter.filterCharacters(metricName);
+	}
+
+	/**
+	 * Returns the logical scope of this group, for example
+	 * {@code "taskmanager.job.task"}.
+	 *
+	 * @param filter character filter which is applied to the scope components
+	 * @param delimiter delimiter to use for concatenating scope components
+	 * @param reporterIndex index of the reporter
+	 * @return logical scope
+	 */
+	private String getLogicalIdentifierScope(CharacterFilter filter, char delimiter, int reporterIndex) {
+		if (logicalScopeStrings.length == 0 || (reporterIndex < 0 || reporterIndex >= logicalScopeStrings.length)) {
+			return ScopeFormat.concat(filter, delimiter, logicalScopeComponents);
+		} else {
+			if (logicalScopeStrings[reporterIndex] == null) {
+				logicalScopeStrings[reporterIndex] = ScopeFormat.concat(filter, delimiter, logicalScopeComponents);
+			}
+			return logicalScopeStrings[reporterIndex];
 		}
 	}
 }

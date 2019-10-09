@@ -34,10 +34,8 @@ import org.apache.flink.runtime.metrics.scope.InternalMetricScope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -84,10 +82,6 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	/** All metric subgroups of this group. */
 	private final Map<String, AbstractMetricGroup> groups = new HashMap<>();
 
-	/** The logical metrics scope represented by this group for each reporter, as a concatenated string, lazily computed.
-	 * For example: "taskmanager.job.task" */
-	private String[] logicalScopeStrings;
-
 	/** The metrics query service scope represented by this group, lazily computed. */
 	protected QueryScopeInfo queryServiceScopeInfo;
 
@@ -101,10 +95,10 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	public AbstractMetricGroup(MetricRegistry registry, String[] scope, A parent) {
 		this.registry = checkNotNull(registry);
 		this.parent = parent;
-		this.logicalScopeStrings = new String[registry.getNumberReporters()];
 		this.scope = new InternalMetricScope(
 			registry,
-			scopeComponents,
+			scope,
+			makeLogicalScopeComponents(parent, getGroupName(s -> s)),
 			this::getAllVariables
 		);
 	}
@@ -132,55 +126,6 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 	 * @param variables map to enter variables and their values into
 	 */
 	protected void putVariables(Map<String, String> variables) {
-	}
-
-	/**
-	 * Returns the logical scope of this group, for example
-	 * {@code "taskmanager.job.task"}.
-	 *
-	 * @param filter character filter which is applied to the scope components
-	 * @return logical scope
-	 */
-	public String getLogicalScope(CharacterFilter filter) {
-		return getLogicalScope(filter, registry.getDelimiter());
-	}
-
-	/**
-	 * Returns the logical scope of this group, for example
-	 * {@code "taskmanager.job.task"}.
-	 *
-	 * @param filter character filter which is applied to the scope components
-	 * @return logical scope
-	 */
-	public String getLogicalScope(CharacterFilter filter, char delimiter) {
-		return getLogicalScope(filter, delimiter, -1);
-	}
-
-	/**
-	 * Returns the logical scope of this group, for example
-	 * {@code "taskmanager.job.task"}.
-	 *
-	 * @param filter character filter which is applied to the scope components
-	 * @param delimiter delimiter to use for concatenating scope components
-	 * @param reporterIndex index of the reporter
-	 * @return logical scope
-	 */
-	String getLogicalScope(CharacterFilter filter, char delimiter, int reporterIndex) {
-		if (logicalScopeStrings.length == 0 || (reporterIndex < 0 || reporterIndex >= logicalScopeStrings.length)) {
-			return createLogicalScope(filter, delimiter);
-		} else {
-			if (logicalScopeStrings[reporterIndex] == null) {
-				logicalScopeStrings[reporterIndex] = createLogicalScope(filter, delimiter);
-			}
-			return logicalScopeStrings[reporterIndex];
-		}
-	}
-
-	protected String createLogicalScope(CharacterFilter filter, char delimiter) {
-		final String groupName = getGroupName(filter);
-		return parent == null
-			? groupName
-			: parent.getLogicalScope(filter, delimiter) + delimiter + groupName;
 	}
 
 	/**
@@ -438,5 +383,30 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
 		KEY,
 		VALUE,
 		GENERIC
+	}
+
+	static String[] makeLogicalScopeComponents(AbstractMetricGroup parent, String name) {
+		if (parent != null) {
+			return append(parent.getScope().getLogicalScopeComponents(), name);
+		}
+		return new String[] { name };
+	}
+
+	static String[] makeScopeComponents(AbstractMetricGroup parent, String name) {
+		if (parent != null) {
+			return append(parent.getScopeComponents(), name);
+		}
+		return new String[] { name };
+	}
+
+	private static String[] append(String[] array, String toAppend) {
+		if (array != null && array.length > 0) {
+			String[] parts = new String[array.length + 1];
+			System.arraycopy(array, 0, parts, 0, array.length);
+			parts[parts.length - 1] = toAppend;
+			return parts;
+		} else {
+			return new String[] { toAppend };
+		}
 	}
 }

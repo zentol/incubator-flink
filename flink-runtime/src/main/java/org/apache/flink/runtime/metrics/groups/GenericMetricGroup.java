@@ -44,19 +44,6 @@ public class GenericMetricGroup extends AbstractMetricGroup<AbstractMetricGroup<
 
 	// ------------------------------------------------------------------------
 
-	private static String[] makeScopeComponents(AbstractMetricGroup parent, String name) {
-		if (parent != null) {
-			String[] parentComponents = parent.getScopeComponents();
-			if (parentComponents != null && parentComponents.length > 0) {
-				String[] parts = new String[parentComponents.length + 1];
-				System.arraycopy(parentComponents, 0, parts, 0, parentComponents.length);
-				parts[parts.length - 1] = name;
-				return parts;
-			}
-		}
-		return new String[] { name };
-	}
-
 	@Override
 	protected String getGroupName(CharacterFilter filter) {
 		return filter.filterCharacters(name);
