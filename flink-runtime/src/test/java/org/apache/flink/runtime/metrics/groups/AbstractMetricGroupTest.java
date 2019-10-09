@@ -265,8 +265,8 @@ public class AbstractMetricGroupTest {
 			// no caching should occur
 			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B));
 			// invalid reporter indices do not throw errors
-			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B, -1));
-			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B, 2));
+			assertEquals("A.X.C.D.1", group.getScope().getMetricIdentifier("1", FILTER_B, -1));
+			assertEquals("A.X.C.D.1", group.getScope().getMetricIdentifier("1", FILTER_B, 2));
 		} finally {
 			testRegistry.shutdown().get();
 		}

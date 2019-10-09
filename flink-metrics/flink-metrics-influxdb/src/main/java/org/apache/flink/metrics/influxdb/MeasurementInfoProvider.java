@@ -51,7 +51,7 @@ class MeasurementInfoProvider implements MetricInfoProvider<MeasurementInfo> {
 	private static Map<String, String> getTags(MetricGroup group) {
 		// Keys are surrounded by brackets: remove them, transforming "<name>" to "name".
 		Map<String, String> tags = new HashMap<>();
-		for (Map.Entry<String, String> variable: group.getAllVariables().entrySet()) {
+		for (Map.Entry<String, String> variable: group.getScope().getAllVariables().entrySet()) {
 			String name = variable.getKey();
 			tags.put(name.substring(1, name.length() - 1), variable.getValue());
 		}

@@ -177,7 +177,7 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
 	private List<String> getTagsFromMetricGroup(MetricGroup metricGroup) {
 		List<String> tags = new ArrayList<>();
 
-		for (Map.Entry<String, String> entry: metricGroup.getAllVariables().entrySet()) {
+		for (Map.Entry<String, String> entry: metricGroup.getScope().getAllVariables().entrySet()) {
 			if (!entry.getKey().equals(HOST_VARIABLE)) {
 				tags.add(getVariableName(entry.getKey()) + ":" + entry.getValue());
 			}
@@ -187,7 +187,7 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
 	}
 
 	private String getHostFromMetricGroup(MetricGroup metricGroup) {
-		return metricGroup.getAllVariables().get(HOST_VARIABLE);
+		return metricGroup.getScope().getAllVariables().get(HOST_VARIABLE);
 	}
 
 	/**
