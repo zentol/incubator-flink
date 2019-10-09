@@ -30,8 +30,6 @@ import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.reporter.MetricReporter;
-import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
-import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
 
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
@@ -107,7 +105,6 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
 		}
 
 		final String scopedMetricName = getScopedName(metricName, group);
-		final String helpString = metricName + " (scope: " + getLogicalScope(group) + ")";
 
 		final Collector collector;
 		Integer count = 0;
@@ -118,7 +115,7 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
 				collector = collectorWithCount.getKey();
 				count = collectorWithCount.getValue();
 			} else {
-				collector = createCollector(metric, dimensionKeys, dimensionValues, scopedMetricName, helpString);
+				collector = createCollector(metric, dimensionKeys, dimensionValues, scopedMetricName, scopedMetricName);
 				try {
 					collector.register();
 				} catch (Exception e) {
@@ -131,7 +128,7 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
 	}
 
 	private static String getScopedName(String metricName, MetricGroup group) {
-		return SCOPE_PREFIX + getLogicalScope(group) + SCOPE_SEPARATOR + CHARACTER_FILTER.filterCharacters(metricName);
+		return SCOPE_PREFIX + group.getScope().getLogicalMetricIdentifier(metricName, CHARACTER_FILTER);
 	}
 
 	private Collector createCollector(Metric metric, List<String> dimensionKeys, List<String> dimensionValues, String scopedMetricName, String helpString) {
@@ -210,11 +207,6 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
 				collectorsWithCountByMetricName.put(scopedMetricName, new AbstractMap.SimpleImmutableEntry<>(collector, count - 1));
 			}
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static String getLogicalScope(MetricGroup group) {
-		return ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER, SCOPE_SEPARATOR);
 	}
 
 	@VisibleForTesting
