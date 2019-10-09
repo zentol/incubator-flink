@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * Interface for a metric registry.
  */
-public interface MetricRegistry {
+public interface MetricRegistry extends DelimiterProvider {
 
 	/**
 	 * Returns the global delimiter.
