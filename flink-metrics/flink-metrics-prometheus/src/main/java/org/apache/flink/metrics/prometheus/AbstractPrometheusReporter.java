@@ -217,6 +217,11 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
 		return ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(CHARACTER_FILTER, SCOPE_SEPARATOR);
 	}
 
+	@Override
+	public CharacterFilter getCharacterFilter() {
+		return CHARACTER_FILTER;
+	}
+
 	@VisibleForTesting
 	io.prometheus.client.Gauge.Child gaugeFrom(Gauge gauge) {
 		return new io.prometheus.client.Gauge.Child() {

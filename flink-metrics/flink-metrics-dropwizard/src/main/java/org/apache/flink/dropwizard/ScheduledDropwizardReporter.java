@@ -123,7 +123,7 @@ public abstract class ScheduledDropwizardReporter implements MetricReporter, Sch
 
 	@Override
 	public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
-		final String fullName = group.getMetricIdentifier(metricName, this);
+		final String fullName = group.getMetricIdentifier(metricName);
 
 		synchronized (this) {
 			if (metric instanceof Counter) {
@@ -179,6 +179,11 @@ public abstract class ScheduledDropwizardReporter implements MetricReporter, Sch
 				registry.remove(fullName);
 			}
 		}
+	}
+
+	@Override
+	public CharacterFilter getCharacterFilter() {
+		return this;
 	}
 
 	@Override

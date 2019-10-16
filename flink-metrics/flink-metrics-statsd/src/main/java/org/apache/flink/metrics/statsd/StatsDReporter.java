@@ -19,6 +19,7 @@
 package org.apache.flink.metrics.statsd;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Histogram;
@@ -211,6 +212,11 @@ public class StatsDReporter extends AbstractReporter implements Scheduled {
 		catch (IOException e) {
 			LOG.error("unable to send packet to statsd at '{}:{}'", address.getHostName(), address.getPort());
 		}
+	}
+
+	@Override
+	public CharacterFilter getCharacterFilter() {
+		return this;
 	}
 
 	@Override

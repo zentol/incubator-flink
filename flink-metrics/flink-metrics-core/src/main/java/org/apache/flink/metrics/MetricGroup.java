@@ -197,6 +197,9 @@ public interface MetricGroup {
 	 * Returns the fully qualified metric name, for example
 	 * {@code "host-7.taskmanager-2.window_word_count.my-mapper.metricName"}.
 	 *
+	 * <p>Reporters should override {@link org.apache.flink.metrics.reporter.MetricReporter#getCharacterFilter()} and
+	 * use {@link #getMetricIdentifier(String)} instead.
+	 *
 	 * @param metricName metric name
 	 * @param filter character filter which is applied to the scope components if not null.
 	 * @return fully qualified metric name

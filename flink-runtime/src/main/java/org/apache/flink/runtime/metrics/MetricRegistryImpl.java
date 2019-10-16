@@ -20,6 +20,7 @@ package org.apache.flink.runtime.metrics;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.View;
@@ -70,6 +71,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 	private final ScopeFormats scopeFormats;
 	private final char globalDelimiter;
 	private final List<Character> delimiters;
+	private final List<CharacterFilter> characterFilters;
 
 	private final CompletableFuture<Void> terminationFuture;
 
@@ -97,6 +99,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 		this.scopeFormats = config.getScopeFormats();
 		this.globalDelimiter = config.getDelimiter();
 		this.delimiters = new ArrayList<>(10);
+		this.characterFilters = new ArrayList<>(10);
 		this.terminationFuture = new CompletableFuture<>();
 		this.isShutdown = false;
 
@@ -153,6 +156,8 @@ public class MetricRegistryImpl implements MetricRegistry {
 						delimiterForReporter = String.valueOf(globalDelimiter);
 					}
 					this.delimiters.add(delimiterForReporter.charAt(0));
+
+					this.characterFilters.add(reporterInstance.getCharacterFilter());
 				}
 				catch (Throwable t) {
 					LOG.error("Could not instantiate metrics reporter {}. Metrics might not be exposed/reported.", namedReporter, t);
@@ -334,7 +339,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 						MetricReporter reporter = reporters.get(i);
 						try {
 							if (reporter != null) {
-								FrontMetricGroup front = new FrontMetricGroup<AbstractMetricGroup<?>>(i, group);
+								FrontMetricGroup front = new FrontMetricGroup<AbstractMetricGroup<?>>(i, characterFilters.get(i), group);
 								reporter.notifyOfAddedMetric(metric, metricName, front);
 							}
 						} catch (Exception e) {
@@ -374,7 +379,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 						try {
 						MetricReporter reporter = reporters.get(i);
 							if (reporter != null) {
-								FrontMetricGroup front = new FrontMetricGroup<AbstractMetricGroup<?>>(i, group);
+								FrontMetricGroup front = new FrontMetricGroup<AbstractMetricGroup<?>>(i, characterFilters.get(i), group);
 								reporter.notifyOfRemovedMetric(metric, metricName, front);
 							}
 						} catch (Exception e) {

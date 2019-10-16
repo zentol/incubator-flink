@@ -223,6 +223,11 @@ public class JMXReporter implements MetricReporter {
 		}
 	}
 
+	@Override
+	public CharacterFilter getCharacterFilter() {
+		return CHARACTER_FILTER;
+	}
+
 	// ------------------------------------------------------------------------
 	//  Utilities
 	// ------------------------------------------------------------------------
