@@ -176,6 +176,7 @@ public class AbstractMetricGroupTest extends TestLogger {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void checkScopes(Metric metric, String metricName, MetricGroup group) {
 			// the first call determines which filter is applied to all future calls; in this case no filter is used at all
 			assertEquals("A-B-C-D-1", group.getMetricIdentifier(metricName));
@@ -202,6 +203,7 @@ public class AbstractMetricGroupTest extends TestLogger {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void checkScopes(Metric metric, String metricName, MetricGroup group) {
 			// the first call determines which filter is applied to all future calls
 			assertEquals("A!B!X!D!1", group.getMetricIdentifier(metricName, this));
@@ -262,11 +264,10 @@ public class AbstractMetricGroupTest extends TestLogger {
 			assertEquals("MetricReporters list should be empty", 0, testRegistry.getReporters().size());
 
 			// default delimiter should be used
-			assertEquals("A.B.X.D.1", group.getMetricIdentifier("1", FILTER_C));
+			assertEquals("A.B.X.D.1", group.getMetricIdentifier("1", FILTER_C, -1, '.'));
 			// no caching should occur
-			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B));
-			// invalid reporter indices do not throw errors
 			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B, -1, '.'));
+			// invalid reporter indices do not throw errors
 			assertEquals("A.X.C.D.1", group.getMetricIdentifier("1", FILTER_B, 2, '.'));
 		} finally {
 			testRegistry.shutdown().get();

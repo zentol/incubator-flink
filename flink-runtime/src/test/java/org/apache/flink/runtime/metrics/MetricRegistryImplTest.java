@@ -22,6 +22,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
+import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
@@ -391,7 +392,7 @@ public class MetricRegistryImplTest extends TestLogger {
 		@Override
 		public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
 			String expectedMetric = "A" + expectedDelimiter + "B" + expectedDelimiter + "C";
-			assertEquals(expectedMetric, group.getMetricIdentifier(metricName, this));
+			assertEquals(expectedMetric, group.getMetricIdentifier(metricName));
 			assertEquals(expectedMetric, group.getMetricIdentifier(metricName));
 			numCorrectDelimitersForRegister++;
 		}
@@ -399,7 +400,7 @@ public class MetricRegistryImplTest extends TestLogger {
 		@Override
 		public void notifyOfRemovedMetric(Metric metric, String metricName, MetricGroup group) {
 			String expectedMetric = "A" + expectedDelimiter + "B" + expectedDelimiter + "C";
-			assertEquals(expectedMetric, group.getMetricIdentifier(metricName, this));
+			assertEquals(expectedMetric, group.getMetricIdentifier(metricName));
 			assertEquals(expectedMetric, group.getMetricIdentifier(metricName));
 			numCorrectDelimitersForUnregister++;
 		}
@@ -439,6 +440,46 @@ public class MetricRegistryImplTest extends TestLogger {
 		@Override
 		public void notifyOfRemovedMetric(Metric metric, String metricName, MetricGroup group) {
 			throw new RuntimeException();
+		}
+	}
+
+	@Test
+	public void testReporterOverridingGetCharacterFilter() throws Exception {
+		ReporterWithCharacterFilter reporter = new ReporterWithCharacterFilter();
+		MetricRegistryImpl registry = new MetricRegistryImpl(
+			MetricRegistryConfiguration.defaultMetricRegistryConfiguration(),
+			Collections.singletonList(ReporterSetup.forReporter("test1", reporter)));
+
+		try {
+			Counter metric = new SimpleCounter();
+
+			TaskManagerMetricGroup group = new TaskManagerMetricGroup(registry, "host", "id");
+			registry.register(metric, "counter", group);
+			assertEquals("hXst.taskmanager.id.cXunter", reporter.metricIdentifier);
+		} finally {
+			registry.shutdown().get();
+		}
+	}
+
+	/**
+	 * Reporter that throws an exception when it is notified of an added or removed metric.
+	 */
+	protected static class ReporterWithCharacterFilter extends TestReporter {
+
+		String metricIdentifier = null;
+
+		@Override
+		public CharacterFilter getCharacterFilter() {
+			return s -> s.replace('o', 'X');
+		}
+
+		@Override
+		public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
+			metricIdentifier = group.getMetricIdentifier(metricName);
+		}
+
+		@Override
+		public void notifyOfRemovedMetric(Metric metric, String metricName, MetricGroup group) {
 		}
 	}
 }

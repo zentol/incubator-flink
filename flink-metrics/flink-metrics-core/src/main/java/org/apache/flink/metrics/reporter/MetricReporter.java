@@ -18,6 +18,7 @@
 
 package org.apache.flink.metrics.reporter;
 
+import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
@@ -76,4 +77,14 @@ public interface MetricReporter {
 	 * @param group       the group that contains the metric
 	 */
 	void notifyOfRemovedMetric(Metric metric, String metricName, MetricGroup group);
+
+	/**
+	 * Returns the {@link CharacterFilter} to be used for this reporter. This method is called once after the reporter
+	 * has been instantiated and configured.
+	 *
+	 * @return character filter to use for this reporter
+	 */
+	default CharacterFilter getCharacterFilter() {
+		return t -> t;
+	}
 }

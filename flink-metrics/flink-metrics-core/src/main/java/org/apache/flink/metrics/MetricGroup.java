@@ -172,7 +172,6 @@ public interface MetricGroup {
 	 * {@code ["host-7", "taskmanager-2", "window_word_count", "my-mapper"]}.
 	 *
 	 * @see #getMetricIdentifier(String)
-	 * @see #getMetricIdentifier(String, CharacterFilter)
 	 */
 	String[] getScopeComponents();
 
@@ -200,6 +199,9 @@ public interface MetricGroup {
 	 * @param metricName metric name
 	 * @param filter character filter which is applied to the scope components if not null.
 	 * @return fully qualified metric name
+	 * @deprecated Reporters should override {@link org.apache.flink.metrics.reporter.MetricReporter#getCharacterFilter()}
+	 * and use {@link #getMetricIdentifier(String)} instead.
 	 */
+	@Deprecated
 	String getMetricIdentifier(String metricName, CharacterFilter filter);
 }

@@ -17,6 +17,8 @@
 
 package org.apache.flink.runtime.metrics.groups;
 
+import org.apache.flink.metrics.CharacterFilter;
+
 /**
  * Encapsulates all settings that are defined per reporter.
  */
@@ -26,9 +28,12 @@ public class ReporterScopedSettings {
 
 	private final char delimiter;
 
-	public ReporterScopedSettings(int reporterIndex, char delimiter) {
+	private final CharacterFilter characterFilter;
+
+	public ReporterScopedSettings(int reporterIndex, char delimiter, CharacterFilter characterFilter) {
 		this.reporterIndex = reporterIndex;
 		this.delimiter = delimiter;
+		this.characterFilter = characterFilter;
 	}
 
 	public int getReporterIndex() {
@@ -37,5 +42,9 @@ public class ReporterScopedSettings {
 
 	public char getDelimiter() {
 		return delimiter;
+	}
+
+	public CharacterFilter getCharacterFilter() {
+		return characterFilter;
 	}
 }

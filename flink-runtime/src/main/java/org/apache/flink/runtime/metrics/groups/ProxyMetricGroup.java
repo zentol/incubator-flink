@@ -123,6 +123,7 @@ public class ProxyMetricGroup<P extends MetricGroup> implements MetricGroup {
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public String getMetricIdentifier(String metricName, CharacterFilter filter) {
 		return parentMetricGroup.getMetricIdentifier(metricName, filter);
 	}

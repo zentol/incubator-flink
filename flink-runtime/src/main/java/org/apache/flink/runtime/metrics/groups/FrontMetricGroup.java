@@ -22,8 +22,7 @@ import org.apache.flink.metrics.CharacterFilter;
 
 /**
  * Metric group which forwards all registration calls to a variable parent metric group that injects a variable reporter
- * index into calls to {@link org.apache.flink.metrics.MetricGroup#getMetricIdentifier(String)}
- * or {@link org.apache.flink.metrics.MetricGroup#getMetricIdentifier(String, CharacterFilter)}.
+ * index into calls to {@link org.apache.flink.metrics.MetricGroup#getMetricIdentifier(String)}.
  * This allows us to use reporter-specific delimiters, without requiring any action by the reporter.
  *
  * @param <P> parentMetricGroup to {@link AbstractMetricGroup AbstractMetricGroup}
@@ -39,7 +38,7 @@ public class FrontMetricGroup<P extends AbstractMetricGroup<?>> extends ProxyMet
 
 	@Override
 	public String getMetricIdentifier(String metricName) {
-		return parentMetricGroup.getMetricIdentifier(metricName, null, this.settings.getReporterIndex(), this.settings.getDelimiter());
+		return parentMetricGroup.getMetricIdentifier(metricName, this.settings.getCharacterFilter(), this.settings.getReporterIndex(), this.settings.getDelimiter());
 	}
 
 	@Override
