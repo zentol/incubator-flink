@@ -696,7 +696,6 @@ under the License.
 					<execution>
 						<id>shade-flink</id>
 						<configuration>
-							<shadeTestJar>false</shadeTestJar>
 							<artifactSet>
 								<includes combine.children="append">
 									<include>org.apache.flink:flink-hadoop-fs</include>
