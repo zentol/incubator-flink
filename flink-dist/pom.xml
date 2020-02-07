@@ -623,7 +623,7 @@ under the License.
 				<executions>
 					<execution>
 						<id>unpack-javax-libraries</id>
-						<phase>process-resources</phase>
+						<phase>compile</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
