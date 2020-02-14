@@ -179,6 +179,16 @@ under the License.
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<configuration>
+						<ignoredUnusedDeclaredDependencies>
+							<!-- accessed via reflection -->
+							<dependency>*</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
+				</plugin>
+				<plugin>
 					<artifactId>maven-antrun-plugin</artifactId>
 					<version>1.7</version>
 				</plugin>

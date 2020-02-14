@@ -51,6 +51,20 @@ under the License.
 	</dependencies>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<configuration>
+						<ignoredUnusedDeclaredDependencies>
+							<!-- implicit dependency since rocksdb is configured in the e2e test -->
+							<dependency>org.apache.flink:flink-statebackend-rocksdb_${scala.binary.version}</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

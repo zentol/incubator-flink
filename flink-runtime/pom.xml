@@ -330,6 +330,22 @@ under the License.
 	</dependencyManagement>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<configuration>
+						<ignoredUnusedDeclaredDependencies>
+							<!-- loaded by netty via reflection -->
+							<dependency>org.javassist:javassis</dependency>
+							<dependency>org.apache.flink:flink-shaded-netty-tcnative-dynamic</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

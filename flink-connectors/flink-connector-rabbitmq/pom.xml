@@ -73,4 +73,21 @@ under the License.
 
 	</dependencies>
 
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<configuration>
+						<ignoredUnusedDeclaredDependencies>
+							<!-- required by flink-streaming-java:test-jar -->
+							<dependency>org.apache.flink:flink-runtime_${scala.binary.version}</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
 </project>
