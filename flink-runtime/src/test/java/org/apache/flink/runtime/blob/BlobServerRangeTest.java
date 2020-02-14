@@ -31,6 +31,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.net.ServerSocket;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+
 /**
  * Tests to ensure that the BlobServer properly starts on a specified range of available ports.
  */
@@ -98,14 +103,14 @@ public class BlobServerRangeTest extends TestLogger {
 		}
 		int availablePort = NetUtils.getAvailablePort();
 		Configuration conf = new Configuration();
-		conf.setString(BlobServerOptions.PORT, sockets[0].getLocalPort() + "," + sockets[1].getLocalPort() + "," + availablePort);
+		conf.setString(BlobServerOptions.PORT, sockets[0].getLocalPort() + "," + sockets[1].getLocalPort() + ",50000-50050");
 		conf.setString(BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
 
 		// this thing is going to throw an exception
 		try {
 			BlobServer server = new BlobServer(conf, new VoidBlobStore());
 			server.start();
-			Assert.assertEquals(availablePort, server.getPort());
+			assertThat(server.getPort(), allOf(greaterThanOrEqualTo(50000), lessThanOrEqualTo(50050)));
 			server.close();
 		} finally {
 			for (int i = 0; i < numAllocated; ++i) {

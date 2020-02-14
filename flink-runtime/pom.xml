@@ -304,11 +304,6 @@ under the License.
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.reflections</groupId>
-			<artifactId>reflections</artifactId>
-		</dependency>
-
 		<!-- Used only for additional logging. Optional because of unclear EPL 1.0 license compatibility. -->
 		<dependency>
 			<groupId>com.github.oshi</groupId>
@@ -330,6 +325,22 @@ under the License.
 	</dependencyManagement>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<configuration>
+						<ignoredUnusedDeclaredDependencies>
+							<!-- loaded by netty via reflection -->
+							<dependency>org.javassist:javassis</dependency>
+							<dependency>org.apache.flink:flink-shaded-netty-tcnative-dynamic</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -220,6 +220,22 @@ under the License.
 		</dependency>
 
 		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-reflect</artifactId>
+			<version>${powermock.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-core</artifactId>
+			<version>${powermock.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest-all</artifactId>
 			<version>${hamcrest.version}</version>
@@ -920,6 +936,15 @@ under the License.
 									<goal>tree</goal>
 								</goals>
 								<phase>validate</phase>
+							</execution>
+							<execution>
+								<id>analyze-unused-dependencies</id>
+								<goals>
+									<goal>analyze-only</goal>
+								</goals>
+								<phase>verify</phase>
+								<configuration>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -1711,6 +1736,38 @@ under the License.
 							<version>1.11.1</version>
 						</dependency>
 					</dependencies>
+					<configuration>
+						<ignoredUsedUndeclaredDependencies combine.children="append">
+							<!-- For brevity -->
+							<dependency>org.apache.flink:*</dependency>
+							<!-- False positive since we use hamcrest-all -->
+							<dependency>org.hamcrest:hamcrest-core</dependency>
+						</ignoredUsedUndeclaredDependencies>
+						<ignoredUnusedDeclaredDependencies combine.children="append">
+							<!-- build dependencies -->
+							<dependency>org.apache.flink:force-shading</dependency>
+							<!-- compile dependencies -->
+							<dependency>com.google.code.findbugs:jsr305</dependency>
+							<dependency>org.scala-lang:scala-compiler</dependency>
+							<!-- logging dependencies -->
+							<dependency>org.slf4j:slf4j-api</dependency>
+							<!-- log4j1 -->
+							<dependency>log4j:log4j</dependency>
+							<dependency>org.slf4j:slf4j-log4j12</dependency>
+							<!-- log4j2 -->
+							<dependency>org.apache.logging.log4j:log4j-slf4j-impl</dependency>
+							<dependency>org.apache.logging.log4j:log4j-api</dependency>
+							<dependency>org.apache.logging.log4j:log4j-core</dependency>
+							<dependency>org.apache.logging.log4j:log4j-1.2-api</dependency>
+							<!-- test dependencies -->
+							<dependency>org.apache.flink:flink-test-utils-junit</dependency>
+							<dependency>junit:junit</dependency>
+							<dependency>org.mockito:mockito-core</dependency>
+							<dependency>org.powermock:powermock-module-junit4</dependency>
+							<dependency>org.powermock:powermock-api-mockito2</dependency>
+							<dependency>org.hamcrest:hamcrest-all</dependency>
+						</ignoredUnusedDeclaredDependencies>
+					</configuration>
 				</plugin>
 
 				<!-- Pin the version of the maven shade plugin -->
