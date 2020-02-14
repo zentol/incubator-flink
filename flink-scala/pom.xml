@@ -78,13 +78,6 @@ under the License.
 			<artifactId>flink-test-utils-junit</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>com.twitter</groupId>
-			<artifactId>chill_${scala.binary.version}</artifactId>
-			<version>${chill.version}</version>
-			<scope>test</scope>
-		</dependency>
-
 		<!-- We need this for the patched FlinkScalaKryoInstantiator -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
@@ -104,12 +97,6 @@ under the License.
 		<dependency>
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.joda</groupId>
-			<artifactId>joda-convert</artifactId>
 			<scope>test</scope>
 		</dependency>
 
