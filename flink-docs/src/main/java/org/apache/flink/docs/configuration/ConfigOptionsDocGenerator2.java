@@ -60,9 +60,9 @@ import static org.apache.flink.docs.util.Utils.escapeCharacters;
 /**
  * Class used for generating code based documentation of configuration parameters.
  */
-public class ConfigOptionsDocGenerator {
+public class ConfigOptionsDocGenerator2 {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ConfigOptionsDocGenerator.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ConfigOptionsDocGenerator2.class);
 
 	static final OptionsClassLocation[] LOCATIONS = new OptionsClassLocation[]{
 		new OptionsClassLocation("flink-core", "org.apache.flink.configuration"),
@@ -95,6 +95,7 @@ public class ConfigOptionsDocGenerator {
 	private static final Pattern CLASS_NAME_PATTERN = Pattern.compile("(?<" + CLASS_NAME_GROUP + ">(?<" + CLASS_PREFIX_GROUP + ">[a-zA-Z]*)(?:Options|Config|Parameters))(?:\\.java)?");
 
 	private static final Formatter formatter = new HtmlFormatter();
+
 	/**
 	 * This method generates html tables from set of classes containing {@link ConfigOption ConfigOptions}.
 	 *
@@ -105,19 +106,18 @@ public class ConfigOptionsDocGenerator {
 	 * <p>One additional table is generated containing all {@link ConfigOption ConfigOptions} that are annotated with
 	 * {@link Documentation.Section}.
 	 *
-	 * @param args
-	 *  [0] output directory for the generated files
-	 *  [1] project root directory
+	 * @param args [0] output directory for the generated files
+	 *             [1] project root directory
 	 */
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
 		String outputDirectory = args[0];
 		String rootDir = args[1];
 
 		LOG.info("Searching the following locations; configured via {}#LOCATIONS:{}",
-			ConfigOptionsDocGenerator.class.getCanonicalName(),
+			ConfigOptionsDocGenerator2.class.getCanonicalName(),
 			Arrays.stream(LOCATIONS).map(OptionsClassLocation::toString).collect(Collectors.joining("\n\t", "\n\t", "")));
 		LOG.info("Excluding the following classes; configured via {}#EXCLUSIONS:{}",
-			ConfigOptionsDocGenerator.class.getCanonicalName(),
+			ConfigOptionsDocGenerator2.class.getCanonicalName(),
 			EXCLUSIONS.stream().collect(Collectors.joining("\n\t", "\n\t", "")));
 
 		List<UnassignedOption> optionsToDocument = discoverOptions(rootDir, LOCATIONS, DEFAULT_PATH_PREFIX)
@@ -125,6 +125,99 @@ public class ConfigOptionsDocGenerator {
 			.collect(Collectors.toList());
 
 		generateSections(optionsToDocument, outputDirectory);
+	}
+
+	private static class OptionWithMetaInfo {
+		private final ConfigOption<?> configOption;
+		protected final Field field;
+
+		OptionWithMetaInfo(ConfigOption<?> configOption, Field field) {
+			this.configOption = configOption;
+			this.field = field;
+		}
+
+		public ConfigOption<?> getConfigOption() {
+			return configOption;
+		}
+
+		public boolean isDeprecated() {
+			return field.getAnnotation(Deprecated.class) != null;
+		}
+
+		public boolean shouldBeExcluded() {
+			return field.getAnnotation(Documentation.ExcludeFromDocumentation.class) != null;
+		}
+
+		public Optional<String> getDefaultOverride() {
+			return Optional.ofNullable(field.getAnnotation(Documentation.OverrideDefault.class)).map(Documentation.OverrideDefault::value);
+		}
+
+		public Optional<Documentation.ExecMode> getTableExecutionMode() {
+			return Optional.ofNullable(field.getAnnotation(Documentation.TableOption.class)).map(Documentation.TableOption::execMode);
+		}
+
+		public UnassignedOption withSections(Set<Section> sections) {
+			return new UnassignedOption(configOption, sections, field);
+		}
+
+	}
+
+	private static class UnassignedOption extends OptionWithMetaInfo {
+		private final Set<Section> sections;
+
+		private UnassignedOption(ConfigOption<?> configOption, Set<Section> sections, Field field) {
+			super(configOption, field);
+			this.sections = sections;
+		}
+
+		public Set<Section> getSections() {
+			return sections;
+		}
+
+		public AssignedOption pin(Section section) {
+			return new AssignedOption(getConfigOption(), section, field);
+		}
+	}
+
+	private static class AssignedOption extends OptionWithMetaInfo {
+		private final Section section;
+
+		private AssignedOption(ConfigOption<?> configOption, Section section, Field field) {
+			super(configOption, field);
+			this.section = section;
+		}
+
+		public Section getSection() {
+			return section;
+		}
+	}
+
+	private static class Section {
+		private final String name;
+		private final int position;
+
+		public Section(String name, int position) {
+			this.name = name;
+			this.position = position;
+		}
+	}
+
+	private static Stream<Section> getSections(Field field) {
+		Documentation.Section sectionAnnotation = field.getAnnotation(Documentation.Section.class);
+		return sectionAnnotation != null
+			? Arrays.stream(sectionAnnotation.value()).map(s -> new Section(s, sectionAnnotation.position()))
+			: Stream.empty();
+	}
+
+	private static Stream<Section> asSection(Optional<ConfigGroup> group, Class<?> optionsClass) {
+		final String rawSectionName = group.map(ConfigGroup::name).orElse(optionsClass.getSimpleName());
+		return Stream.of(new Section(rawSectionName.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(), 0));
+	}
+
+	private static UnassignedOption normalize(OptionWithMetaInfo optionWithMetaInfo, Optional<ConfigGroup> group, Class<?> optionsClass) {
+		Set<Section> sections = Stream.concat(getSections(optionWithMetaInfo.field), asSection(group, optionsClass)).collect(Collectors.toSet());
+
+		return optionWithMetaInfo.withSections(sections);
 	}
 
 	private static Stream<UnassignedOption> discoverOptions(String rootDir, OptionsClassLocation[] locations, String pathPrefix) throws IOException, ClassNotFoundException {
@@ -155,24 +248,6 @@ public class ConfigOptionsDocGenerator {
 		}
 
 		return options.stream();
-	}
-
-	private static UnassignedOption normalize(OptionWithMetaInfo optionWithMetaInfo, Optional<ConfigGroup> group, Class<?> optionsClass) {
-		Set<Section> sections = Stream.concat(getSections(optionWithMetaInfo.field), asSection(group, optionsClass)).collect(Collectors.toSet());
-
-		return optionWithMetaInfo.withSections(sections);
-	}
-
-	private static Stream<Section> getSections(Field field) {
-		Documentation.Section sectionAnnotation = field.getAnnotation(Documentation.Section.class);
-		return sectionAnnotation != null
-			? Arrays.stream(sectionAnnotation.value()).map(s -> new Section(s, sectionAnnotation.position()))
-			: Stream.empty();
-	}
-
-	private static Stream<Section> asSection(Optional<ConfigGroup> group, Class<?> optionsClass) {
-		final String rawSectionName = group.map(ConfigGroup::name).orElse(optionsClass.getSimpleName());
-		return Stream.of(new Section(rawSectionName.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(), 0));
 	}
 
 	@VisibleForTesting
@@ -298,14 +373,14 @@ public class ConfigOptionsDocGenerator {
 			Documentation.ExecMode execMode = tableExecutionMode.get();
 			if (Documentation.ExecMode.BATCH_STREAMING.equals(execMode)) {
 				execModeStringBuilder.append("<br> <span class=\"label label-primary\">")
-						.append(Documentation.ExecMode.BATCH.toString())
-						.append("</span> <span class=\"label label-primary\">")
-						.append(Documentation.ExecMode.STREAMING.toString())
-						.append("</span>");
+					.append(Documentation.ExecMode.BATCH.toString())
+					.append("</span> <span class=\"label label-primary\">")
+					.append(Documentation.ExecMode.STREAMING.toString())
+					.append("</span>");
 			} else {
 				execModeStringBuilder.append("<br> <span class=\"label label-primary\">")
-						.append(execMode.toString())
-						.append("</span>");
+					.append(execMode.toString())
+					.append("</span>");
 			}
 		}
 
@@ -400,7 +475,7 @@ public class ConfigOptionsDocGenerator {
 			return TimeUtils.formatWithHighestUnit((Duration) value);
 		} else if (value instanceof List) {
 			return ((List<Object>) value).stream()
-				.map(ConfigOptionsDocGenerator::stringifyObject)
+				.map(ConfigOptionsDocGenerator2::stringifyObject)
 				.collect(Collectors.joining(";"));
 		} else if (value instanceof Map) {
 			return ((Map<String, String>) value)
@@ -506,81 +581,6 @@ public class ConfigOptionsDocGenerator {
 		}
 	}
 
-	private static class Section {
-		private final String name;
-		private final int position;
-
-		public Section(String name, int position) {
-			this.name = name;
-			this.position = position;
-		}
-	}
-
-	private static class OptionWithMetaInfo {
-		private final ConfigOption<?> configOption;
-		protected final Field field;
-
-		OptionWithMetaInfo(ConfigOption<?> configOption, Field field) {
-			this.configOption = configOption;
-			this.field = field;
-		}
-
-		public ConfigOption<?> getConfigOption() {
-			return configOption;
-		}
-
-		public boolean isDeprecated() {
-			return field.getAnnotation(Deprecated.class) != null;
-		}
-
-		public boolean shouldBeExcluded() {
-			return field.getAnnotation(Documentation.ExcludeFromDocumentation.class) != null;
-		}
-
-		public Optional<String> getDefaultOverride() {
-			return Optional.ofNullable(field.getAnnotation(Documentation.OverrideDefault.class)).map(Documentation.OverrideDefault::value);
-		}
-
-		public Optional<Documentation.ExecMode> getTableExecutionMode() {
-			return Optional.ofNullable(field.getAnnotation(Documentation.TableOption.class)).map(Documentation.TableOption::execMode);
-		}
-
-		public UnassignedOption withSections(Set<Section> sections) {
-			return new UnassignedOption(configOption, sections, field);
-		}
-
-	}
-
-	private static class UnassignedOption extends OptionWithMetaInfo {
-		private final Set<Section> sections;
-
-		private UnassignedOption(ConfigOption<?> configOption, Set<Section> sections, Field field) {
-			super(configOption, field);
-			this.sections = sections;
-		}
-
-		public Set<Section> getSections() {
-			return sections;
-		}
-
-		public AssignedOption pin(Section section) {
-			return new AssignedOption(getConfigOption(), section, field);
-		}
-	}
-
-	private static class AssignedOption extends OptionWithMetaInfo {
-		private final Section section;
-
-		private AssignedOption(ConfigOption<?> configOption, Section section, Field field) {
-			super(configOption, field);
-			this.section = section;
-		}
-
-		public Section getSection() {
-			return section;
-		}
-	}
-
-	private ConfigOptionsDocGenerator() {
+	private ConfigOptionsDocGenerator2() {
 	}
 }
