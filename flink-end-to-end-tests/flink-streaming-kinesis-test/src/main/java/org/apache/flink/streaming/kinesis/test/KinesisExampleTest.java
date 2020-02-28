@@ -19,7 +19,6 @@ package org.apache.flink.streaming.kinesis.test;
 
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.streaming.connectors.kinesis.testutils.KinesisPubsubClient;
 
 import org.junit.Assert;
 import org.slf4j.Logger;
