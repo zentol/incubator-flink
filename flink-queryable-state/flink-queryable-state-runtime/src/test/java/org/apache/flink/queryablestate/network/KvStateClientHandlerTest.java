@@ -18,6 +18,7 @@
 
 package org.apache.flink.queryablestate.network;
 
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.queryablestate.messages.KvStateInternalRequest;
 import org.apache.flink.queryablestate.messages.KvStateResponse;
 import org.apache.flink.queryablestate.network.messages.MessageSerializer;
@@ -28,14 +29,13 @@ import org.apache.flink.shaded.netty4.io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link ClientHandler}.
@@ -48,7 +48,7 @@ public class KvStateClientHandlerTest {
 	 */
 	@Test
 	public void testReadCallbacksAndBufferRecycling() throws Exception {
-		final ClientHandlerCallback<KvStateResponse> callback = mock(ClientHandlerCallback.class);
+		final CapturingClientHandlerCallback callback = new CapturingClientHandlerCallback();
 
 		final MessageSerializer<KvStateInternalRequest, KvStateResponse> serializer =
 				new MessageSerializer<>(new KvStateInternalRequest.KvStateInternalRequestDeserializer(), new KvStateResponse.KvStateResponseDeserializer());
@@ -65,7 +65,7 @@ public class KvStateClientHandlerTest {
 
 		// Verify callback
 		channel.writeInbound(buf);
-		verify(callback, times(1)).onRequestResult(eq(1222112277L), any(KvStateResponse.class));
+		assertThat(callback.onRequestResultCalls.get(0).f0, is(1222112277L));
 		assertEquals("Buffer not recycled", 0, buf.refCnt());
 
 		//
@@ -79,7 +79,9 @@ public class KvStateClientHandlerTest {
 
 		// Verify callback
 		channel.writeInbound(buf);
-		verify(callback, times(1)).onRequestFailure(eq(1222112278L), isA(RuntimeException.class));
+		Tuple2<Long, Throwable> onRequestFailureCall1 = callback.onRequestFailureCalls.get(0);
+		assertThat(onRequestFailureCall1.f0, is(1222112278L));
+		assertThat(onRequestFailureCall1.f1, instanceOf(RuntimeException.class));
 		assertEquals("Buffer not recycled", 0, buf.refCnt());
 
 		//
@@ -92,7 +94,7 @@ public class KvStateClientHandlerTest {
 
 		// Verify callback
 		channel.writeInbound(buf);
-		verify(callback, times(1)).onFailure(isA(RuntimeException.class));
+		assertThat(callback.onFailureCalls.get(0), instanceOf(RuntimeException.class));
 
 		//
 		// Unexpected messages
@@ -101,20 +103,42 @@ public class KvStateClientHandlerTest {
 
 		// Verify callback
 		channel.writeInbound(buf);
-		verify(callback, times(1)).onFailure(isA(IllegalStateException.class));
+		assertThat(callback.onFailureCalls.get(1), instanceOf(IllegalStateException.class));
 		assertEquals("Buffer not recycled", 0, buf.refCnt());
 
 		//
 		// Exception caught
 		//
 		channel.pipeline().fireExceptionCaught(new RuntimeException("Expected test Exception"));
-		verify(callback, times(3)).onFailure(isA(RuntimeException.class));
+		assertThat(callback.onFailureCalls.get(2), instanceOf(RuntimeException.class));
 
 		//
 		// Channel inactive
 		//
 		channel.pipeline().fireChannelInactive();
-		verify(callback, times(1)).onFailure(isA(ClosedChannelException.class));
+		assertThat(callback.onFailureCalls.get(3), instanceOf(ClosedChannelException.class));
+	}
+
+	private static class CapturingClientHandlerCallback implements ClientHandlerCallback<KvStateResponse> {
+
+		List<Tuple2<Long, KvStateResponse>> onRequestResultCalls = new ArrayList<>();
+		List<Tuple2<Long, Throwable>> onRequestFailureCalls = new ArrayList<>();
+		List<Throwable> onFailureCalls = new ArrayList<>();
+
+		@Override
+		public void onRequestResult(long requestId, KvStateResponse response) {
+			onRequestResultCalls.add(Tuple2.of(requestId, response));
+		}
+
+		@Override
+		public void onRequestFailure(long requestId, Throwable cause) {
+			onRequestFailureCalls.add(Tuple2.of(requestId, cause));
+		}
+
+		@Override
+		public void onFailure(Throwable cause) {
+			onFailureCalls.add(cause);
+		}
 	}
 
 }
