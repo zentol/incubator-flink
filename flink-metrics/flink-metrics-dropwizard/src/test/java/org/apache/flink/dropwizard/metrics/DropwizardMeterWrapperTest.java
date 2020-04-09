@@ -18,12 +18,15 @@
 
 package org.apache.flink.dropwizard.metrics;
 
+import org.apache.flink.api.common.time.Time;
+
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Meter;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests for the DropwizardMeterWrapper.
@@ -32,31 +35,48 @@ public class DropwizardMeterWrapperTest {
 
 	@Test
 	public void testWrapper() {
-		com.codahale.metrics.Meter dropwizardMeter = mock(com.codahale.metrics.Meter.class);
-		when(dropwizardMeter.getOneMinuteRate()).thenReturn(1.0);
-		when(dropwizardMeter.getCount()).thenReturn(100L);
+		SettableClock clock = new SettableClock();
+		com.codahale.metrics.Meter dropwizardMeter = new Meter(clock);
+		dropwizardMeter.mark(100L);
+		// nano seconds
+		clock.setCurrentTime(Time.minutes(1).toMilliseconds() * 1_000_000);
 
 		DropwizardMeterWrapper wrapper = new DropwizardMeterWrapper(dropwizardMeter);
 
-		assertEquals(1.0, wrapper.getRate(), 0.00001);
+		// dropwizard meters use an exponential moving average
+		assertEquals(7.996993086896951, wrapper.getRate(), 0.00001);
 		assertEquals(100L, wrapper.getCount());
 	}
 
 	@Test
 	public void testMarkEvent() {
-		com.codahale.metrics.Meter dropwizardMeter = mock(com.codahale.metrics.Meter.class);
+		com.codahale.metrics.Meter dropwizardMeter = new Meter();
 		DropwizardMeterWrapper wrapper = new DropwizardMeterWrapper(dropwizardMeter);
 		wrapper.markEvent();
 
-		verify(dropwizardMeter).mark();
+		assertThat(dropwizardMeter.getCount(), is(1L));
 	}
 
 	@Test
 	public void testMarkEventN() {
-		com.codahale.metrics.Meter dropwizardMeter = mock(com.codahale.metrics.Meter.class);
+		com.codahale.metrics.Meter dropwizardMeter = new Meter();
 		DropwizardMeterWrapper wrapper = new DropwizardMeterWrapper(dropwizardMeter);
 		wrapper.markEvent(10L);
 
-		verify(dropwizardMeter).mark(10L);
+		assertThat(dropwizardMeter.getCount(), is(10L));
+	}
+
+	private static class SettableClock extends Clock {
+
+		private long currentTime = 0;
+
+		void setCurrentTime(long time) {
+			currentTime = time;
+		}
+
+		@Override
+		public long getTick() {
+			return currentTime;
+		}
 	}
 }

@@ -18,14 +18,18 @@
 
 package org.apache.flink.dropwizard.metrics;
 
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Meter;
+import org.apache.flink.metrics.MeterView;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.util.TestMeter;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertThat;
+
 
 /**
  * Tests for the FlinkMeterWrapper.
@@ -48,21 +52,23 @@ public class FlinkMeterWrapperTest {
 
 	@Test
 	public void testMarkOneEvent() {
-		Meter meter = mock(Meter.class);
+		Counter backingCounter = new SimpleCounter();
+		Meter meter = new MeterView(backingCounter);
 
 		FlinkMeterWrapper wrapper = new FlinkMeterWrapper(meter);
 		wrapper.mark();
 
-		verify(meter).markEvent();
+		assertThat(backingCounter.getCount(), is(1L));
 	}
 
 	@Test
 	public void testMarkSeveralEvents() {
-		Meter meter = mock(Meter.class);
+		Counter backingCounter = new SimpleCounter();
+		Meter meter = new MeterView(backingCounter);
 
 		FlinkMeterWrapper wrapper = new FlinkMeterWrapper(meter);
 		wrapper.mark(5);
 
-		verify(meter).markEvent(5);
+		assertThat(backingCounter.getCount(), is(5L));
 	}
 }
