@@ -18,10 +18,10 @@
 package org.apache.flink.streaming.connectors.gcp.pubsub.common;
 
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,15 +29,12 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link AcknowledgeOnCheckpoint}.
  */
 public class AcknowledgeOnCheckpointTest {
-	private final Acknowledger<String> mockedAcknowledger = mock(Acknowledger.class);
+	private final Acknowledger<String> mockedAcknowledger = ignored -> {};
 
 	@Test
 	public void testRestoreStateAndSnapshot() throws Exception {
@@ -118,14 +115,13 @@ public class AcknowledgeOnCheckpointTest {
 		input.add(new AcknowledgeIdsForCheckpoint<>(2, asList("idsFor2", "moreIdsFor2")));
 		input.add(new AcknowledgeIdsForCheckpoint<>(3, asList("idsFor3", "moreIdsFor3")));
 
-		AcknowledgeOnCheckpoint<String> acknowledgeOnCheckpoint = new AcknowledgeOnCheckpoint<>(mockedAcknowledger);
+		CompletableFuture<List<String>> acknowledgeArguments = new CompletableFuture<>();
+		AcknowledgeOnCheckpoint<String> acknowledgeOnCheckpoint = new AcknowledgeOnCheckpoint<>(acknowledgeArguments::complete);
 		acknowledgeOnCheckpoint.restoreState(input);
 
 		acknowledgeOnCheckpoint.notifyCheckpointComplete(2);
 
-		ArgumentCaptor<List<String>> argumentCaptor = ArgumentCaptor.forClass(List.class);
-		verify(mockedAcknowledger, times(1)).acknowledge(argumentCaptor.capture());
-		assertThat(argumentCaptor.getValue(), containsInAnyOrder(
+		assertThat(acknowledgeArguments.get(), containsInAnyOrder(
 			"idsFor0", "moreIdsFor0",
 			"idsFor1", "moreIdsFor1",
 			"idsFor2", "moreIdsFor2"));

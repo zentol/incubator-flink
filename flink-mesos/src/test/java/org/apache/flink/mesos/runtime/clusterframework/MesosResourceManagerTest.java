@@ -54,6 +54,7 @@ import org.apache.flink.runtime.io.network.partition.NoOpResourceManagerPartitio
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobMasterId;
 import org.apache.flink.runtime.jobmaster.JobMasterRegistrationSuccess;
+import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGatewayBuilder;
 import org.apache.flink.runtime.leaderelection.TestingLeaderElectionService;
 import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
 import org.apache.flink.runtime.messages.Acknowledge;
@@ -66,12 +67,14 @@ import org.apache.flink.runtime.resourcemanager.SlotRequest;
 import org.apache.flink.runtime.resourcemanager.TaskExecutorRegistration;
 import org.apache.flink.runtime.resourcemanager.slotmanager.ResourceActions;
 import org.apache.flink.runtime.resourcemanager.slotmanager.SlotManager;
+import org.apache.flink.runtime.resourcemanager.slotmanager.TestingSlotManagerBuilder;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.TestingRpcService;
 import org.apache.flink.runtime.taskexecutor.SlotReport;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationSuccess;
+import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.util.TestLogger;
 
@@ -419,7 +422,7 @@ public class MesosResourceManagerTest extends TestLogger {
 				this.jobID = jobID;
 				this.resourceID = new ResourceID(jobID.toString());
 				this.address = "/" + jobID;
-				this.gateway = mock(JobMasterGateway.class);
+				this.gateway = new TestingJobMasterGatewayBuilder().build();
 				this.jobMasterId = JobMasterId.generate();
 				this.leaderRetrievalService = new SettableLeaderRetrievalService(this.address, this.jobMasterId.toUUID());
 			}
@@ -441,7 +444,7 @@ public class MesosResourceManagerTest extends TestLogger {
 			MockTaskExecutor(Protos.TaskID taskID) {
 				this.taskID = taskID;
 				this.address = "/" + taskID;
-				this.gateway = mock(TaskExecutorGateway.class);
+				this.gateway = new TestingTaskExecutorGatewayBuilder().createTestingTaskExecutorGateway();
 				this.resourceID = MesosResourceManager.extractResourceID(this.taskID);
 			}
 		}

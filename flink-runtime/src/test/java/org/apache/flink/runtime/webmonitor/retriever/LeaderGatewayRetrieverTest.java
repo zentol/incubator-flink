@@ -22,6 +22,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
 import org.apache.flink.runtime.rpc.RpcGateway;
+import org.apache.flink.runtime.webmonitor.TestingRestfulGateway;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.TestLogger;
 
@@ -34,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 /**
  * Test cases for the {@link LeaderGatewayRetriever}.
@@ -49,7 +49,7 @@ public class LeaderGatewayRetrieverTest extends TestLogger {
 		final String address = "localhost";
 		final UUID leaderId = UUID.randomUUID();
 
-		RpcGateway rpcGateway = mock(RpcGateway.class);
+		RpcGateway rpcGateway = new TestingRestfulGateway();
 
 		TestingLeaderGatewayRetriever leaderGatewayRetriever = new TestingLeaderGatewayRetriever(rpcGateway);
 		SettableLeaderRetrievalService settableLeaderRetrievalService = new SettableLeaderRetrievalService();

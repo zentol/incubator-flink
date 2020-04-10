@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.functions.async;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.BroadcastVariableInitializer;
@@ -26,6 +27,7 @@ import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.api.common.functions.util.RuntimeUDFContext;
 import org.apache.flink.api.common.state.AggregatingStateDescriptor;
 import org.apache.flink.api.common.state.FoldingStateDescriptor;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -36,6 +38,10 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 
 import org.junit.Test;
+
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -107,19 +113,17 @@ public class RichAsyncFunctionTest {
 		final int indexOfSubtask = 43;
 		final int attemptNumber = 1337;
 		final String taskNameWithSubtask = "barfoo";
-		final ExecutionConfig executionConfig = mock(ExecutionConfig.class);
-		final ClassLoader userCodeClassLoader = mock(ClassLoader.class);
+		final ExecutionConfig executionConfig = new ExecutionConfig();
+		final ClassLoader userCodeClassLoader = new URLClassLoader(new URL[]{});
 
-		RuntimeContext mockedRuntimeContext = mock(RuntimeContext.class);
-
-		when(mockedRuntimeContext.getTaskName()).thenReturn(taskName);
-		when(mockedRuntimeContext.getMetricGroup()).thenReturn(metricGroup);
-		when(mockedRuntimeContext.getNumberOfParallelSubtasks()).thenReturn(numberOfParallelSubtasks);
-		when(mockedRuntimeContext.getIndexOfThisSubtask()).thenReturn(indexOfSubtask);
-		when(mockedRuntimeContext.getAttemptNumber()).thenReturn(attemptNumber);
-		when(mockedRuntimeContext.getTaskNameWithSubtasks()).thenReturn(taskNameWithSubtask);
-		when(mockedRuntimeContext.getExecutionConfig()).thenReturn(executionConfig);
-		when(mockedRuntimeContext.getUserCodeClassLoader()).thenReturn(userCodeClassLoader);
+		final RuntimeContext mockedRuntimeContext = new RuntimeUDFContext(
+			new TaskInfo(taskName, numberOfParallelSubtasks, indexOfSubtask, numberOfParallelSubtasks, attemptNumber),
+			userCodeClassLoader,
+			executionConfig,
+			Collections.emptyMap(),
+			Collections.emptyMap(),
+			metricGroup
+		);
 
 		function.setRuntimeContext(mockedRuntimeContext);
 

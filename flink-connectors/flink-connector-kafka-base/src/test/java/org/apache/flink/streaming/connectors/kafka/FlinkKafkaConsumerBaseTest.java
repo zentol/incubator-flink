@@ -349,11 +349,10 @@ public class FlinkKafkaConsumerBaseTest extends TestLogger {
 			new KafkaTopicsDescriptor(initKafkaTopics, null),
 			0,
 			1,
-			TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(initKafkaTopics),
-			TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(
-				initKafkaTopics.stream()
+			ignored -> initKafkaTopics,
+			ignored -> initKafkaTopics.stream()
 					.map(topic -> new KafkaTopicPartition(topic, 0))
-					.collect(Collectors.toList())));
+					.collect(Collectors.toList()));
 		final FlinkKafkaConsumerBase<String> consumer = new DummyFlinkKafkaConsumer<>(initKafkaTopics, discoverer);
 		if (disableFiltering) {
 			consumer.disableFilterRestoredPartitionsWithSubscribedTopics();
@@ -750,8 +749,8 @@ public class FlinkKafkaConsumerBaseTest extends TestLogger {
 				new KafkaTopicsDescriptor(testTopics, null),
 				i,
 				initialParallelism,
-				TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(testTopics),
-				TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockFetchedPartitionsOnStartup));
+				ignored -> testTopics,
+				ignored -> mockFetchedPartitionsOnStartup);
 
 			consumers[i] = new DummyFlinkKafkaConsumer<>(testTopics, partitionDiscoverer);
 			testHarnesses[i] = createTestHarness(consumers[i], initialParallelism, i);
@@ -807,8 +806,8 @@ public class FlinkKafkaConsumerBaseTest extends TestLogger {
 				new KafkaTopicsDescriptor(testTopics, null),
 				i,
 				restoredParallelism,
-				TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(testTopics),
-				TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockFetchedPartitionsAfterRestore));
+				ignored -> testTopics,
+				ignored -> mockFetchedPartitionsAfterRestore);
 
 			restoredConsumers[i] = new DummyFlinkKafkaConsumer<>(testTopics, partitionDiscoverer);
 			restoredTestHarnesses[i] = createTestHarness(restoredConsumers[i], restoredParallelism, i);

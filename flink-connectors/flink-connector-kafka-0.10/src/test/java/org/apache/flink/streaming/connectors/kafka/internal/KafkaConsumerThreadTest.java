@@ -26,7 +26,6 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.connectors.kafka.internals.ClosableBlockingQueue;
-import org.apache.flink.streaming.connectors.kafka.internals.KafkaCommitCallback;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionState;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionStateSentinel;
@@ -50,6 +49,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import static org.apache.flink.streaming.connectors.kafka.Utils.DUMMY_COMMIT_CALLBACK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -83,6 +84,8 @@ import static org.powermock.api.mockito.PowerMockito.whenNew;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Handover.class)
 public class KafkaConsumerThreadTest {
+
+	private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerThreadTest.class);
 
 	@Test(timeout = 10000)
 	public void testCloseWithoutAssignedPartitions() throws Exception {
@@ -515,7 +518,7 @@ public class KafkaConsumerThreadTest {
 		// pause just before the reassignment so we can inject the wakeup
 		testThread.waitPartitionReassignmentInvoked();
 
-		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), mock(KafkaCommitCallback.class));
+		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), DUMMY_COMMIT_CALLBACK);
 		assertEquals(1, mockConsumer.getNumWakeupCalls());
 
 		testThread.startPartitionReassignment();
@@ -601,7 +604,7 @@ public class KafkaConsumerThreadTest {
 		// pause just before the reassignment so we can inject the wakeup
 		testThread.waitPartitionReassignmentInvoked();
 
-		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), mock(KafkaCommitCallback.class));
+		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), DUMMY_COMMIT_CALLBACK);
 
 		// make sure the consumer was actually woken up
 		assertEquals(1, mockConsumer.getNumWakeupCalls());
@@ -687,7 +690,7 @@ public class KafkaConsumerThreadTest {
 		// wait until the reassignment has started
 		midAssignmentLatch.await();
 
-		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), mock(KafkaCommitCallback.class));
+		testThread.setOffsetsToCommit(new HashMap<TopicPartition, OffsetAndMetadata>(), DUMMY_COMMIT_CALLBACK);
 
 		// the wakeup in the setOffsetsToCommit() call should have been buffered, and not called on the consumer
 		assertEquals(0, mockConsumer.getNumWakeupCalls());
@@ -764,7 +767,6 @@ public class KafkaConsumerThreadTest {
 		// -- mock Handover and logger ---
 		Handover mockHandover = PowerMockito.mock(Handover.class);
 		doNothing().when(mockHandover).produce(any());
-		Logger mockLogger = mock(Logger.class);
 
 		MetricGroup metricGroup = new UnregisteredMetricsGroup();
 		FlinkConnectorRateLimiter rateLimiter = new GuavaFlinkConnectorRateLimiter();
@@ -774,7 +776,7 @@ public class KafkaConsumerThreadTest {
 		// -- Test Kafka Consumer thread ---
 
 		KafkaConsumerThread testThread = new TestKafkaConsumerThreadRateLimit(
-				mockLogger,
+				LOG,
 				mockHandover,
 				properties,
 				unassignedPartitionsQueue,
@@ -822,7 +824,7 @@ public class KafkaConsumerThreadTest {
 				Handover handover) {
 
 			super(
-					mock(Logger.class),
+					LOG,
 					handover,
 					new Properties(),
 					unassignedPartitionsQueue,

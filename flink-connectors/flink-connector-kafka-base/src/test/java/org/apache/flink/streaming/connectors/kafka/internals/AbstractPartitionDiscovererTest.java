@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
@@ -79,8 +80,8 @@ public class AbstractPartitionDiscovererTest {
 					topicsDescriptor,
 					subtaskIndex,
 					mockGetAllPartitionsForTopicsReturn.size(),
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
-					TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockGetAllPartitionsForTopicsReturn));
+					ignored -> Collections.singletonList(TEST_TOPIC),
+					ignored -> mockGetAllPartitionsForTopicsReturn);
 			partitionDiscoverer.open();
 
 			List<KafkaTopicPartition> initialDiscovery = partitionDiscoverer.discoverPartitions();
@@ -124,8 +125,8 @@ public class AbstractPartitionDiscovererTest {
 						topicsDescriptor,
 						subtaskIndex,
 						numConsumers,
-						TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
-						TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockGetAllPartitionsForTopicsReturn));
+						ignored -> Collections.singletonList(TEST_TOPIC),
+						ignored -> mockGetAllPartitionsForTopicsReturn);
 				partitionDiscoverer.open();
 
 				List<KafkaTopicPartition> initialDiscovery = partitionDiscoverer.discoverPartitions();
@@ -176,8 +177,8 @@ public class AbstractPartitionDiscovererTest {
 						topicsDescriptor,
 						subtaskIndex,
 						numConsumers,
-						TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
-						TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockGetAllPartitionsForTopicsReturn));
+						ignored -> Collections.singletonList(TEST_TOPIC),
+						ignored -> mockGetAllPartitionsForTopicsReturn);
 				partitionDiscoverer.open();
 
 				List<KafkaTopicPartition> initialDiscovery = partitionDiscoverer.discoverPartitions();
@@ -237,7 +238,7 @@ public class AbstractPartitionDiscovererTest {
 					topicsDescriptor,
 					0,
 					numConsumers,
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
+					ignored -> Collections.singletonList(TEST_TOPIC),
 					deepClone(mockGetAllPartitionsForTopicsReturnSequence));
 			partitionDiscovererSubtask0.open();
 
@@ -245,7 +246,7 @@ public class AbstractPartitionDiscovererTest {
 					topicsDescriptor,
 					1,
 					numConsumers,
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
+					ignored -> Collections.singletonList(TEST_TOPIC),
 					deepClone(mockGetAllPartitionsForTopicsReturnSequence));
 			partitionDiscovererSubtask1.open();
 
@@ -253,7 +254,7 @@ public class AbstractPartitionDiscovererTest {
 					topicsDescriptor,
 					2,
 					numConsumers,
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList(TEST_TOPIC)),
+					ignored -> Collections.singletonList(TEST_TOPIC),
 					deepClone(mockGetAllPartitionsForTopicsReturnSequence));
 			partitionDiscovererSubtask2.open();
 
@@ -372,16 +373,16 @@ public class AbstractPartitionDiscovererTest {
 					topicsDescriptor,
 					subtaskIndex,
 					numSubtasks,
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Arrays.asList("test-topic", "test-topic2")),
-					TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockGetAllPartitionsForTopicsReturn));
+					ignored -> Arrays.asList("test-topic", "test-topic2"),
+					ignored -> mockGetAllPartitionsForTopicsReturn);
 			partitionDiscoverer.open();
 
 			TestPartitionDiscoverer partitionDiscovererOutOfOrder = new TestPartitionDiscoverer(
 					topicsDescriptor,
 					subtaskIndex,
 					numSubtasks,
-					TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Arrays.asList("test-topic", "test-topic2")),
-					TestPartitionDiscoverer.createMockGetAllPartitionsFromTopicsSequenceFromFixedReturn(mockGetAllPartitionsForTopicsReturnOutOfOrder));
+					ignored -> Arrays.asList("test-topic", "test-topic2"),
+					ignored -> mockGetAllPartitionsForTopicsReturnOutOfOrder);
 			partitionDiscovererOutOfOrder.open();
 
 			List<KafkaTopicPartition> discoveredPartitions = partitionDiscoverer.discoverPartitions();
@@ -411,10 +412,12 @@ public class AbstractPartitionDiscovererTest {
 				topicsDescriptor,
 				0,
 				1,
-				TestPartitionDiscoverer.createMockGetAllTopicsSequenceFromFixedReturn(Collections.singletonList("test-topic")),
+				ignored -> Collections.singletonList("test-topic"),
 				// first metadata fetch has missing partitions that appears only in the second fetch;
 				// need to create new modifiable lists for each fetch, since internally Iterable.remove() is used.
-				Arrays.asList(new ArrayList<>(mockGetAllPartitionsForTopicsReturn1), new ArrayList<>(mockGetAllPartitionsForTopicsReturn2)));
+				index -> index == 0
+					? new ArrayList<>(mockGetAllPartitionsForTopicsReturn1)
+					: new ArrayList<>(mockGetAllPartitionsForTopicsReturn2));
 		partitionDiscoverer.open();
 
 		List<KafkaTopicPartition> discoveredPartitions1 = partitionDiscoverer.discoverPartitions();
@@ -439,7 +442,7 @@ public class AbstractPartitionDiscovererTest {
 		return false;
 	}
 
-	private List<List<KafkaTopicPartition>> deepClone(List<List<KafkaTopicPartition>> toClone) {
+	private Function<Integer, List<KafkaTopicPartition>> deepClone(List<List<KafkaTopicPartition>> toClone) {
 		List<List<KafkaTopicPartition>> clone = new ArrayList<>(toClone.size());
 		for (List<KafkaTopicPartition> partitionsToClone : toClone) {
 			List<KafkaTopicPartition> clonePartitions = new ArrayList<>(partitionsToClone.size());
@@ -448,7 +451,7 @@ public class AbstractPartitionDiscovererTest {
 			clone.add(clonePartitions);
 		}
 
-		return clone;
+		return clone::get;
 	}
 
 	/**
