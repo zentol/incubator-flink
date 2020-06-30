@@ -109,11 +109,7 @@ read from files using various methods: you can just read them line by line, as
 CSV files, or using any of the other provided sources. To just read a text file
 as a sequence of lines, you can use:
 
-{% highlight java %}
-final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-DataStream<String> text = env.readTextFile("file:///path/to/file");
-{% endhighlight %}
+{% include examples/java/anatomy_example_1.md %}
 
 This will give you a DataStream on which you can then apply transformations to create new
 derived DataStreams.
@@ -121,16 +117,7 @@ derived DataStreams.
 You apply transformations by calling methods on DataStream with a
 transformation functions. For example, a map transformation looks like this:
 
-{% highlight java %}
-DataStream<String> input = ...;
-
-DataStream<Integer> parsed = input.map(new MapFunction<String, Integer>() {
-    @Override
-    public Integer map(String value) {
-        return Integer.parseInt(value);
-    }
-});
-{% endhighlight %}
+{% include examples/java/anatomy_example_2.md %}
 
 This will create a new DataStream by converting every String in the original
 collection to an Integer.
@@ -721,14 +708,7 @@ A LocalEnvironment is created and used as follows:
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
-{% highlight java %}
-final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-
-DataStream<String> lines = env.addSource(/* some source */);
-// build your program
-
-env.execute();
-{% endhighlight %}
+{% include examples/java/local_stream_environment_example.md %}
 </div>
 <div data-lang="scala" markdown="1">
 
@@ -796,12 +776,7 @@ Flink also provides a sink to collect DataStream results for testing and debuggi
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
-{% highlight java %}
-import org.apache.flink.streaming.experimental.DataStreamUtils
-
-DataStream<Tuple2<String, Integer>> myResult = ...
-Iterator<Tuple2<String, Integer>> myOutput = DataStreamUtils.collect(myResult)
-{% endhighlight %}
+{% include examples/java/````collect_example.md %}
 
 </div>
 <div data-lang="scala" markdown="1">

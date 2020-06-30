@@ -35,6 +35,7 @@ under the License.
 
 	<modules>
 		<module>flink-docs-generators</module>
+		<module>flink-docs-examples</module>
 	</modules>
 
 </project>
