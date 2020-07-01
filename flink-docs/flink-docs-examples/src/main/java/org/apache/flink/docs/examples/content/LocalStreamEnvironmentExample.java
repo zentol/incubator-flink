@@ -28,7 +28,7 @@ public class LocalStreamEnvironmentExample {
 		// <
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
-		// | hide-argument
+		// | hide-argument:'some source'
 		DataStream<String> lines = env.addSource(null);
 		// build your program
 

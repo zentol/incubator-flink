@@ -18,10 +18,13 @@
 package org.apache.flink.docs.examples.extractor;
 
 import org.apache.flink.util.FileUtils;
+import org.apache.flink.util.Preconditions;
 
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -36,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,6 +53,8 @@ public class ExampleExtractor {
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleExtractor.class);
 
 	private static final Pattern START_COMMENT_PATTERN = Pattern.compile("\t*// < ?(?<name>[\\w ]*) ?.*");
+	private static final Pattern DIRECTIVE_COMMENT_PATTERN = Pattern.compile("\t*// \\| ?(([\\w-]*)(:('[\\w ]+'))? ?)+");
+	private static final Pattern DIRECTIVE_PATTERN = Pattern.compile("(?<directive>[\\w-]+)(?::'(?<arg>[\\w ]+)')?");
 
 	public static void main(String[] args) throws IOException {
 		Path docsExamplesDir = Paths.get(args[0]);
@@ -115,23 +120,6 @@ public class ExampleExtractor {
 		return mergeBlocks(blocks);
 	}
 
-	private static List<Block> mergeBlocks(List<Block> blocks) {
-		final Map<Optional<String>, List<Block>> blocksByName = blocks.stream().collect(Collectors.groupingBy(Block::getName));
-		final List<Block> mergedBlocks = new ArrayList<>();
-		blocksByName.forEach((key, value) -> {
-			List<String> mergedLines = new ArrayList<>();
-			for (int i = 0; i < value.size(); i++) {
-				Block block = value.get(i);
-				mergedLines.addAll(block.getLines());
-				if (i < value.size() - 1) {
-					mergedLines.add("");
-				}
-			}
-			mergedBlocks.add(new Block(key.orElse(null), mergedLines));
-		});
-		return mergedBlocks;
-	}
-
 	private static Block processBlock(List<String> lines) {
 		String start = lines.get(0);
 		Matcher matcher = START_COMMENT_PATTERN.matcher(start);
@@ -171,6 +159,23 @@ public class ExampleExtractor {
 		return lines.stream()
 			.map(line -> line.length() > finalMinTabCount ? line.substring(finalMinTabCount) : line)
 			.collect(Collectors.toList());
+	}
+
+	private static List<Block> mergeBlocks(List<Block> blocks) {
+		final Map<Optional<String>, List<Block>> blocksByName = blocks.stream().collect(Collectors.groupingBy(Block::getName));
+		final List<Block> mergedBlocks = new ArrayList<>();
+		blocksByName.forEach((key, value) -> {
+			List<String> mergedLines = new ArrayList<>();
+			for (int i = 0; i < value.size(); i++) {
+				Block block = value.get(i);
+				mergedLines.addAll(block.getLines());
+				if (i < value.size() - 1) {
+					mergedLines.add("");
+				}
+			}
+			mergedBlocks.add(new Block(key.orElse(null), mergedLines));
+		});
+		return mergedBlocks;
 	}
 
 	private static void write(String fileName, Block block, Language language, Path outputDirectory) {
@@ -219,10 +224,15 @@ public class ExampleExtractor {
 
 	private static List<Directive> parseDirective(String line) {
 		List<Directive> directives = new ArrayList<>();
-		if (line.trim().startsWith("// | ")) {
-			for (Directive directive : Directive.values()) {
-				if (line.contains(directive.keyword)) {
-					directives.add(directive);
+		if (DIRECTIVE_COMMENT_PATTERN.matcher(line).matches()) {
+			Matcher directiveExtractor = DIRECTIVE_PATTERN.matcher(line);
+			while (directiveExtractor.find()) {
+				String directive = directiveExtractor.group("directive");
+				String arg = directiveExtractor.group("arg");
+				for (DirectiveFactory directiveFactory : DirectiveFactory.values()) {
+					if (directiveFactory.keyword.equals(directive)) {
+						directives.add(directiveFactory.get(arg));
+					}
 				}
 			}
 		}
@@ -233,8 +243,8 @@ public class ExampleExtractor {
 		List<String> processedLines = new ArrayList<>();
 		for (int i = 0; i < lines.size(); i++) {
 			String line = lines.get(i);
-			List<Directive> directives = parseDirective(line);
-			if (directives.size() == 0) {
+			List<Directive> directiveFactories = parseDirective(line);
+			if (directiveFactories.size() == 0) {
 				processedLines.add(line);
 			} else {
 				i++;
@@ -243,8 +253,8 @@ public class ExampleExtractor {
 					base += lines.get(i + 1).trim();
 					i++;
 				}
-				for (Directive directive : directives) {
-					base = directive.processor.apply(base);
+				for (Directive directive : directiveFactories) {
+					base = directive.apply(base);
 				}
 				processedLines.add(base);
 			}
@@ -252,16 +262,24 @@ public class ExampleExtractor {
 		return processedLines;
 	}
 
-	private enum Directive {
-		HIDE_ASSIGNMENT("hide-assignment", line -> line.replaceFirst("(.*) = .*?;", "$1 = ...")),
-		HIDE_ARGUMENT("hide-argument", line -> line.replaceFirst("(.*)\\(.*\\);", "$1(...);"));
+	private interface Directive {
+		String apply(String line);
+	}
 
-		private String keyword;
-		private Function<String, String> processor;
+	private enum DirectiveFactory {
+		HIDE_ASSIGNMENT("hide-assignment", (line, arg) -> line.replaceFirst("(.*) = .*?;", "$1 = ...")),
+		HIDE_ARGUMENT("hide-argument", (line, arg) -> line.replaceFirst("(.*)\\(.*\\);", "$1(/* " + arg + " */);"));
 
-		Directive(String keyword, Function<String, String> processor) {
+		private final String keyword;
+		private final BiFunction<String, String, String> processor;
+
+		DirectiveFactory(String keyword, BiFunction<String, String, String> processor) {
 			this.keyword = keyword;
 			this.processor = processor;
+		}
+
+		public Directive get(@Nullable String arg) {
+			return line -> processor.apply(line, arg);
 		}
 	}
 
@@ -274,9 +292,9 @@ public class ExampleExtractor {
 			this(null, lines);
 		}
 
-		private Block(String name, List<String> lines) {
+		private Block(@Nullable String name, List<String> lines) {
 			this.name = name == null || name.isEmpty() ? Optional.empty() : Optional.of(name);
-			this.lines = lines;
+			this.lines = Preconditions.checkNotNull(lines);
 		}
 
 		public Optional<String> getName() {
