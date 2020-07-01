@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 public class ExampleExtractor {
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleExtractor.class);
 
-	private static final Pattern START_COMMENT_PATTERN = Pattern.compile("\t*// < ?(?<name>[\\w ]*) ?.*");
+	private static final Pattern START_COMMENT_PATTERN = Pattern.compile("\t*// <(?<name> ([\\w ]+;?)*)?");
 	private static final Pattern DIRECTIVE_COMMENT_PATTERN = Pattern.compile("\t*// \\| ?(([\\w-]*)(:('[\\w ]+'))? ?)+");
 	private static final Pattern DIRECTIVE_PATTERN = Pattern.compile("(?<directive>[\\w-]+)(?::'(?<arg>[\\w ]+)')?");
 
@@ -113,27 +113,43 @@ public class ExampleExtractor {
 				blockStarts.add(x);
 			} else if (isBlockEnd(line)) {
 				List<String> rawBlock = lines.subList(blockStarts.remove(), x + 1);
-				Block strings = processBlock(rawBlock);
-				blocks.add(strings);
+
+				List<String> names = extractBlockNames(rawBlock.get(0));
+
+				List<String> strings = processLines(rawBlock.subList(1, rawBlock.size() - 1));
+
+				names.forEach(name -> blocks.add(new Block(name.equals("_") ? null : name, strings)));
 			}
 		}
 		return mergeBlocks(blocks);
 	}
 
-	private static Block processBlock(List<String> lines) {
-		String start = lines.get(0);
+	private static List<String> extractBlockNames(String start) {
 		Matcher matcher = START_COMMENT_PATTERN.matcher(start);
 		if (!matcher.matches()) {
 			throw new RuntimeException(String.format("Start comment: '%s' did not conform to expected format '%s'.", start, START_COMMENT_PATTERN.pattern()));
 		}
-		String name = matcher.group("name");
 
-		List<String> codeLines = lines.subList(1, lines.size() - 1);
+		String rawNames = matcher.group("name");
+
+		if (rawNames == null) {
+			return Collections.singletonList("_");
+		} else {
+			String[] split = rawNames.split(";");
+			List<String> names = new ArrayList<>();
+			for (String s : split) {
+				names.add(s.trim());
+			}
+			return names;
+		}
+	}
+
+	private static List<String> processLines(List<String> codeLines) {
 		codeLines = sanitizeBLock(codeLines);
 		codeLines = alignLeft(codeLines);
 		codeLines = processDirectives(codeLines);
 
-		return new Block(name, codeLines);
+		return codeLines;
 	}
 
 	private static List<String> sanitizeBLock(List<String> lines) {
@@ -268,7 +284,7 @@ public class ExampleExtractor {
 
 	private enum DirectiveFactory {
 		HIDE_ASSIGNMENT("hide-assignment", (line, arg) -> line.replaceFirst("(.*) = .*?;", "$1 = ...")),
-		HIDE_ARGUMENT("hide-argument", (line, arg) -> line.replaceFirst("(.*)\\(.*\\);", "$1(/* " + arg + " */);"));
+		HIDE_ARGUMENT("hide-argument", (line, arg) -> line.replaceFirst("(.*)\\(.*\\);", "$1(" + argOrDots(arg) + ");"));
 
 		private final String keyword;
 		private final BiFunction<String, String, String> processor;
@@ -280,6 +296,12 @@ public class ExampleExtractor {
 
 		public Directive get(@Nullable String arg) {
 			return line -> processor.apply(line, arg);
+		}
+
+		private static String argOrDots(@Nullable String arg) {
+			return arg == null
+				? "..."
+				: "/* " + arg + " */";
 		}
 	}
 
