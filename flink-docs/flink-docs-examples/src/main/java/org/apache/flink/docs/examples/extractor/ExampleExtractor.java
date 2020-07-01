@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 public class ExampleExtractor {
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleExtractor.class);
 
-	private static final Pattern START_COMMENT_PATTERN = Pattern.compile("\t*// < ?(?<name>\\w*) ?.*");
+	private static final Pattern START_COMMENT_PATTERN = Pattern.compile("\t*// < ?(?<name>[\\w ]*) ?.*");
 
 	public static void main(String[] args) throws IOException {
 		Path docsExamplesDir = Paths.get(args[0]);
@@ -81,7 +81,9 @@ public class ExampleExtractor {
 				.filter(language.getExampleFileFilter())
 				.forEach(file -> {
 					List<Block> lists = processFile(file);
-					lists.forEach(block -> write(FilenameUtils.removeExtension(file.getFileName().toString()), block, language, outputDirectory));
+					String fileName = FilenameUtils.removeExtension(file.getFileName().toString())
+						.replaceFirst("(.*)Example", "$1");
+					lists.forEach(block -> write(fileName, block, language, outputDirectory));
 				});
 		}
 	}

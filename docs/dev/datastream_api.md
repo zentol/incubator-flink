@@ -109,7 +109,7 @@ read from files using various methods: you can just read them line by line, as
 CSV files, or using any of the other provided sources. To just read a text file
 as a sequence of lines, you can use:
 
-{% include examples/java/anatomy_example_1.md %}
+{% include examples/java/anatomy_1.md %}
 
 This will give you a DataStream on which you can then apply transformations to create new
 derived DataStreams.
@@ -117,7 +117,7 @@ derived DataStreams.
 You apply transformations by calling methods on DataStream with a
 transformation functions. For example, a map transformation looks like this:
 
-{% include examples/java/anatomy_example_2.md %}
+{% include examples/java/anatomy_2.md %}
 
 This will create a new DataStream by converting every String in the original
 collection to an Integer.
@@ -708,7 +708,7 @@ A LocalEnvironment is created and used as follows:
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
-{% include examples/java/local_stream_environment_example.md %}
+{% include examples/java/local_stream_environment.md %}
 </div>
 <div data-lang="scala" markdown="1">
 
@@ -776,7 +776,7 @@ Flink also provides a sink to collect DataStream results for testing and debuggi
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
-{% include examples/java/````collect_example.md %}
+{% include examples/java/collect.md %}
 
 </div>
 <div data-lang="scala" markdown="1">
