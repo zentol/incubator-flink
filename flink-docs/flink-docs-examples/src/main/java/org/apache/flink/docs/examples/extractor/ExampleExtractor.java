@@ -73,7 +73,7 @@ public class ExampleExtractor {
 	private static void internalMain(Path baseDirectory, Path outputDirectory, Language language) throws IOException {
 		Path exampleDirectory = baseDirectory.resolve(language.getRelativeExampleDirectory());
 		if (!Files.exists(exampleDirectory)) {
-			LOG.warn("Skipping {}-language directory ({}) because it does not exist.", language.getMarkdownLanguageIdentifier(), exampleDirectory);
+			LOG.warn("Skipping {}-language directory '{}' because it does not exist.", language.getMarkdownLanguageIdentifier(), exampleDirectory);
 			return;
 		}
 		try (Stream<Path> exampleFiles = Files.walk(exampleDirectory)) {
@@ -136,7 +136,7 @@ public class ExampleExtractor {
 		String start = lines.get(0);
 		Matcher matcher = START_COMMENT_PATTERN.matcher(start);
 		if (!matcher.matches()) {
-			throw new RuntimeException(String.format("Start comment: (%s) did not conform to expected format (%s).", start, START_COMMENT_PATTERN.pattern()));
+			throw new RuntimeException(String.format("Start comment: '%s' did not conform to expected format '%s'.", start, START_COMMENT_PATTERN.pattern()));
 		}
 		String name = matcher.group("name");
 
@@ -182,6 +182,12 @@ public class ExampleExtractor {
 			block.getLines().stream(),
 			Stream.of("{% endhighlight %}"))
 			.collect(Collectors.toList());
+
+		if (LOG.isDebugEnabled()) {
+			LOG.info("Writing file {}:{}{}", outputDirectory.getParent().getParent().relativize(outputFile), System.lineSeparator(), lines.stream().collect(Collectors.joining(System.lineSeparator())));
+		} else {
+			LOG.info("Writing file '{}'.", outputDirectory.getParent().getParent().relativize(outputFile));
+		}
 
 		try {
 			Files.createDirectories(outputFile.getParent());
