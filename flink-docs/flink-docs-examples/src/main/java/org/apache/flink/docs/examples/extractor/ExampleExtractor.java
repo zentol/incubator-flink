@@ -57,6 +57,12 @@ public class ExampleExtractor {
 	private static final Pattern DIRECTIVE_PATTERN = Pattern.compile("(?<directive>[\\w-]+)(?::'(?<arg>[\\w ]+)')?");
 
 	public static void main(String[] args) throws IOException {
+		internalMain(new String[]{
+			"C:\\Dev\\Repos\\flink\\flink-docs\\flink-docs-examples",
+			"C:\\Dev\\Repos\\flink\\docs\\_includes\\examples"});
+	}
+
+	private static void internalMain(String[] args) throws IOException {
 		Path docsExamplesDir = Paths.get(args[0]);
 		Path outputDirectory = Paths.get(args[1]);
 
