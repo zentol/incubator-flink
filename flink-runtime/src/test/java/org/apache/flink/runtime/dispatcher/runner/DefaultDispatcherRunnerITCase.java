@@ -43,6 +43,7 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmanager.JobGraphStore;
 import org.apache.flink.runtime.jobmaster.TestingJobManagerRunner;
 import org.apache.flink.runtime.leaderelection.TestingLeaderElectionService;
+import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.TestingRpcServiceResource;
@@ -55,6 +56,7 @@ import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -125,6 +127,26 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 	public void teardown() throws Exception {
 		if (fatalErrorHandler != null) {
 			fatalErrorHandler.rethrowError();
+		}
+	}
+
+	@Test(timeout = 5_000L)
+	public void testNonBlockingJobSubmission() throws Exception {
+		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
+			final UUID firstLeaderSessionId = UUID.randomUUID();
+			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
+
+			// create a job graph of a job that blocks forever
+			final JobVertex testVertex = new BlockingJobVertex("testVertex");
+			testVertex.setInvokableClass(NoOpInvokable.class);
+			JobGraph blockingJobGraph =  new JobGraph(TEST_JOB_ID, "blockingTestJob", testVertex);
+
+			CompletableFuture<Acknowledge> ackFuture = firstDispatcherGateway.submitJob(
+				blockingJobGraph,
+				TIMEOUT);
+
+			// job submission needs to return within a reasonable timeframe
+			Assert.assertEquals(Acknowledge.get(), ackFuture.get(4, TimeUnit.SECONDS));
 		}
 	}
 
@@ -230,5 +252,20 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			TestingUtils.defaultExecutor(),
 			rpcServiceResource.getTestingRpcService(),
 			partialDispatcherServices);
+	}
+
+	private static class BlockingJobVertex extends JobVertex {
+		private final Object lock = new Object();
+		public BlockingJobVertex(String name) {
+			super(name);
+		}
+
+		@Override
+		public void initializeOnMaster(ClassLoader loader) throws Exception {
+			super.initializeOnMaster(loader);
+			synchronized (lock) {
+				lock.wait(); // block forever
+			}
+		}
 	}
 }
