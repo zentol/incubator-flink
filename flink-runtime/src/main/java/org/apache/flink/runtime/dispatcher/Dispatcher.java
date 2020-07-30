@@ -142,7 +142,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	protected final CompletableFuture<ApplicationStatus> shutDownFuture;
 
-
 	public Dispatcher(
 			RpcService rpcService,
 			DispatcherId fencingToken,
@@ -684,7 +683,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
 		DispatcherJob job = jobs.remove(jobId);
-		if(job.isInitializing()) {
+		if (job.isInitializing()) {
 			// TODO what about race conditions?
 			job.cancelInitialization();
 			// TODO cleanupHA?
@@ -847,6 +846,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private <T> List<T> flattenOptionalCollection(Collection<Optional<T>> optionalCollection) {
 		return optionalCollection.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
+
 	private long getNumberOfJobsRunning() {
 		return jobs.values().stream().filter(j -> !j.isInitializing() && !j.isFailed()).count();
 	}
@@ -922,6 +922,4 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	Executor getDispatcherExecutor() {
 		return getRpcService().getExecutor();
 	}
-
-
 }

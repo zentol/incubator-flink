@@ -141,12 +141,11 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			// create a job graph of a job that blocks forever
 			final BlockingJobVertex blockingJobVertex = new BlockingJobVertex("testVertex");
 			blockingJobVertex.setInvokableClass(NoOpInvokable.class);
-			JobGraph blockingJobGraph =  new JobGraph(TEST_JOB_ID, "blockingTestJob", blockingJobVertex);
+			JobGraph blockingJobGraph = new JobGraph(TEST_JOB_ID, "blockingTestJob", blockingJobVertex);
 
 			CompletableFuture<Acknowledge> ackFuture = dispatcherGateway.submitJob(
 				blockingJobGraph,
 				TIMEOUT);
-
 
 			// job submission needs to return within a reasonable timeframe
 			LOG.info("Waiting on future");
