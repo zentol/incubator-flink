@@ -173,6 +173,35 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		}
 	}
 
+	@Test(timeout = 5_000L)
+	public void testCancellationDuringInitialization() throws Exception {
+		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
+			LOG.info("Starting test");
+			final UUID firstLeaderSessionId = UUID.randomUUID();
+			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
+
+			// create a job graph of a job that blocks forever
+			final BlockingJobVertex blockingJobVertex = new BlockingJobVertex("testVertex");
+			blockingJobVertex.setInvokableClass(NoOpInvokable.class);
+			JobGraph blockingJobGraph = new JobGraph(TEST_JOB_ID, "blockingTestJob", blockingJobVertex);
+
+			CompletableFuture<Acknowledge> ackFuture = dispatcherGateway.submitJob(
+				blockingJobGraph,
+				TIMEOUT);
+
+			// job submission needs to return within a reasonable timeframe
+			LOG.info("Waiting on future");
+			Assert.assertEquals(Acknowledge.get(), ackFuture.get(4, TimeUnit.SECONDS));
+
+			LOG.info("Done waiting");
+
+			// submission has succeeded, now cancel the job
+			dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
+			LOG.info("Job successfully cancelled");
+		}
+	}
+
+
 	@Test
 	public void leaderChange_afterJobSubmission_recoversSubmittedJob() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
