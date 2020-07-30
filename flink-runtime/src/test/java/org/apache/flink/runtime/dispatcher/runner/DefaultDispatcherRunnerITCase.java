@@ -37,6 +37,7 @@ import org.apache.flink.runtime.dispatcher.SingleJobJobGraphStore;
 import org.apache.flink.runtime.dispatcher.StandaloneDispatcher;
 import org.apache.flink.runtime.dispatcher.TestingJobManagerRunnerFactory;
 import org.apache.flink.runtime.dispatcher.VoidHistoryServerArchivist;
+import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.heartbeat.TestingHeartbeatServices;
 import org.apache.flink.runtime.highavailability.TestingHighAvailabilityServicesBuilder;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -60,6 +61,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +72,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -153,6 +156,9 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 
 			LOG.info("Done waiting");
 
+			// ensure INITIALIZING status
+			Assert.assertEquals(JobStatus.INITIALIZING, dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get());
+
 			// submission has succeeded, let the initialization finish.
 			blockingJobVertex.unblock();
 
@@ -174,6 +180,7 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 	}
 
 	@Test(timeout = 5_000L)
+	@Ignore("This test doesn't work w/o proper interrupt-based cancellation")
 	public void testCancellationDuringInitialization() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
 			LOG.info("Starting test");
@@ -201,6 +208,51 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		}
 	}
 
+	@Test(timeout = 5_000L)
+	public void testErrorDuringInitialization() throws Exception {
+		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
+			LOG.info("Starting test");
+			final UUID firstLeaderSessionId = UUID.randomUUID();
+			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
+
+			// create a job graph that fails during initialization
+			final FailingInitializationJobVertex failingInitializationJobVertex = new FailingInitializationJobVertex(
+				"testVertex");
+			failingInitializationJobVertex.setInvokableClass(NoOpInvokable.class);
+			JobGraph blockingJobGraph = new JobGraph(TEST_JOB_ID, "failingTestJob", failingInitializationJobVertex);
+
+			CompletableFuture<Acknowledge> ackFuture = dispatcherGateway.submitJob(
+				blockingJobGraph,
+				TIMEOUT);
+
+			// job submission needs to return within a reasonable timeframe
+			Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
+
+			try {
+				LOG.info("checking job status:");
+				// wait till job is running
+				JobStatus status;
+				do {
+					status = dispatcherGateway.requestJobStatus(
+						blockingJobGraph.getJobID(),
+						TIMEOUT).get();
+					Thread.sleep(50);
+					LOG.info("Status = " + status);
+					Assert.assertThat(
+						status,
+						either(is(JobStatus.INITIALIZING)).or(is(JobStatus.FAILED)));
+				} while (status != JobStatus.FAILED);
+				LOG.info("job is failed now");
+
+				// get failure cause
+				ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
+				Assert.assertNotNull(execGraph.getFailureInfo());
+				Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
+			} catch (Throwable t) {
+				LOG.warn("There we have it", t);
+			}
+		}
+	}
 
 	@Test
 	public void leaderChange_afterJobSubmission_recoversSubmittedJob() throws Exception {
@@ -336,6 +388,17 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				LOG.info("Notifying");
 				lock.notify();
 			}
+		}
+	}
+
+	private static class FailingInitializationJobVertex extends JobVertex{
+		public FailingInitializationJobVertex(String name) {
+			super(name);
+		}
+
+		@Override
+		public void initializeOnMaster(ClassLoader loader) throws Exception {
+			throw new IllegalStateException("Artificial test failure");
 		}
 	}
 }

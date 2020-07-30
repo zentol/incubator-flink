@@ -33,24 +33,29 @@ import java.util.concurrent.CompletableFuture;
  * Representation of a job while the JobManager is initializing, managed by the {@link Dispatcher}.
  */
 public class DispatcherJob {
-	private final CompletableFuture<CompletableFuture<JobManagerRunner>> initializingJobManager;
-	private CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
+	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 
 	private ErrorInfo failure = null;
 	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
 	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
 		LOG.info("Defining future");
-		initializingJobManager = CompletableFuture.supplyAsync(() -> {
-			// initialize JM
-			LOG.info("starting jm:");
-			return dispatcher.createJobManagerRunner(jobGraph).thenApply(FunctionUtils.uncheckedFunction((runner) -> {
+		initializingJobManager = dispatcher.createJobManagerRunner(jobGraph)
+			.thenApplyAsync(FunctionUtils.uncheckedFunction((runner) -> {
+				LOG.info("Starting jm runner:");
 				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
 				LOG.info("started jm");
 				return r;
-			}));
-		}, dispatcher.getDispatcherExecutor());
-		initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
+			}), dispatcher.getDispatcherExecutor());
+		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
+			if (throwable != null) {
+				// error during initialization
+				//dispatcher.onJobManagerInitFailure(jobGraph.getJobID());
+				this.failure = new ErrorInfo(throwable, System.currentTimeMillis());
+				LOG.info("Error in initialization recorded");
+			}
+		});
+		/*initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
 			LOG.info("jm init finished");
 			// JM init has finished
 			if (initThrowable != null) {
@@ -58,7 +63,6 @@ public class DispatcherJob {
 				failure = new ErrorInfo(initThrowable, System.currentTimeMillis());
 				dispatcher.onJobManagerInitFailure(jobGraph.getJobID());
 			} else {
-				jobManagerRunnerFuture = jobManagerRunner;
 				// register error handler
 				jobManagerRunnerFuture.whenCompleteAsync((ignore, runnerThrowable) -> {
 					if (runnerThrowable != null) {
@@ -68,7 +72,7 @@ public class DispatcherJob {
 					}
 				}, dispatcher.getDispatcherExecutor());
 			}
-		});
+		}); */
 		LOG.info("ctor done");
 	}
 
@@ -81,8 +85,9 @@ public class DispatcherJob {
 	}
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
+		LOG.info("getJobManagerRunnerFuture");
 		Preconditions.checkState(!isInitializing(), "Expecting initialized JobManager");
-		return jobManagerRunnerFuture;
+		return initializingJobManager;
 	}
 
 	public void cancelInitialization() {
