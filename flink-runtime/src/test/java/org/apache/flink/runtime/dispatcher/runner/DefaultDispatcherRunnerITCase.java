@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.dispatcher.runner;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.dispatcher.Dispatcher;
@@ -133,20 +134,43 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 	@Test(timeout = 5_000L)
 	public void testNonBlockingJobSubmission() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
+			LOG.info("Starting test");
 			final UUID firstLeaderSessionId = UUID.randomUUID();
-			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
+			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 
 			// create a job graph of a job that blocks forever
-			final JobVertex testVertex = new BlockingJobVertex("testVertex");
-			testVertex.setInvokableClass(NoOpInvokable.class);
-			JobGraph blockingJobGraph =  new JobGraph(TEST_JOB_ID, "blockingTestJob", testVertex);
+			final BlockingJobVertex blockingJobVertex = new BlockingJobVertex("testVertex");
+			blockingJobVertex.setInvokableClass(NoOpInvokable.class);
+			JobGraph blockingJobGraph =  new JobGraph(TEST_JOB_ID, "blockingTestJob", blockingJobVertex);
 
-			CompletableFuture<Acknowledge> ackFuture = firstDispatcherGateway.submitJob(
+			CompletableFuture<Acknowledge> ackFuture = dispatcherGateway.submitJob(
 				blockingJobGraph,
 				TIMEOUT);
 
+
 			// job submission needs to return within a reasonable timeframe
+			LOG.info("Waiting on future");
 			Assert.assertEquals(Acknowledge.get(), ackFuture.get(4, TimeUnit.SECONDS));
+
+			LOG.info("Done waiting");
+
+			// submission has succeeded, let the initialization finish.
+			blockingJobVertex.unblock();
+
+			LOG.info("checking job status:");
+			// wait till job is running
+			JobStatus status;
+			do {
+				status = dispatcherGateway.requestJobStatus(
+					blockingJobGraph.getJobID(),
+					TIMEOUT).get();
+				Thread.sleep(50);
+				LOG.info("Status = " + status);
+			} while(status != JobStatus.RUNNING);
+			LOG.info("job is running now");
+
+			dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
+			LOG.info("Job successfully cancelled");
 		}
 	}
 
@@ -256,6 +280,7 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 
 	private static class BlockingJobVertex extends JobVertex {
 		private final Object lock = new Object();
+		private boolean blocking = true;
 		public BlockingJobVertex(String name) {
 			super(name);
 		}
@@ -263,8 +288,25 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		@Override
 		public void initializeOnMaster(ClassLoader loader) throws Exception {
 			super.initializeOnMaster(loader);
+
+			while (true) {
+				synchronized (lock) {
+					if (!blocking) {
+						LOG.info("Initialization is unblocked ...");
+						return;
+					}
+					LOG.info("Initialization is waiting ... Lock on " + lock);
+					lock.wait(10);
+				}
+			}
+		}
+
+		public void unblock() {
+			LOG.info("Unblocking on " + lock);
 			synchronized (lock) {
-				lock.wait(); // block forever
+				blocking = false;
+				LOG.info("Notifying");
+				lock.notify();
 			}
 		}
 	}

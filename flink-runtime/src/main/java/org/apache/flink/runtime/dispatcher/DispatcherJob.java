@@ -6,6 +6,9 @@ import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.FunctionUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -16,13 +19,21 @@ public class DispatcherJob {
 	private CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 
 	private ErrorInfo failure = null;
+	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
 	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
+		LOG.info("Defining future");
 		initializingJobManager = CompletableFuture.supplyAsync(() -> {
 			// initialize JM
-			return dispatcher.createJobManagerRunner(jobGraph).thenApply(FunctionUtils.uncheckedFunction(dispatcher::startJobManagerRunner));
+			LOG.info("starting jm:");
+			return dispatcher.createJobManagerRunner(jobGraph).thenApply(FunctionUtils.uncheckedFunction((runner) -> {
+				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
+				LOG.info("started jm");
+				return r;
+			}));
 		}, dispatcher.getDispatcherExecutor());
 		initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
+			LOG.info("jm init finished");
 			// JM init has finished
 			if (initThrowable != null) {
 				// initialization failed
@@ -40,6 +51,7 @@ public class DispatcherJob {
 				}, dispatcher.getDispatcherExecutor());
 			}
 		});
+		LOG.info("ctor done");
 	}
 
 	public boolean isInitializing() {

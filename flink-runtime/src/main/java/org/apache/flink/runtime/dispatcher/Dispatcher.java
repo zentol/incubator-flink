@@ -74,6 +74,9 @@ import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.FunctionWithException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -103,6 +106,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<DispatcherId> implements DispatcherGateway {
 
+	private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
+
 	public static final String DISPATCHER_NAME = "dispatcher";
 
 	private final Configuration configuration;
@@ -118,7 +123,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private final FatalErrorHandler fatalErrorHandler;
 
-	private final Map<JobID, DispatcherJob> runningJobs;
+	private final Map<JobID, DispatcherJob> jobs;
 
 	private final DispatcherBootstrap dispatcherBootstrap;
 
@@ -136,6 +141,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private final Map<JobID, CompletableFuture<Void>> jobManagerTerminationFutures;
 
 	protected final CompletableFuture<ApplicationStatus> shutDownFuture;
+
 
 	public Dispatcher(
 			RpcService rpcService,
@@ -162,7 +168,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		this.runningJobsRegistry = highAvailabilityServices.getRunningJobsRegistry();
 
-		runningJobs = new HashMap<>(16);
+		jobs = new HashMap<>(16);
 
 		this.historyServerArchivist = dispatcherServices.getHistoryServerArchivist();
 
@@ -306,7 +312,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			throw new FlinkException(String.format("Failed to retrieve job scheduling status for job %s.", jobId), e);
 		}
 
-		return jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE || runningJobs.containsKey(jobId);
+		return jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE || jobs.containsKey(jobId);
 	}
 
 	private boolean isPartialResourceConfigured(JobGraph jobGraph) {
@@ -362,11 +368,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> runJob(JobGraph jobGraph) {
-		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
+		Preconditions.checkState(!jobs.containsKey(jobGraph.getJobID()));
 		DispatcherJob dispatcherJob = new DispatcherJob(jobGraph, this);
 
-		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
-
+		jobs.put(jobGraph.getJobID(), dispatcherJob);
+		LOG.info("runJob completed");
 		return CompletableFuture.completedFuture(null);
 	}
 
@@ -377,7 +383,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			jobManagerRunner.getResultFuture().handleAsync(
 				(ArchivedExecutionGraph archivedExecutionGraph, Throwable throwable) -> {
 					// check if we are still the active JobManagerRunner by checking the identity
-					final JobManagerRunner currentJobManagerRunner = Optional.ofNullable(runningJobs.get(jobId))
+					final JobManagerRunner currentJobManagerRunner = Optional.ofNullable(jobs.get(jobId))
 						.map(dispatcherJob -> dispatcherJob.getJobManagerRunnerFuture().getNow(null))
 						.orElse(null);
 					//noinspection ObjectEquality
@@ -430,7 +436,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public CompletableFuture<Collection<JobID>> listJobs(Time timeout) {
 		return CompletableFuture.completedFuture(
-			Collections.unmodifiableSet(new HashSet<>(runningJobs.keySet())));
+			Collections.unmodifiableSet(new HashSet<>(jobs.keySet())));
 	}
 
 	@Override
@@ -454,6 +460,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<Acknowledge> cancelJob(JobID jobId, Time timeout) {
+		DispatcherJob job = jobs.get(jobId);
+		if (job.isInitializing()) {
+			job.cancelInitialization();
+			// TODO consider executing the cancellation in a future?
+			return CompletableFuture.completedFuture(Acknowledge.get());
+		}
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 		return jobMasterGatewayFuture.thenCompose((JobMasterGateway jobMasterGateway) -> jobMasterGateway.cancel(timeout));
@@ -555,7 +567,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<JobResult> requestJobResult(JobID jobId, Time timeout) {
-		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = runningJobs.get(jobId).getJobManagerRunnerFuture();
+		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = jobs.get(jobId).getJobManagerRunnerFuture();
 
 		if (jobManagerRunnerFuture == null) {
 			final ArchivedExecutionGraph archivedExecutionGraph = archivedExecutionGraphStore.get(jobId);
@@ -671,10 +683,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
-		DispatcherJob job = runningJobs.remove(jobId);
+		DispatcherJob job = jobs.remove(jobId);
 		if(job.isInitializing()) {
 			// TODO what about race conditions?
 			job.cancelInitialization();
+			// TODO cleanupHA?
+			// TODO: return?
 		}
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
@@ -726,7 +740,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private void terminateJobManagerRunners() {
 		log.info("Stopping all currently running jobs of dispatcher {}.", getAddress());
 
-		final HashSet<JobID> jobsToRemove = new HashSet<>(jobManagerRunnerFutures.keySet());
+		final HashSet<JobID> jobsToRemove = new HashSet<>(jobs.keySet());
 
 		for (JobID jobId : jobsToRemove) {
 			removeJobAndRegisterTerminationFuture(jobId, false);
@@ -797,7 +811,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
-		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = jobManagerRunnerFutures.get(jobId);
+		// TODO: consider passing a DispatcherJob + JobId here, to avoid double map lookup
+		DispatcherJob job = jobs.get(jobId);
+		if (job == null) {
+			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
+		}
+		Preconditions.checkState(!job.isInitializing()); // TODO check for failure as well?
+		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
 		if (jobManagerRunnerFuture == null) {
 			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
@@ -806,7 +826,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			return leaderGatewayFuture.thenApplyAsync(
 				(JobMasterGateway jobMasterGateway) -> {
 					// check whether the retrieved JobMasterGateway belongs still to a running JobMaster
-					if (jobManagerRunnerFutures.containsKey(jobId)) {
+					if (jobs.containsKey(jobId)) {
 						return jobMasterGateway;
 					} else {
 						throw new CompletionException(new FlinkJobNotFoundException(jobId));
@@ -827,15 +847,18 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private <T> List<T> flattenOptionalCollection(Collection<Optional<T>> optionalCollection) {
 		return optionalCollection.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
+	private long getNumberOfJobsRunning() {
+		return jobs.values().stream().filter(j -> !j.isInitializing() && !j.isFailed()).count();
+	}
 
 	@Nonnull
 	private <T> List<CompletableFuture<Optional<T>>> queryJobMastersForInformation(Function<JobMasterGateway, CompletableFuture<T>> queryFunction) {
-		final int numberJobsRunning = jobManagerRunnerFutures.size();
+		final int numberJobsRunning = (int) getNumberOfJobsRunning();
 
 		ArrayList<CompletableFuture<Optional<T>>> optionalJobInformation = new ArrayList<>(
 			numberJobsRunning);
 
-		for (JobID jobId : jobManagerRunnerFutures.keySet()) {
+		for (JobID jobId : jobs.keySet()) {
 			final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 			final CompletableFuture<Optional<T>> optionalRequest = jobMasterGatewayFuture
@@ -864,7 +887,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	CompletableFuture<Void> getJobTerminationFuture(JobID jobId) {
-		if (jobManagerRunnerFutures.containsKey(jobId)) {
+		if (jobs.containsKey(jobId)) {
 			return FutureUtils.completedExceptionally(new DispatcherException(String.format("Job with job id %s is still running.", jobId)));
 		} else {
 			return jobManagerTerminationFutures.getOrDefault(jobId, CompletableFuture.completedFuture(null));
@@ -873,7 +896,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void registerDispatcherMetrics(MetricGroup jobManagerMetricGroup) {
 		jobManagerMetricGroup.gauge(MetricNames.NUM_RUNNING_JOBS,
-			() -> (long) jobManagerRunnerFutures.size());
+			() -> getNumberOfJobsRunning());
 	}
 
 	public CompletableFuture<Void> onRemovedJobGraph(JobID jobId) {
@@ -883,7 +906,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	void onJobManagerFailure(JobID jobID) {
-		this.runningJobs.remove(jobID);
+		this.jobs.remove(jobID);
 	}
 
 	public void onJobManagerInitFailure(JobID jobID) {
