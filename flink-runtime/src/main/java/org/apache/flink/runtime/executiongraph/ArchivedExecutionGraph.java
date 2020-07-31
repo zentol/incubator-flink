@@ -19,11 +19,15 @@
 package org.apache.flink.runtime.executiongraph;
 
 import org.apache.flink.api.common.ArchivedExecutionConfig;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
+import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
+import org.apache.flink.runtime.jobgraph.jsonplan.JsonPlanGenerator;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.Preconditions;
@@ -31,6 +35,7 @@ import org.apache.flink.util.SerializedValue;
 
 import javax.annotation.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -312,7 +317,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	 * @param executionGraph to create the ArchivedExecutionGraph from
 	 * @return ArchivedExecutionGraph created from the given ExecutionGraph
 	 */
-	public static ArchivedExecutionGraph createFrom(ExecutionGraph executionGraph) {
+	public static ArchivedExecutionGraph createFromFailedInit(ExecutionGraph executionGraph) {
 		final int numberVertices = executionGraph.getTotalNumberOfVertices();
 
 		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = new HashMap<>(numberVertices);
@@ -351,4 +356,61 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			executionGraph.getCheckpointStatsSnapshot(),
 			executionGraph.getStateBackendName().orElse(null));
 	}
+
+	/**
+	 * Create ArchivedExecutionGraph from failed JobGraph.
+	 *
+	 * Note: Some elements in the ArchivedExecutionGraph will be filled on a best-effort basis
+	 */
+	public static ArchivedExecutionGraph createFromFailedInit(
+		JobGraph jobGraph,
+		Throwable failure,
+		long jobManagerInitializationStarted) {
+		long failureTime = System.currentTimeMillis();
+		final int numberVertices = jobGraph.getNumberOfVertices();
+
+		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = new HashMap<>(numberVertices);
+		List<ArchivedExecutionJobVertex> archivedVerticesInCreationOrder = new ArrayList<>(numberVertices);
+		final Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators = Collections.emptyMap();
+		StringifiedAccumulatorResult[] archivedUserAccumulators = new StringifiedAccumulatorResult[]{};
+
+		final long[] timestamps = new long[JobStatus.values().length];
+		timestamps[JobStatus.FAILED.ordinal()] = failureTime;
+		timestamps[JobStatus.INITIALIZING.ordinal()] = jobManagerInitializationStarted;
+
+		String jsonPlan = "{}";
+		try {
+			jsonPlan = JsonPlanGenerator.generatePlan(jobGraph);
+		} catch (Throwable ignored) {}
+
+		ExecutionConfig ec;
+		try {
+			// note: this is using the system classloader, not the usercode cl, thus it
+			// will fail in some cases.
+			ec = jobGraph.getSerializedExecutionConfig().deserializeValue(ArchivedExecutionGraph.class.getClassLoader());
+		} catch (Throwable ignored) {
+			ec = new ExecutionConfig();
+		}
+
+		ErrorInfo failureInfo = new ErrorInfo(failure, failureTime);
+
+		return new ArchivedExecutionGraph(
+			jobGraph.getJobID(),
+			jobGraph.getName(),
+			archivedTasks,
+			archivedVerticesInCreationOrder,
+			timestamps,
+			JobStatus.FAILED,
+			failureInfo,
+			jsonPlan,
+			archivedUserAccumulators,
+			serializedUserAccumulators,
+			ec.archive(),
+			false,
+			null,
+			null,
+			null);
+
+	}
+
 }

@@ -123,6 +123,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private final FatalErrorHandler fatalErrorHandler;
 
+	// TODO: use jobs only for initializing + running? separate structure for failed
 	private final Map<JobID, DispatcherJob> jobs;
 
 	private final DispatcherBootstrap dispatcherBootstrap;
@@ -406,6 +407,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					return null;
 				}, getMainThreadExecutor()));
 
+
+
 		jobManagerRunner.start();
 
 		return jobManagerRunner;
@@ -433,7 +436,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					throw new CompletionException(new JobExecutionException(jobGraph.getJobID(), "Could not instantiate JobManager.", e));
 				}
 			},
-			rpcService.getExecutor());
+			getDispatcherExecutor());
 	}
 
 	@Override
@@ -521,18 +524,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(JobID jobId, Time timeout) {
 		LOG.info("requestJobStatus");
-		DispatcherJob dispatcherJob = jobs.get(jobId);
-		if (dispatcherJob == null) {
-			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
-		}
-		if (dispatcherJob.isInitializing()) {
-			LOG.info("is initing");
-			return CompletableFuture.completedFuture(JobStatus.INITIALIZING);
-		}
-		if (dispatcherJob.isFailed()) {
-			LOG.info("failed status");
-			return CompletableFuture.completedFuture(JobStatus.FAILED);
-		}
+
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 		final CompletableFuture<JobStatus> jobStatusFuture = jobMasterGatewayFuture.thenCompose(
@@ -540,8 +532,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		return jobStatusFuture.exceptionally(
 			(Throwable throwable) -> {
+				LOG.info("jobStatusFuture.exceptionally");
 				final JobDetails jobDetails = archivedExecutionGraphStore.getAvailableJobDetails(jobId);
-
+				LOG.info("in store " + jobDetails);
 				// check whether it is a completed job
 				if (jobDetails == null) {
 					throw new CompletionException(ExceptionUtils.stripCompletionException(throwable));
@@ -563,19 +556,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(JobID jobId, Time timeout) {
 		LOG.info("requestJob");
-		DispatcherJob dispatcherJob = jobs.get(jobId);
-		if (dispatcherJob == null) {
-			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
-		}
-		if (dispatcherJob.isInitializing()) {
-			LOG.info("is initing");
-			return FutureUtils.completedExceptionally(new IllegalStateException("Job is still initializing"));
-		}
-		if (dispatcherJob.isFailed()) {
-			LOG.info("failed status");
-			// construct ArchivedExecutionGraph
 
-		}
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 		final CompletableFuture<ArchivedExecutionGraph> archivedExecutionGraphFuture = jobMasterGatewayFuture.thenCompose(
@@ -843,12 +824,15 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
 		LOG.info("getJobMasterGatewayFuture");
-		// TODO: consider passing a DispatcherJob + JobId here, to avoid double map lookup
 		DispatcherJob job = jobs.get(jobId);
 		if (job == null) {
+			LOG.info("job is null");
 			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 		}
-		Preconditions.checkState(!job.isInitializing()); // TODO check for failure as well?
+		if (job.isInitializing()) {
+			LOG.info("is initializing .. returning fake gateway ...");
+			return job.getInitializingJobMasterGatewayFuture();
+		}
 		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
 		if (jobManagerRunnerFuture == null) {
@@ -881,7 +865,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private long getNumberOfJobsRunning() {
-		return jobs.values().stream().filter(j -> !j.isInitializing() && !j.isFailed()).count();
+		return jobs.size();
 	}
 
 	@Nonnull
@@ -942,17 +926,31 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		this.jobs.remove(jobID);
 	}
 
-	public void onJobManagerInitFailure(JobID jobID) {
+	public void onJobManagerInitFailure(
+		JobGraph jobGraph,
+		Throwable failure,
+		long jobManagerInitializationStarted) {
+		LOG.info("init failed");
+		jobs.remove(jobGraph.getJobID());
+		LOG.info("removed from map");
 		try {
-			jobGraphWriter.removeJobGraph(jobID);
+			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
+			LOG.info("removed rom jg");
 		} catch (Exception e) {
 			// TODO
 			e.printStackTrace();
 			// LOG.warn("Error while removing job graph", e);
 		}
+		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, failure, jobManagerInitializationStarted);
+		try {
+			this.archivedExecutionGraphStore.put(archivedGraph);
+			LOG.info("in archive");
+		} catch (IOException e) {
+			LOG.warn("Error while archiving execution graph of job that failed during init", e);
+		}
 	}
 
 	Executor getDispatcherExecutor() {
-		return getRpcService().getExecutor();
+		return getMainThreadExecutor();
 	}
 }

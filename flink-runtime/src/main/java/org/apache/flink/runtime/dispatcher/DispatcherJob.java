@@ -18,9 +18,9 @@
 
 package org.apache.flink.runtime.dispatcher;
 
-import org.apache.flink.runtime.executiongraph.ErrorInfo;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
+import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.FunctionUtils;
 
@@ -35,11 +35,14 @@ import java.util.concurrent.CompletableFuture;
 public class DispatcherJob {
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 
-	private ErrorInfo failure = null;
+	private final JobMasterGateway initializingJobMasterGateway;
+
+	// private ErrorInfo failure = null;
 	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
 	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
 		LOG.info("Defining future");
+		long jobManagerInitializationStarted = System.currentTimeMillis();
 		initializingJobManager = dispatcher.createJobManagerRunner(jobGraph)
 			.thenApplyAsync(FunctionUtils.uncheckedFunction((runner) -> {
 				LOG.info("Starting jm runner:");
@@ -50,11 +53,20 @@ public class DispatcherJob {
 		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
 			if (throwable != null) {
 				// error during initialization
-				//dispatcher.onJobManagerInitFailure(jobGraph.getJobID());
-				this.failure = new ErrorInfo(throwable, System.currentTimeMillis());
+				try {
+					dispatcher.onJobManagerInitFailure(
+						jobGraph,
+						throwable,
+						jobManagerInitializationStarted);
+				} catch (Throwable t) {
+					LOG.warn("Error in reporting failure", t);
+				}
+				//this.failure = new ErrorInfo(throwable, System.currentTimeMillis());
 				LOG.info("Error in initialization recorded");
 			}
-		});
+		}, dispatcher.getDispatcherExecutor());
+		initializingJobMasterGateway = new InitializingJobMasterGateway(initializingJobManager);
+
 		/*initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
 			LOG.info("jm init finished");
 			// JM init has finished
@@ -80,9 +92,6 @@ public class DispatcherJob {
 		return !initializingJobManager.isDone();
 	}
 
-	public boolean isFailed() {
-		return failure != null;
-	}
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
 		LOG.info("getJobManagerRunnerFuture");
@@ -92,5 +101,12 @@ public class DispatcherJob {
 
 	public void cancelInitialization() {
 		initializingJobManager.cancel(true);
+	}
+
+	/**
+	 * Returns a fake JobMasterGateway that acts as an initializing JobMaster.
+	 */
+	public CompletableFuture<JobMasterGateway> getInitializingJobMasterGatewayFuture() {
+		return CompletableFuture.completedFuture(initializingJobMasterGateway);
 	}
 }

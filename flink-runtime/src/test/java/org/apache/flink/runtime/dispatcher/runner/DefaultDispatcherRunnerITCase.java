@@ -250,6 +250,7 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
 			} catch (Throwable t) {
 				LOG.warn("There we have it", t);
+				Assert.fail();
 			}
 		}
 	}

@@ -144,14 +144,14 @@ public class ArchivedExecutionGraphTest extends TestLogger {
 
 	@Test
 	public void testArchive() throws IOException, ClassNotFoundException {
-		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFrom(runtimeGraph);
+		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(runtimeGraph);
 
 		compareExecutionGraph(runtimeGraph, archivedGraph);
 	}
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFrom(runtimeGraph);
+		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(runtimeGraph);
 
 		verifySerializability(archivedGraph);
 	}
