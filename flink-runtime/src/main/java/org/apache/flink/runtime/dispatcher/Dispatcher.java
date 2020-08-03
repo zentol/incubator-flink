@@ -436,7 +436,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					throw new CompletionException(new JobExecutionException(jobGraph.getJobID(), "Could not instantiate JobManager.", e));
 				}
 			},
-			getDispatcherExecutor());
+			getRpcService().getExecutor()); // do not use main thread executor. Otherwise, Dispatcher is blocked on JobManager creation
 	}
 
 	@Override
@@ -951,6 +951,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	Executor getDispatcherExecutor() {
-		return getMainThreadExecutor();
+		return super.getMainThreadExecutor();
 	}
 }

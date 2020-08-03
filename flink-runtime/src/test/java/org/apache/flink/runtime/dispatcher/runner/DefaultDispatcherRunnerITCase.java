@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.dispatcher.Dispatcher;
 import org.apache.flink.runtime.dispatcher.DispatcherBootstrap;
 import org.apache.flink.runtime.dispatcher.DispatcherFactory;
@@ -157,7 +158,9 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			LOG.info("Done waiting");
 
 			// ensure INITIALIZING status
-			Assert.assertEquals(JobStatus.INITIALIZING, dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get());
+			CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
+			FutureUtils.assertNoException(jobStatusFuture);
+			Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
 			// submission has succeeded, let the initialization finish.
 			blockingJobVertex.unblock();
@@ -233,9 +236,14 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				// wait till job is running
 				JobStatus status;
 				do {
-					status = dispatcherGateway.requestJobStatus(
+					CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(
 						blockingJobGraph.getJobID(),
-						TIMEOUT).get();
+						TIMEOUT);
+					statusFuture.whenComplete((JobStatus js, Throwable throwable) -> {
+						// test
+						LOG.warn("Throwable", throwable);
+					});
+					status = statusFuture.get();
 					Thread.sleep(50);
 					LOG.info("Status = " + status);
 					Assert.assertThat(

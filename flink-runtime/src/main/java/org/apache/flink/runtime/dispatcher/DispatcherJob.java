@@ -49,7 +49,7 @@ public class DispatcherJob {
 				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
 				LOG.info("started jm");
 				return r;
-			}), dispatcher.getDispatcherExecutor());
+			}), dispatcher.getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
 		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
 			if (throwable != null) {
 				// error during initialization
@@ -64,7 +64,7 @@ public class DispatcherJob {
 				//this.failure = new ErrorInfo(throwable, System.currentTimeMillis());
 				LOG.info("Error in initialization recorded");
 			}
-		}, dispatcher.getDispatcherExecutor());
+		}, dispatcher.getDispatcherExecutor()); // execute in main thread to avoid concurrency issues
 		initializingJobMasterGateway = new InitializingJobMasterGateway(initializingJobManager);
 
 		/*initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
