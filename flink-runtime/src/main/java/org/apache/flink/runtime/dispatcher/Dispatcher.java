@@ -123,7 +123,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private final FatalErrorHandler fatalErrorHandler;
 
-	// TODO: use jobs only for initializing + running? separate structure for failed
 	private final Map<JobID, DispatcherJob> jobs;
 
 	private final DispatcherBootstrap dispatcherBootstrap;
@@ -358,14 +357,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
 		jobGraphWriter.putJobGraph(jobGraph);
 		return runJob(jobGraph);
-
-		/* TODO: remove job graph from writer in case of submission failure
-
-		return runJobFuture.whenComplete(BiConsumerWithException.unchecked((Object ignored, Throwable throwable) -> {
-			if (throwable != null) {
-				jobGraphWriter.removeJobGraph(jobGraph.getJobID());
-			}
-		})); */
 	}
 
 	private CompletableFuture<Void> runJob(JobGraph jobGraph) {
@@ -920,19 +911,15 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		long jobManagerInitializationStarted) {
 		LOG.info("init failed", failure);
 		jobs.remove(jobGraph.getJobID());
-		LOG.info("removed from map");
 		try {
 			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
 			LOG.info("removed rom jg");
 		} catch (Exception e) {
-			// TODO
-			e.printStackTrace();
-			// LOG.warn("Error while removing job graph", e);
+			LOG.warn("Error while removing job graph", e);
 		}
 		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, failure, jobManagerInitializationStarted);
 		try {
 			this.archivedExecutionGraphStore.put(archivedGraph);
-			LOG.info("in archive");
 		} catch (IOException e) {
 			LOG.warn("Error while archiving execution graph of job that failed during init", e);
 		}
