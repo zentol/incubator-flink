@@ -21,7 +21,6 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
-import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.FunctionUtils;
 
 import org.slf4j.Logger;
@@ -53,38 +52,15 @@ public class DispatcherJob {
 		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
 			if (throwable != null) {
 				// error during initialization
-				try {
-					dispatcher.onJobManagerInitFailure(
-						jobGraph,
-						throwable,
-						jobManagerInitializationStarted);
-				} catch (Throwable t) {
-					LOG.warn("Error in reporting failure", t);
-				}
-				//this.failure = new ErrorInfo(throwable, System.currentTimeMillis());
+				dispatcher.onJobManagerInitFailure(
+					jobGraph,
+					throwable,
+					jobManagerInitializationStarted);
 				LOG.info("Error in initialization recorded");
 			}
 		}, dispatcher.getDispatcherExecutor()); // execute in main thread to avoid concurrency issues
-		initializingJobMasterGateway = new InitializingJobMasterGateway(initializingJobManager);
+		initializingJobMasterGateway = new InitializingJobMasterGateway(initializingJobManager, jobGraph);
 
-		/*initializingJobManager.whenCompleteAsync((jobManagerRunner, initThrowable) -> {
-			LOG.info("jm init finished");
-			// JM init has finished
-			if (initThrowable != null) {
-				// initialization failed
-				failure = new ErrorInfo(initThrowable, System.currentTimeMillis());
-				dispatcher.onJobManagerInitFailure(jobGraph.getJobID());
-			} else {
-				// register error handler
-				jobManagerRunnerFuture.whenCompleteAsync((ignore, runnerThrowable) -> {
-					if (runnerThrowable != null) {
-						// at any point in the JobManager's life, there was an error.
-						dispatcher.onJobManagerFailure(jobGraph.getJobID());
-						// TODO: there could be a scenario where the remove call happens before the item is added to the Map in the Dispatcher
-					}
-				}, dispatcher.getDispatcherExecutor());
-			}
-		}); */
 		LOG.info("ctor done");
 	}
 
@@ -92,10 +68,8 @@ public class DispatcherJob {
 		return !initializingJobManager.isDone();
 	}
 
-
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
 		LOG.info("getJobManagerRunnerFuture");
-		Preconditions.checkState(!isInitializing(), "Expecting initialized JobManager");
 		return initializingJobManager;
 	}
 

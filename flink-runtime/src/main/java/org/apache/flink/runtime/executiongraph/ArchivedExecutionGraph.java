@@ -25,7 +25,6 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
 import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.jsonplan.JsonPlanGenerator;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
@@ -35,7 +34,6 @@ import org.apache.flink.util.SerializedValue;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -359,7 +357,6 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 
 	/**
 	 * Create ArchivedExecutionGraph from failed JobGraph.
-	 *
 	 * Note: Some elements in the ArchivedExecutionGraph will be filled on a best-effort basis
 	 */
 	public static ArchivedExecutionGraph createFromFailedInit(

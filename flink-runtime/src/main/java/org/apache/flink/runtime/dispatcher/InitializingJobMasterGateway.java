@@ -15,6 +15,7 @@ import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
@@ -50,10 +51,15 @@ import java.util.concurrent.CompletableFuture;
 @Internal
 public class InitializingJobMasterGateway implements JobMasterGateway {
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
-	private final JobDetails jobDetails = null; //TODO
+	private final JobID jobId;
+	private final String jobName;
+	private final int jobNumTasks;
 
-	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager) {
+	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph) {
 		this.initializingJobManager = initializingJobManager;
+		jobId = jobGraph.getJobID();
+		jobName = jobGraph.getName();
+		jobNumTasks = jobGraph.getVerticesAsArray().length;
 	}
 
 	@Override
@@ -65,8 +71,12 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	@Override
 	public CompletableFuture<JobDetails> requestJobDetails(
 		Time timeout) {
-		// TODO field is null
-		return CompletableFuture.completedFuture(jobDetails);
+		int[] tasksPerState = new int[ExecutionState.values().length];
+		JobStatus status = JobStatus.INITIALIZING;
+		if (initializingJobManager.isCancelled()) {
+			status = JobStatus.CANCELED;
+		}
+		return CompletableFuture.completedFuture(new JobDetails(jobId, jobName, 0, 0, 0, status, 0, tasksPerState, jobNumTasks));
 	}
 
 	@Override
@@ -99,6 +109,7 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	@Override
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(
 		Time timeout) {
+		// TODO?
 		return getUnsupportedExceptionFuture();
 	}
 
@@ -177,7 +188,6 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	public void heartbeatFromResourceManager(ResourceID resourceID) {
 		throwUnsupportedException();
 	}
-
 
 	@Override
 	public CompletableFuture<String> triggerSavepoint(
