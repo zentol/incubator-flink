@@ -217,7 +217,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	void runRecoveredJob(final JobGraph recoveredJob) {
 		checkNotNull(recoveredJob);
-		FutureUtils.assertNoException(runJob(recoveredJob)
+		FutureUtils.assertNoException(runJob(recoveredJob, true)
 			.handle(handleRecoveredJobStartError(recoveredJob.getJobID())));
 	}
 
@@ -356,16 +356,20 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
 		jobGraphWriter.putJobGraph(jobGraph);
-		return runJob(jobGraph);
+		return runJob(jobGraph, false);
 	}
 
-	private CompletableFuture<Void> runJob(JobGraph jobGraph) {
+	private CompletableFuture<Void> runJob(JobGraph jobGraph, boolean blocking) {
 		Preconditions.checkState(!jobs.containsKey(jobGraph.getJobID()));
 		DispatcherJob dispatcherJob = new DispatcherJob(jobGraph, this);
 
 		jobs.put(jobGraph.getJobID(), dispatcherJob);
 		LOG.info("runJob completed");
-		return CompletableFuture.completedFuture(null);
+		if (blocking) {
+			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
+		} else {
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 
 	JobManagerRunner startJobManagerRunner(JobManagerRunner jobManagerRunner) throws Exception {

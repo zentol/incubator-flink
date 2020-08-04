@@ -175,8 +175,8 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 				// wait until job is running
 				CommonTestUtils.waitUntilCondition(() ->
 					dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TESTING_TIMEOUT).get() == JobStatus.RUNNING, Deadline.fromNow(VERIFICATION_TIMEOUT), 20L);
-
-				dispatcherLeaderElectionService.notLeader();
+LOG.info("Job is running");
+				dispatcherLeaderElectionService.notLeader(); // triggers Stopping of SessionDispatcherLeaderProcess
 
 				// recovering submitted jobs
 				LOG.info("Re-grant leadership first time.");
