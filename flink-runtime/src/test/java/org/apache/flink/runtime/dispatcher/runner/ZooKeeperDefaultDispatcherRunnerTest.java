@@ -176,7 +176,7 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 				CommonTestUtils.waitUntilCondition(() ->
 					dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TESTING_TIMEOUT).get() == JobStatus.RUNNING, Deadline.fromNow(VERIFICATION_TIMEOUT), 20L);
 LOG.info("Job is running");
-				dispatcherLeaderElectionService.notLeader(); // triggers Stopping of SessionDispatcherLeaderProcess
+				dispatcherLeaderElectionService.notLeader();
 
 				// recovering submitted jobs
 				LOG.info("Re-grant leadership first time.");
@@ -184,8 +184,11 @@ LOG.info("Job is running");
 
 				LOG.info("Cancel recovered job {}.", jobGraph.getJobID());
 				// cancellation of the job should remove everything
-				final CompletableFuture<JobResult> jobResultFuture = nextDispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
+
 				nextDispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
+				LOG.info("Cancellation successful");
+				// TODO this future was created before the cancellation. Intentionally?
+				final CompletableFuture<JobResult> jobResultFuture = nextDispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
 
 				// a successful cancellation should eventually remove all job information
 				final JobResult jobResult = jobResultFuture.get();

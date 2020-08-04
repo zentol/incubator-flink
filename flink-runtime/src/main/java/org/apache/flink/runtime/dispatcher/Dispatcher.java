@@ -89,6 +89,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -224,7 +225,10 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private BiFunction<Void, Throwable, Void> handleRecoveredJobStartError(JobID jobId) {
 		return (ignored, throwable) -> {
 			if (throwable != null) {
-				onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", jobId), throwable));
+				// ignore failures caused by CancellationException.
+				if (!ExceptionUtils.findThrowable(throwable, CancellationException.class).isPresent()) {
+					onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", jobId), throwable));
+				}
 			}
 
 			return null;
@@ -518,7 +522,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		LOG.info("requestJobStatus");
 
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
-
+		LOG.info("got future" + jobMasterGatewayFuture);
 		final CompletableFuture<JobStatus> jobStatusFuture = jobMasterGatewayFuture.thenCompose(
 			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout));
 
@@ -831,6 +835,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			final CompletableFuture<JobMasterGateway> leaderGatewayFuture = jobManagerRunnerFuture.thenCompose(JobManagerRunner::getJobMasterGateway);
 			return leaderGatewayFuture.thenApplyAsync(
 				(JobMasterGateway jobMasterGateway) -> {
+					LOG.info("ownership check");
 					// check whether the retrieved JobMasterGateway belongs still to a running JobMaster
 					if (jobs.containsKey(jobId)) {
 						return jobMasterGateway;
@@ -914,9 +919,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	public void onJobManagerInitFailure(
 		JobGraph jobGraph,
-		Throwable failure,
+		Throwable throwable,
 		long jobManagerInitializationStarted) {
-		LOG.info("init failed", failure);
+		LOG.info("init failed", throwable);
 		// try removing job graph (this is only necessary in HA case)
 		try {
 			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
@@ -926,7 +931,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		}
 		// store the information we have about the job
 		try {
-			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, failure, jobManagerInitializationStarted);
+			JobStatus finalJobStatus = JobStatus.FAILED;
+			if (ExceptionUtils.findThrowable(throwable, CancellationException.class).isPresent()) {
+				finalJobStatus = JobStatus.CANCELED;
+			}
+			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, finalJobStatus, jobManagerInitializationStarted);
 			this.archivedExecutionGraphStore.put(archivedGraph);
 			LOG.info("archived graph");
 		} catch (IOException e) {

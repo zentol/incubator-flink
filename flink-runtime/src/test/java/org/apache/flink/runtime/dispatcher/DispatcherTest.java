@@ -21,6 +21,7 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.operators.ResourceSpec;
+import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
@@ -62,6 +63,7 @@ import org.apache.flink.runtime.state.CheckpointStorageLocation;
 import org.apache.flink.runtime.state.CompletedCheckpointStorageLocation;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
+import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.TestingJobGraphStore;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.runtime.util.TestingFatalErrorHandlerResource;
@@ -79,6 +81,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
@@ -89,6 +93,9 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -114,6 +121,8 @@ import static org.junit.Assert.fail;
  * Test for the {@link Dispatcher} component.
  */
 public class DispatcherTest extends TestLogger {
+
+	protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
 	private static RpcService rpcService;
 
@@ -288,9 +297,18 @@ public class DispatcherTest extends TestLogger {
 
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
-		CompletableFuture<Acknowledge> acknowledgeFuture = dispatcherGateway.submitJob(jobGraph, TIMEOUT);
+		LOG.info("Submit job:");
+		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+		LOG.info("finished submission");
 
-		acknowledgeFuture.get();
+		CommonTestUtils.waitUntilCondition(() -> {
+				JobStatus status = dispatcherGateway.requestJobStatus(
+					jobGraph.getJobID(),
+					TIMEOUT).get();
+				LOG.info("req status " + status);
+				return status == JobStatus.RUNNING;
+			}, Deadline.fromNow(
+			Duration.of(10, ChronoUnit.SECONDS)), 20L);
 
 		assertTrue(
 			"jobManagerRunner was not started",
