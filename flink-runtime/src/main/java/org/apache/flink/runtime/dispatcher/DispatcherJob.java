@@ -34,9 +34,9 @@ import java.util.concurrent.CompletableFuture;
 public class DispatcherJob {
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 
-	private final JobMasterGateway initializingJobMasterGateway;
+	// as long as this gateway is set, the job is initializing
+	private JobMasterGateway initializingJobMasterGateway;
 
-	// private ErrorInfo failure = null;
 	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
 	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
@@ -47,6 +47,7 @@ public class DispatcherJob {
 				LOG.info("Starting jm runner:");
 				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
 				LOG.info("started jm");
+				initializingJobMasterGateway = null;
 				return r;
 			}), dispatcher.getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
 		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
@@ -65,16 +66,12 @@ public class DispatcherJob {
 	}
 
 	public boolean isInitializing() {
-		return !initializingJobManager.isDone();
+		return initializingJobMasterGateway != null;
 	}
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
 		LOG.info("getJobManagerRunnerFuture");
 		return initializingJobManager;
-	}
-
-	public void cancelInitialization() {
-		initializingJobManager.cancel(true);
 	}
 
 	/**

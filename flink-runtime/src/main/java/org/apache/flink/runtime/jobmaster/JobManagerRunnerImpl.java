@@ -175,6 +175,7 @@ public class JobManagerRunnerImpl implements LeaderContender, OnCompletionAction
 
 	@Override
 	public CompletableFuture<Void> closeAsync() {
+		log.info("closeAsync is runnin");
 		synchronized (lock) {
 			if (!shutdown) {
 				shutdown = true;

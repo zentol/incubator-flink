@@ -99,15 +99,9 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
-		if (!initializingJobManager.isDone()) {
-			return CompletableFuture.completedFuture(JobStatus.INITIALIZING);
-		}
-
-		if (initializingJobManager.isCancelled()) {
-			return CompletableFuture.completedFuture(JobStatus.CANCELLING);
-		}
+		return CompletableFuture.completedFuture(JobStatus.INITIALIZING);
 		// we expect the Dispatcher to look up this job in the archive on an exception.
-		return FutureUtils.completedExceptionally(new RuntimeException("Unknown job status"));
+		// TODO return FutureUtils.completedExceptionally(new RuntimeException("Unknown job status"));
 	}
 
 	// ----------------- All operations below are not supported ----------------- //

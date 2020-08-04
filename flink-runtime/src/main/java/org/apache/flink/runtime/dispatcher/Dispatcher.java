@@ -520,7 +520,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		return jobStatusFuture.exceptionally(
 			(Throwable throwable) -> {
-				LOG.info("jobStatusFuture.exceptionally");
+				LOG.info("jobStatusFuture.exceptionally", throwable);
 				final JobDetails jobDetails = archivedExecutionGraphStore.getAvailableJobDetails(jobId);
 				LOG.info("in store " + jobDetails);
 				// check whether it is a completed job
@@ -682,6 +682,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
+		LOG.info("running removeJob");
 		// TODO test properly
 		DispatcherJob job = jobs.remove(jobId);
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
@@ -699,6 +700,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private void cleanUpJobData(JobID jobId, boolean cleanupHA) {
+		LOG.info("running cleanUpJobData");
 		jobManagerMetricGroup.removeJob(jobId);
 
 		boolean cleanupHABlobs = false;
@@ -742,6 +744,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> terminateJobManagerRunnersAndGetTerminationFuture() {
+		LOG.info("terminateJobManagerRunnersAndGetTerminationFuture");
 		terminateJobManagerRunners();
 		final Collection<CompletableFuture<Void>> values = jobManagerTerminationFutures.values();
 		return FutureUtils.completeAll(values);
@@ -910,19 +913,26 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		Throwable failure,
 		long jobManagerInitializationStarted) {
 		LOG.info("init failed", failure);
-		jobs.remove(jobGraph.getJobID());
+		// try removing job graph (this is only necessary in HA case)
 		try {
 			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
-			LOG.info("removed rom jg");
+			LOG.info("removed from jobgraph");
 		} catch (Exception e) {
 			LOG.warn("Error while removing job graph", e);
 		}
-		ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, failure, jobManagerInitializationStarted);
+		// store the information we have about the job
 		try {
+			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, failure, jobManagerInitializationStarted);
 			this.archivedExecutionGraphStore.put(archivedGraph);
+			LOG.info("archived graph");
 		} catch (IOException e) {
 			LOG.warn("Error while archiving execution graph of job that failed during init", e);
 		}
+		// clean up
+		cleanUpJobData(jobGraph.getJobID(), true);
+		// remove job from map of jobs
+		jobs.remove(jobGraph.getJobID());
+		LOG.info("removed job from map");
 	}
 
 	Executor getDispatcherExecutor() {
