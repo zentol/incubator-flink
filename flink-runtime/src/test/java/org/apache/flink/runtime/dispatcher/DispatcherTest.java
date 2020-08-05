@@ -294,18 +294,17 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testJobSubmission() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
-
+		// grant leadership to job master so that we can call dispatcherGateway.requestJobStatus().
+		UUID leaderUid = UUID.randomUUID();
+		jobMasterLeaderElectionService.isLeader(leaderUid);
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
-		LOG.info("Submit job:");
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
-		LOG.info("finished submission");
 
 		CommonTestUtils.waitUntilCondition(() -> {
 				JobStatus status = dispatcherGateway.requestJobStatus(
-					jobGraph.getJobID(),
-					TIMEOUT).get();
-				LOG.info("req status " + status);
+				jobGraph.getJobID(),
+				TIMEOUT).get();
 				return status == JobStatus.RUNNING;
 			}, Deadline.fromNow(
 			Duration.of(10, ChronoUnit.SECONDS)), 20L);

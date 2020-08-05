@@ -353,7 +353,6 @@ public class JobManagerRunnerImpl implements LeaderContender, OnCompletionAction
 			UUID leaderSessionId,
 			String leaderAddress,
 			CompletableFuture<JobMasterGateway> currentLeaderGatewayFuture) {
-
 		if (leaderElectionService.hasLeadership(leaderSessionId)) {
 			currentLeaderGatewayFuture.complete(jobMasterService.getGateway());
 			leaderElectionService.confirmLeadership(leaderSessionId, leaderAddress);

@@ -35,7 +35,7 @@ public class DispatcherJob {
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 
 	// as long as this gateway is set, the job is initializing
-	private JobMasterGateway initializingJobMasterGateway;
+	private CompletableFuture<JobMasterGateway> initializingJobMasterGateway;
 
 	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
@@ -60,7 +60,8 @@ public class DispatcherJob {
 				LOG.info("Error in initialization recorded");
 			}
 		}, dispatcher.getDispatcherExecutor()); // execute in main thread to avoid concurrency issues
-		initializingJobMasterGateway = new InitializingJobMasterGateway(initializingJobManager, jobGraph);
+		initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph),
+			dispatcher.getRpcService().getExecutor());
 
 		LOG.info("ctor done");
 	}
@@ -78,6 +79,6 @@ public class DispatcherJob {
 	 * Returns a fake JobMasterGateway that acts as an initializing JobMaster.
 	 */
 	public CompletableFuture<JobMasterGateway> getInitializingJobMasterGatewayFuture() {
-		return CompletableFuture.completedFuture(initializingJobMasterGateway);
+		return initializingJobMasterGateway;
 	}
 }
