@@ -45,6 +45,7 @@ public class DispatcherJob {
 		initializingJobManager = dispatcher.createJobManagerRunner(jobGraph)
 			.thenApplyAsync(FunctionUtils.uncheckedFunction((runner) -> {
 				LOG.info("Starting jm runner:");
+				todo next: use debugger to understand why nothing is happening here in the testblockingjobmanagerunner test
 				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
 				LOG.info("started jm");
 				initializingJobMasterGateway = null;
