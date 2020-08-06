@@ -96,7 +96,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -124,7 +123,7 @@ import static org.junit.Assert.fail;
  */
 public class DispatcherTest extends TestLogger {
 
-	protected final Logger LOG = LoggerFactory.getLogger(getClass());
+	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	private static RpcService rpcService;
 
