@@ -75,6 +75,7 @@ import org.apache.flink.util.function.ThrowingRunnable;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -107,6 +108,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -538,24 +540,37 @@ public class DispatcherTest extends TestLogger {
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
-		CompletableFuture<Acknowledge> submissionFuture = dispatcherGateway.submitJob(jobGraph, TIMEOUT);
+		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 
-		assertThat(submissionFuture.isDone(), is(false));
+		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		queue.offer(Optional.of(testException));
 
-		try {
-			submissionFuture.get();
-			fail("Should fail because we could not instantiate the JobManagerRunner.");
-		} catch (Exception e) {
-			assertThat(ExceptionUtils.findThrowable(e, t -> t.equals(testException)).isPresent(), is(true));
-		}
+		// wait till job is failed
+		JobStatus status;
+		do {
+			status = dispatcherGateway.requestJobStatus(
+				jobGraph.getJobID(),
+				TIMEOUT).get();
+			Assert.assertThat(
+				status,
+				either(Matchers.is(JobStatus.INITIALIZING)).or(Matchers.is(JobStatus.FAILED)));
+			Thread.sleep(20);
+		} while (status != JobStatus.FAILED);
 
-		submissionFuture = dispatcherGateway.submitJob(jobGraph, TIMEOUT);
+		ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
+		Assert.assertNotNull(execGraph.getFailureInfo());
+		assertThat(ExceptionUtils.findSerializedThrowable(execGraph.getFailureInfo().getException(), FlinkException.class, this.getClass().getClassLoader()).isPresent(), is(true));
 
+		// submit job again
+		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+
+		// don't fail this time
 		queue.offer(Optional.empty());
 
-		submissionFuture.get();
+		// Ensure job is running
+		CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
+			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
 	}
 
 	@Test
