@@ -79,6 +79,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.swing.plaf.basic.BasicTreeUI;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -92,9 +93,11 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -359,6 +362,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
+		LOG.info("persistAndRunJob");
 		jobGraphWriter.putJobGraph(jobGraph);
 		return runJob(jobGraph, false);
 	}
@@ -883,6 +887,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> waitForTerminatingJobManager(JobID jobId, JobGraph jobGraph, FunctionWithException<JobGraph, CompletableFuture<Void>, ?> action) {
+		LOG.info("waitForTerminatingJobManager");
 		final CompletableFuture<Void> jobManagerTerminationFuture = getJobTerminationFuture(jobId)
 			.exceptionally((Throwable throwable) -> {
 				throw new CompletionException(
@@ -892,6 +897,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		return jobManagerTerminationFuture.thenComposeAsync(
 			FunctionUtils.uncheckedFunction((ignored) -> {
+				LOG.info("FunctionUtils.uncheckedFunction((ignored)");
 				jobManagerTerminationFutures.remove(jobId);
 				return action.apply(jobGraph);
 			}),
@@ -950,5 +956,27 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	Executor getDispatcherExecutor() {
 		return super.getMainThreadExecutor();
+	}
+
+	/**
+	 * Returns a future that blocks until a job has been initialized after submission.
+	 */
+	public static CompletableFuture<Acknowledge> waitUntilInitialized(JobID jobId, DispatcherGateway gateway, Executor executor) {
+		return CompletableFuture.supplyAsync(() -> {
+			while (true) {
+				try {
+					JobStatus status = gateway.requestJobStatus(
+						jobId,
+						Time.milliseconds(50)).get();
+					if (status != JobStatus.INITIALIZING) {
+						return Acknowledge.get();
+					} else {
+						Thread.sleep(20);
+					}
+				} catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			}
+		}, executor);
 	}
 }

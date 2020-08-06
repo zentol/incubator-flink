@@ -38,6 +38,7 @@ import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.clusterframework.ApplicationStatus;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.concurrent.FutureUtils;
+import org.apache.flink.runtime.dispatcher.Dispatcher;
 import org.apache.flink.runtime.dispatcher.DispatcherGateway;
 import org.apache.flink.runtime.dispatcher.DispatcherId;
 import org.apache.flink.runtime.dispatcher.MemoryArchivedExecutionGraphStore;
@@ -108,6 +109,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -688,7 +690,20 @@ public class MiniCluster implements JobExecutorService, AutoCloseableAsync {
 			.thenCombine(
 				dispatcherGatewayFuture,
 				(Void ack, DispatcherGateway dispatcherGateway) -> dispatcherGateway.submitJob(jobGraph, rpcTimeout))
+			.thenCombine(
+				dispatcherGatewayFuture,
+				(jobSubmissionFuture, dispatcherGateway) -> {
+					// wait for job submission future to complete
+					LOG.info("wait here");
+					try {
+						jobSubmissionFuture.get();
+					} catch (Exception e) {
+						throw new CompletionException(e);
+					}
+					return Dispatcher.waitUntilInitialized(jobGraph.getJobID(), dispatcherGateway, ioExecutor);
+				})
 			.thenCompose(Function.identity());
+
 		return acknowledgeCompletableFuture.thenApply(
 			(Acknowledge ignored) -> new JobSubmissionResult(jobGraph.getJobID()));
 	}
