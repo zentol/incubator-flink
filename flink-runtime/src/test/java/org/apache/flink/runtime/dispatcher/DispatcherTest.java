@@ -431,19 +431,29 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 
-		final CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT);
+		CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT);
 
 		assertThat(jobStatusFuture.isDone(), is(false));
 
-		try {
-			jobStatusFuture.get(10, TimeUnit.MILLISECONDS);
-			fail("Should not complete.");
-		} catch (TimeoutException ignored) {
-			// ignored
+		// Make sure that the jobstatus request is blocking after it has left the INITIALIZING status
+		boolean timeoutSeen = false;
+		while (!timeoutSeen) {
+			try {
+				jobStatusFuture = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT);
+				JobStatus jobStatus = jobStatusFuture.get(10, TimeUnit.MILLISECONDS);
+				if (jobStatus != JobStatus.INITIALIZING) {
+					fail("Should not complete.");
+				} else {
+					Thread.sleep(10); // give more time to initialize
+				}
+			} catch (TimeoutException ignored) {
+				timeoutSeen = true;
+			}
 		}
-
+		// Job is initialized. Make the master leader
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID()).get();
 
+		// ensure that the future is now completing
 		assertThat(jobStatusFuture.get(), notNullValue());
 	}
 
@@ -478,7 +488,7 @@ public class DispatcherTest extends TestLogger {
 	 *
 	 * <p>See FLINK-10314
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testBlockingJobManagerRunner() throws Exception {
 		final OneShotLatch jobManagerRunnerCreationLatch = new OneShotLatch();
 		dispatcher = createAndStartDispatcher(
@@ -500,14 +510,10 @@ public class DispatcherTest extends TestLogger {
 
 		jobManagerRunnerCreationLatch.trigger();
 
-		// wait until job is running
-		LOG.info("Wait till running");
-		Thread.sleep(50000);
-		/*CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
-			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 20L);
-		LOG.info("cancelling");
-		dispatcherGateway.cancelJob(jobGraph.getJobID(), TIMEOUT);
-		LOG.info("Cancelled"); */
+		CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
+			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
+
+		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.RUNNING));
 	}
 
 	/**
