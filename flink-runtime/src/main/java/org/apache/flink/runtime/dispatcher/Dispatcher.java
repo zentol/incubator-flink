@@ -264,7 +264,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private void stopDispatcherServices() throws Exception {
-		LOG.info("stopDispatcherServices");
 		Exception exception = null;
 		try {
 			jobManagerSharedServices.shutdown();
@@ -360,7 +359,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
-		LOG.info("persistAndRunJob");
 		jobGraphWriter.putJobGraph(jobGraph);
 		return runJob(jobGraph, false);
 	}
@@ -370,7 +368,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		DispatcherJob dispatcherJob = new DispatcherJob(jobGraph, this);
 
 		jobs.put(jobGraph.getJobID(), dispatcherJob);
-		LOG.info("runJob completed");
 		if (blocking) {
 			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
 		} else {
@@ -415,10 +412,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	CompletableFuture<JobManagerRunner> createJobManagerRunner(JobGraph jobGraph) {
 		final RpcService rpcService = getRpcService();
-		LOG.info("CreateJobMangerRunner()");
 		return CompletableFuture.supplyAsync(
 			() -> {
-				LOG.info("creating jm runner");
 				try {
 					JobManagerRunner r = jobManagerRunnerFactory.createJobManagerRunner(
 						jobGraph,
@@ -429,7 +424,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 						jobManagerSharedServices,
 						new DefaultJobManagerJobMetricGroupFactory(jobManagerMetricGroup),
 						fatalErrorHandler);
-					LOG.info("Created JM runner");
 					return r;
 				} catch (Exception e) {
 					throw new CompletionException(new JobExecutionException(jobGraph.getJobID(), "Could not instantiate JobManager.", e));
@@ -465,11 +459,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<Acknowledge> cancelJob(JobID jobId, Time timeout) {
-		/*DispatcherJob job = jobs.get(jobId);
-		if (job.isInitializing()) {
-			job.cancelInitialization();
-			return CompletableFuture.completedFuture(Acknowledge.get());
-		}*/
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 		return jobMasterGatewayFuture.thenCompose((JobMasterGateway jobMasterGateway) -> jobMasterGateway.cancel(timeout));
@@ -521,18 +510,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(JobID jobId, Time timeout) {
-		LOG.info("requestJobStatus");
-
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
-		LOG.info("got future" + jobMasterGatewayFuture);
 		final CompletableFuture<JobStatus> jobStatusFuture = jobMasterGatewayFuture.thenCompose(
 			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout));
 
 		return jobStatusFuture.exceptionally(
 			(Throwable throwable) -> {
-				LOG.info("jobStatusFuture.exceptionally", throwable);
 				final JobDetails jobDetails = archivedExecutionGraphStore.getAvailableJobDetails(jobId);
-				LOG.info("in store " + jobDetails);
 				// check whether it is a completed job
 				if (jobDetails == null) {
 					throw new CompletionException(ExceptionUtils.stripCompletionException(throwable));
@@ -553,8 +537,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(JobID jobId, Time timeout) {
-		LOG.info("requestJob");
-
 		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
 
 		final CompletableFuture<ArchivedExecutionGraph> archivedExecutionGraphFuture = jobMasterGatewayFuture.thenCompose(
@@ -667,7 +649,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	 * @param cleanupHA True iff HA data shall also be cleaned up
 	 */
 	private void removeJobAndRegisterTerminationFuture(JobID jobId, boolean cleanupHA) {
-		LOG.info("removeJobAndRegisterTerminationFuture");
 		final CompletableFuture<Void> cleanupFuture = removeJob(jobId, cleanupHA);
 
 		registerJobManagerRunnerTerminationFuture(jobId, cleanupFuture);
@@ -692,8 +673,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
-		LOG.info("running removeJob");
-		// TODO test properly
 		DispatcherJob job = jobs.remove(jobId);
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
@@ -710,7 +689,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private void cleanUpJobData(JobID jobId, boolean cleanupHA) {
-		LOG.info("running cleanUpJobData");
 		jobManagerMetricGroup.removeJob(jobId);
 
 		boolean cleanupHABlobs = false;
@@ -754,14 +732,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> terminateJobManagerRunnersAndGetTerminationFuture() {
-		LOG.info("terminateJobManagerRunnersAndGetTerminationFuture");
 		terminateJobManagerRunners();
 		final Collection<CompletableFuture<Void>> values = jobManagerTerminationFutures.values();
 		return FutureUtils.completeAll(values);
 	}
 
 	protected void onFatalError(Throwable throwable) {
-		LOG.info("onFatalError");
 		fatalErrorHandler.onFatalError(throwable);
 	}
 
@@ -819,14 +795,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
-		LOG.info("getJobMasterGatewayFuture");
 		DispatcherJob job = jobs.get(jobId);
 		if (job == null) {
-			LOG.info("job is null");
 			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 		}
 		if (job.isInitializing()) {
-			LOG.info("is initializing .. returning fake gateway ...");
 			return job.getInitializingJobMasterGatewayFuture();
 		}
 		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
@@ -837,7 +810,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			final CompletableFuture<JobMasterGateway> leaderGatewayFuture = jobManagerRunnerFuture.thenCompose(JobManagerRunner::getJobMasterGateway);
 			return leaderGatewayFuture.thenApplyAsync(
 				(JobMasterGateway jobMasterGateway) -> {
-					LOG.info("ownership check");
 					// check whether the retrieved JobMasterGateway belongs still to a running JobMaster
 					if (jobs.containsKey(jobId)) {
 						return jobMasterGateway;
@@ -885,7 +857,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> waitForTerminatingJobManager(JobID jobId, JobGraph jobGraph, FunctionWithException<JobGraph, CompletableFuture<Void>, ?> action) {
-		LOG.info("waitForTerminatingJobManager");
 		final CompletableFuture<Void> jobManagerTerminationFuture = getJobTerminationFuture(jobId)
 			.exceptionally((Throwable throwable) -> {
 				throw new CompletionException(
@@ -895,7 +866,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		return jobManagerTerminationFuture.thenComposeAsync(
 			FunctionUtils.uncheckedFunction((ignored) -> {
-				LOG.info("FunctionUtils.uncheckedFunction((ignored)");
 				jobManagerTerminationFutures.remove(jobId);
 				return action.apply(jobGraph);
 			}),
@@ -925,11 +895,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		JobGraph jobGraph,
 		Throwable throwable,
 		long jobManagerInitializationStarted) {
-		LOG.info("init failed", throwable);
 		// try removing job graph (this is only necessary in HA case)
 		try {
 			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
-			LOG.info("removed from jobgraph");
 		} catch (Exception e) {
 			LOG.warn("Error while removing job graph", e);
 		}
@@ -941,7 +909,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			}
 			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, finalJobStatus, jobManagerInitializationStarted);
 			this.archivedExecutionGraphStore.put(archivedGraph);
-			LOG.info("archived graph");
 		} catch (IOException e) {
 			LOG.warn("Error while archiving execution graph of job that failed during init", e);
 		}
@@ -949,7 +916,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		cleanUpJobData(jobGraph.getJobID(), true);
 		// remove job from map of jobs
 		jobs.remove(jobGraph.getJobID());
-		LOG.info("removed job from map");
 	}
 
 	Executor getDispatcherExecutor() {
