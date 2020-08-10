@@ -18,13 +18,8 @@
 
 package org.apache.flink.runtime.dispatcher;
 
-import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
-import org.apache.flink.util.function.FunctionUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,47 +27,37 @@ import java.util.concurrent.CompletableFuture;
  * Representation of a job while the JobManager is initializing, managed by the {@link Dispatcher}.
  */
 public class DispatcherJob {
-	// TODO consider removing this class (moving it into Dispatcher)
-	private final CompletableFuture<JobManagerRunner> initializingJobManager;
+	private CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 
-	// as long as this gateway is set, the job is initializing
-	private CompletableFuture<JobMasterGateway> initializingJobMasterGateway;
-
-	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
-
-	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
-		long jobManagerInitializationStarted = System.currentTimeMillis();
-		initializingJobManager = dispatcher.createJobManagerRunner(jobGraph)
-			.thenApplyAsync(FunctionUtils.uncheckedFunction((runner) -> {
-				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
-				initializingJobMasterGateway = null;
-				return r;
-			}), dispatcher.getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
-		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
-			if (throwable != null) {
-				// error during initialization
-				dispatcher.onJobManagerInitFailure(
-					jobGraph,
-					throwable,
-					jobManagerInitializationStarted);
-			}
-		}, dispatcher.getDispatcherExecutor()); // execute in main thread to avoid concurrency issues
-		initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph),
-			dispatcher.getRpcService().getExecutor());
-	}
+	// as long as this future is set, the job is initializing
+	private CompletableFuture<JobMasterGateway> initializingJobMasterGatewayFuture;
+	private boolean cancelled = false;
 
 	public boolean isInitializing() {
-		return initializingJobMasterGateway != null;
+		return initializingJobMasterGatewayFuture != null;
+	}
+
+	public CompletableFuture<JobMasterGateway> getInitializingJobMasterGatewayFuture() {
+		return initializingJobMasterGatewayFuture;
+	}
+
+	public void setInitializingJobMasterGatewayFuture(CompletableFuture<JobMasterGateway> initializingJobMasterGateway) {
+		this.initializingJobMasterGatewayFuture = initializingJobMasterGateway;
 	}
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
-		return initializingJobManager;
+		return jobManagerRunnerFuture;
 	}
 
-	/**
-	 * Returns a fake JobMasterGateway that acts as an initializing JobMaster.
-	 */
-	public CompletableFuture<JobMasterGateway> getInitializingJobMasterGatewayFuture() {
-		return initializingJobMasterGateway;
+	public void setInitializingJobManagerRunnerFuture(CompletableFuture<JobManagerRunner> initializingJobManager) {
+		this.jobManagerRunnerFuture = initializingJobManager;
+	}
+
+	public void setCancelled(boolean val) {
+		this.cancelled = val;
+	}
+
+	public boolean isCancelled() {
+		return cancelled;
 	}
 }

@@ -89,11 +89,11 @@ public enum ClientUtils {
 				.submitJob(jobGraph)
 				.thenApply(jobID -> {
 					// wait till initialization is over. Report errors.
-					JobStatus status = null;
+					JobStatus status;
 					try {
 						status = client.getJobStatus(jobID).get();
 						while (status == JobStatus.INITIALIZING) {
-							Thread.sleep(20L);
+							Thread.sleep(20L); // TODO which timeout to use?
 							status = client.getJobStatus(jobID).get();
 						}
 						if (status == JobStatus.FAILED) {
@@ -129,9 +129,7 @@ public enum ClientUtils {
 		try {
 			jobResult = client
 				.submitJob(jobGraph)
-				.thenCompose((jid) -> {
-					return client.requestJobResult(jid);
-				})
+				.thenCompose(client::requestJobResult)
 				.get();
 		} catch (InterruptedException | ExecutionException e) {
 			ExceptionUtils.checkInterrupted(e);

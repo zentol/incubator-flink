@@ -41,6 +41,7 @@ import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobMasterId;
 import org.apache.flink.runtime.jobmaster.SerializedInputSplit;
 import org.apache.flink.runtime.messages.Acknowledge;
+import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
 import org.apache.flink.runtime.messages.checkpoint.DeclineCheckpoint;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
@@ -72,16 +73,19 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	private final JobID jobId;
 	private final String jobName;
 	private final int jobNumTasks;
+	private final DispatcherJob dispatcherJob;
 
-	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph) {
+	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph, DispatcherJob dispatcherJob) {
 		this.initializingJobManager = initializingJobManager;
 		jobId = jobGraph.getJobID();
 		jobName = jobGraph.getName();
 		jobNumTasks = jobGraph.getVerticesAsArray().length;
+		this.dispatcherJob = dispatcherJob;
 	}
 
 	@Override
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
+		dispatcherJob.setCancelled(true);
 		initializingJobManager.cancel(true);
 		return CompletableFuture.completedFuture(Acknowledge.get());
 	}
@@ -100,8 +104,12 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
 		return CompletableFuture.completedFuture(JobStatus.INITIALIZING);
-		// we expect the Dispatcher to look up this job in the archive on an exception.
-		// TODO return FutureUtils.completedExceptionally(new RuntimeException("Unknown job status"));
+	}
+
+	@Override
+	public CompletableFuture<ArchivedExecutionGraph> requestJob(
+		Time timeout) {
+		return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 	}
 
 	// ----------------- All operations below are not supported ----------------- //
@@ -116,13 +124,6 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 		// This error happens when the JobManager is still initializing. We are not able to
 		// process this request, because we can not forward it to the JM yet.
 		return FutureUtils.completedExceptionally(new UnsupportedOperationException(EXCEPTION_MESSAGE));
-	}
-
-	@Override
-	public CompletableFuture<ArchivedExecutionGraph> requestJob(
-		Time timeout) {
-		// TODO?
-		return getUnsupportedExceptionFuture();
 	}
 
 	@Override

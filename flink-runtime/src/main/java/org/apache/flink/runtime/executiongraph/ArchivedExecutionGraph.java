@@ -315,7 +315,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	 * @param executionGraph to create the ArchivedExecutionGraph from
 	 * @return ArchivedExecutionGraph created from the given ExecutionGraph
 	 */
-	public static ArchivedExecutionGraph createFromFailedInit(ExecutionGraph executionGraph) {
+	public static ArchivedExecutionGraph createFrom(ExecutionGraph executionGraph) {
 		final int numberVertices = executionGraph.getTotalNumberOfVertices();
 
 		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = new HashMap<>(numberVertices);

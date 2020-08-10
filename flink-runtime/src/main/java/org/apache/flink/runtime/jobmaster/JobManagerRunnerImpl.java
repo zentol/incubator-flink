@@ -175,7 +175,6 @@ public class JobManagerRunnerImpl implements LeaderContender, OnCompletionAction
 
 	@Override
 	public CompletableFuture<Void> closeAsync() {
-		log.info("closeAsync is runnin");
 		synchronized (lock) {
 			if (!shutdown) {
 				shutdown = true;
@@ -353,6 +352,7 @@ public class JobManagerRunnerImpl implements LeaderContender, OnCompletionAction
 			UUID leaderSessionId,
 			String leaderAddress,
 			CompletableFuture<JobMasterGateway> currentLeaderGatewayFuture) {
+
 		if (leaderElectionService.hasLeadership(leaderSessionId)) {
 			currentLeaderGatewayFuture.complete(jobMasterService.getGateway());
 			leaderElectionService.confirmLeadership(leaderSessionId, leaderAddress);
