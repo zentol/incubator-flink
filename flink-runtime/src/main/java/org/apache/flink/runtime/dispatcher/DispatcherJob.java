@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
  * Representation of a job while the JobManager is initializing, managed by the {@link Dispatcher}.
  */
 public class DispatcherJob {
+	// TODO consider removing this class (moving it into Dispatcher)
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 
 	// as long as this gateway is set, the job is initializing
@@ -40,13 +41,10 @@ public class DispatcherJob {
 	private static final Logger LOG = LoggerFactory.getLogger(DispatcherJob.class);
 
 	public DispatcherJob(JobGraph jobGraph, Dispatcher dispatcher) {
-		LOG.info("Defining future");
 		long jobManagerInitializationStarted = System.currentTimeMillis();
 		initializingJobManager = dispatcher.createJobManagerRunner(jobGraph)
 			.thenApplyAsync(FunctionUtils.uncheckedFunction((runner) -> {
-				LOG.info("Starting jm runner:");
 				JobManagerRunner r = dispatcher.startJobManagerRunner(runner);
-				LOG.info("started jm");
 				initializingJobMasterGateway = null;
 				return r;
 			}), dispatcher.getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
@@ -57,13 +55,10 @@ public class DispatcherJob {
 					jobGraph,
 					throwable,
 					jobManagerInitializationStarted);
-				LOG.info("Error in initialization recorded");
 			}
 		}, dispatcher.getDispatcherExecutor()); // execute in main thread to avoid concurrency issues
 		initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph),
 			dispatcher.getRpcService().getExecutor());
-
-		LOG.info("ctor done");
 	}
 
 	public boolean isInitializing() {
@@ -71,7 +66,6 @@ public class DispatcherJob {
 	}
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
-		LOG.info("getJobManagerRunnerFuture");
 		return initializingJobManager;
 	}
 

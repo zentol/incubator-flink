@@ -153,17 +153,13 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				TIMEOUT);
 
 			// job submission needs to return within a reasonable timeframe
-			LOG.info("Waiting on future");
 			Assert.assertEquals(Acknowledge.get(), ackFuture.get(4, TimeUnit.SECONDS));
-
-			LOG.info("Done waiting");
 
 			// ensure INITIALIZING status from status
 			CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
 			FutureUtils.assertNoException(jobStatusFuture);
 			Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
-			LOG.info("Request multiple job details: ");
 			// ensure correct JobDetails
 			MultipleJobsDetails multiDetails = dispatcherGateway.requestMultipleJobDetails(
 				TIMEOUT).get();
@@ -173,7 +169,6 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			// submission has succeeded, let the initialization finish.
 			blockingJobVertex.unblock();
 
-			LOG.info("checking job status:");
 			// wait till job is running
 			JobStatus status;
 			do {
@@ -183,17 +178,14 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				Thread.sleep(50);
 				LOG.info("Status = " + status);
 			} while(status != JobStatus.RUNNING);
-			LOG.info("job is running now");
 
 			dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
-			LOG.info("Job successfully cancelled");
 		}
 	}
 
 	@Test(timeout = 5_000L)
 	public void testInvalidCallDuringInitialization() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
-			LOG.info("Starting test");
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 
@@ -207,17 +199,13 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				TIMEOUT);
 
 			// job submission needs to return within a reasonable timeframe
-			LOG.info("Waiting on future");
 			Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
-
-			LOG.info("Done waiting");
 
 			// ensure INITIALIZING status from status
 			CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
 			FutureUtils.assertNoException(jobStatusFuture);
 			Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
-			LOG.info("trigger savepoint");
 			// this call is supposed to fail
 			boolean execptionSeen = false;
 			try {
@@ -237,14 +225,12 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			blockingJobVertex.unblock();
 
 			dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
-			LOG.info("Job successfully cancelled");
 		}
 	}
 
 	@Test(timeout = 5_000L)
 	public void testCancellationDuringInitialization() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
-			LOG.info("Starting test");
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 
@@ -258,21 +244,16 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				TIMEOUT);
 
 			// job submission needs to return within a reasonable timeframe
-			LOG.info("Waiting on future");
 			Assert.assertEquals(Acknowledge.get(), ackFuture.get(4, TimeUnit.SECONDS));
-
-			LOG.info("Done waiting");
 
 			// submission has succeeded, now cancel the job
 			dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
-			LOG.info("Job successfully cancelled");
 		}
 	}
 
 	@Test(timeout = 5_000L)
 	public void testErrorDuringInitialization() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
-			LOG.info("Starting test");
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 			final DispatcherGateway dispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 
@@ -289,31 +270,23 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			// job submission needs to return within a reasonable timeframe
 			Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
 
-			try {
-				LOG.info("checking job status:");
-				// wait till job is running
-				JobStatus status;
-				do {
-					CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(
-						blockingJobGraph.getJobID(),
-						TIMEOUT);
-					status = statusFuture.get();
-					Thread.sleep(50);
-					LOG.info("Status = " + status);
-					Assert.assertThat(
-						status,
-						either(is(JobStatus.INITIALIZING)).or(is(JobStatus.FAILED)));
-				} while (status != JobStatus.FAILED);
-				LOG.info("job is failed now");
+			// wait till job is running
+			JobStatus status;
+			do {
+				CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(
+					blockingJobGraph.getJobID(),
+					TIMEOUT);
+				status = statusFuture.get();
+				Thread.sleep(50);
+				Assert.assertThat(
+					status,
+					either(is(JobStatus.INITIALIZING)).or(is(JobStatus.FAILED)));
+			} while (status != JobStatus.FAILED);
 
-				// get failure cause
-				ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
-				Assert.assertNotNull(execGraph.getFailureInfo());
-				Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
-			} catch (Throwable t) {
-				LOG.warn("There we have it", t);
-				Assert.fail();
-			}
+			// get failure cause
+			ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
+			Assert.assertNotNull(execGraph.getFailureInfo());
+			Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
 		}
 	}
 
@@ -327,7 +300,6 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 				TIMEOUT);
 			status = statusFuture.get();
 			Thread.sleep(50);
-			LOG.info("Status = " + status);
 		} while (status != targetStatus);
 	}
 
@@ -336,7 +308,6 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 
-LOG.info("submit");
 			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 			firstDispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 			waitUntilJobStatus(JobStatus.RUNNING, jobGraph.getJobID(), firstDispatcherGateway);

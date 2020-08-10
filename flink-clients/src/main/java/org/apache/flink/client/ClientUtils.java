@@ -130,7 +130,6 @@ public enum ClientUtils {
 			jobResult = client
 				.submitJob(jobGraph)
 				.thenCompose((jid) -> {
-					LOG.info("submission done, requesting job res:");
 					return client.requestJobResult(jid);
 				})
 				.get();

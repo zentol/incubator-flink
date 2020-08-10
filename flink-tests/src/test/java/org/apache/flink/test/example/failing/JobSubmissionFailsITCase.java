@@ -139,7 +139,6 @@ public class JobSubmissionFailsITCase extends TestLogger {
 			// TODO shall we change the semantics of a detached submission? Submission errors are not reported anymore?
 			fail("Job submission should have thrown an exception.");
 		} catch (Exception e) {
-			log.info("THIS IS THE EXCEPTION", e);
 			if (!failurePredicate.test(e)) {
 				throw e;
 			}
