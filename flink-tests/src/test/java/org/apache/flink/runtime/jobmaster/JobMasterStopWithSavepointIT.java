@@ -289,7 +289,7 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 						0),
 				null));
 
-		ClientUtils.submitJob(clusterClient, jobGraph);
+		ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
 		assertTrue(invokeLatch.await(60, TimeUnit.SECONDS));
 		waitForJob();
 	}

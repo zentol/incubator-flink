@@ -30,6 +30,7 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.blob.BlobClient;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.clusterframework.ApplicationStatus;
+import org.apache.flink.runtime.dispatcher.Dispatcher;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmaster.JobResult;
@@ -37,6 +38,7 @@ import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.testtasks.BlockingNoOpInvokable;
 import org.apache.flink.runtime.testtasks.FailingBlockingInvokable;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
+import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.MiniClusterResource;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.util.ExceptionUtils;
@@ -56,11 +58,13 @@ import java.io.FilenameFilter;
 import java.net.InetSocketAddress;
 import java.nio.file.NoSuchFileException;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -184,10 +188,13 @@ public class BlobsCleanupITCase extends TestLogger {
 		}
 
 		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
+		final JobSubmissionResult jobSubmissionResult = submissionFuture.get();
+
+		// wait until job is submitted
+		CommonTestUtils.waitUntilCondition(() -> miniCluster.getJobStatus(jobGraph.getJobID()).get() != JobStatus.INITIALIZING,
+			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 20L);
 
 		if (testCase == TestCase.JOB_SUBMISSION_FAILS) {
-			submissionFuture.get();
-
 			// check job status
 			assertThat(miniCluster.getJobStatus(jid).get(), is(JobStatus.FAILED));
 
@@ -196,8 +203,6 @@ public class BlobsCleanupITCase extends TestLogger {
 			assertTrue(exception.isPresent());
 			assertTrue(ExceptionUtils.findThrowableSerializedAware(exception.get(), NoSuchFileException.class, getClass().getClassLoader()).isPresent());
 		} else {
-			final JobSubmissionResult jobSubmissionResult = submissionFuture.get();
-
 			assertThat(jobSubmissionResult.getJobID(), is(jid));
 
 			final CompletableFuture<JobResult> resultFuture = miniCluster.requestJobResult(jid);

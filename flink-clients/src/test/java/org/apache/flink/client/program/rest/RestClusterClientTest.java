@@ -265,7 +265,7 @@ public class RestClusterClientTest extends TestLogger {
 			RestClusterClient<?> restClusterClient = createRestClusterClient(restServerEndpoint.getServerAddress().getPort());
 
 			try {
-				final JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(restClusterClient, jobGraph);
+				final JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(restClusterClient, jobGraph, getClass().getClassLoader());
 
 				// if the detached mode didn't work, then we would not reach this point because the execution result
 				// retrieval would have failed.

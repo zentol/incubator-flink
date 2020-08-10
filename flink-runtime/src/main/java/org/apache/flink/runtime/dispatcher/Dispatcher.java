@@ -66,6 +66,7 @@ import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.PermanentlyFencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.akka.AkkaRpcServiceUtils;
+import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
@@ -958,7 +959,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	/**
 	 * Returns a future that blocks until a job has been initialized after submission.
 	 */
-	public static CompletableFuture<Acknowledge> waitUntilInitialized(JobID jobId, DispatcherGateway gateway, Executor executor) {
+	public static CompletableFuture<Acknowledge> waitUntilInitialized(JobID jobId, RestfulGateway gateway, Executor executor) {
 		return CompletableFuture.supplyAsync(() -> {
 			while (true) {
 				try {

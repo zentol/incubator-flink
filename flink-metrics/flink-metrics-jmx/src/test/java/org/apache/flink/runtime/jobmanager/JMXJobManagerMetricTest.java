@@ -108,7 +108,7 @@ public class JMXJobManagerMetricTest extends TestLogger {
 				null));
 
 			ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
-			ClientUtils.submitJob(client, jobGraph);
+			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
 
 			FutureUtils.retrySuccessfulWithDelay(
 				() -> client.getJobStatus(jobGraph.getJobID()),

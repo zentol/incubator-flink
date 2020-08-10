@@ -689,18 +689,6 @@ public class MiniCluster implements JobExecutorService, AutoCloseableAsync {
 			.thenCombine(
 				dispatcherGatewayFuture,
 				(Void ack, DispatcherGateway dispatcherGateway) -> dispatcherGateway.submitJob(jobGraph, rpcTimeout))
-			.thenCombine(
-				dispatcherGatewayFuture,
-				(jobSubmissionFuture, dispatcherGateway) -> {
-					// wait for job submission future to complete
-					LOG.info("wait here");
-					try {
-						jobSubmissionFuture.get();
-					} catch (Exception e) {
-						throw new CompletionException(e);
-					}
-					return Dispatcher.waitUntilInitialized(jobGraph.getJobID(), dispatcherGateway, ioExecutor);
-				})
 			.thenCompose(Function.identity());
 
 		return acknowledgeCompletableFuture.thenApply(

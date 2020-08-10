@@ -130,7 +130,7 @@ public abstract class SavepointMigrationTestBase extends TestBaseUtils {
 		// Submit the job
 		JobGraph jobGraph = env.getStreamGraph().getJobGraph();
 
-		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph);
+		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
 
 		LOG.info("Submitted job {} and waiting...", jobSubmissionResult.getJobID());
 
@@ -193,7 +193,7 @@ public abstract class SavepointMigrationTestBase extends TestBaseUtils {
 
 		jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
-		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph);
+		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
 
 		boolean done = false;
 		while (deadLine.hasTimeLeft()) {

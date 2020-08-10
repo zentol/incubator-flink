@@ -227,7 +227,7 @@ public class ClientTest extends TestLogger {
 		jobGraph.addJars(Collections.emptyList());
 		jobGraph.setClasspaths(Collections.emptyList());
 
-		JobSubmissionResult result = ClientUtils.submitJob(clusterClient, jobGraph);
+		JobSubmissionResult result = ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
 		assertNotNull(result);
 	}
 
@@ -430,7 +430,7 @@ public class ClientTest extends TestLogger {
 						jobGraph.addJars(accessor.getJars());
 						jobGraph.setClasspaths(accessor.getClasspaths());
 
-						final JobID jobID = ClientUtils.submitJob(clusterClient, jobGraph).getJobID();
+						final JobID jobID = ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader()).getJobID();
 						return CompletableFuture.completedFuture(new ClusterClientJobClientAdapter<>(() -> clusterClient, jobID));
 					};
 				}

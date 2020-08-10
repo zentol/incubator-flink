@@ -95,7 +95,7 @@ public class JobRetrievalITCase extends TestLogger {
 		// has been attached in resumingThread
 		lock.acquire();
 
-		ClientUtils.submitJob(client, jobGraph);
+		ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
 
 		final CheckedThread resumingThread = new CheckedThread("Flink-Job-Retriever") {
 			@Override

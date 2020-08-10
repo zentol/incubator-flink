@@ -19,6 +19,7 @@
 package org.apache.flink.client;
 
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
@@ -34,6 +35,7 @@ import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.SerializedThrowable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import static org.apache.flink.util.FlinkUserCodeClassLoader.NOOP_EXCEPTION_HANDLER;
@@ -76,12 +80,34 @@ public enum ClientUtils {
 
 	public static JobExecutionResult submitJob(
 			ClusterClient<?> client,
-			JobGraph jobGraph) throws ProgramInvocationException {
+			JobGraph jobGraph,
+			ClassLoader classLoader) throws ProgramInvocationException {
 		checkNotNull(client);
 		checkNotNull(jobGraph);
 		try {
 			return client
 				.submitJob(jobGraph)
+				.thenApply(jobID -> {
+					// wait till initialization is over. Report errors.
+					JobStatus status = null;
+					try {
+						status = client.getJobStatus(jobID).get();
+						while (status == JobStatus.INITIALIZING) {
+							Thread.sleep(20L);
+							status = client.getJobStatus(jobID).get();
+						}
+						if (status == JobStatus.FAILED) {
+							JobResult result = client.requestJobResult(jobID).get();
+							Optional<SerializedThrowable> maybeError = result.getSerializedThrowable();
+							if (maybeError.isPresent()) {
+								throw maybeError.get().deserializeError(classLoader);
+							}
+						}
+						return jobID;
+					} catch (Throwable e) {
+						throw new CompletionException("Error while waiting for Job initalization", e);
+					}
+				})
 				.thenApply(DetachedJobExecutionResult::new)
 				.get();
 		} catch (InterruptedException | ExecutionException e) {
@@ -103,7 +129,10 @@ public enum ClientUtils {
 		try {
 			jobResult = client
 				.submitJob(jobGraph)
-				.thenCompose(client::requestJobResult)
+				.thenCompose((jid) -> {
+					LOG.info("submission done, requesting job res:");
+					return client.requestJobResult(jid);
+				})
 				.get();
 		} catch (InterruptedException | ExecutionException e) {
 			ExceptionUtils.checkInterrupted(e);
