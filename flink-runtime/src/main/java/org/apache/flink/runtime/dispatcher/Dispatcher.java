@@ -381,22 +381,36 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 				}),
 				getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
 
-		initializingJobManager.whenCompleteAsync((ignored, throwable) -> {
-			if (throwable != null) {
-				DispatcherJob job = runningJobs.get(jobGraph.getJobID());
-				boolean isCancelled = false;
-				if (job != null) {
-					isCancelled = job.isCancelled();
-				}
-				// error during initialization
-				onJobManagerInitializationFailure(
-					jobGraph,
-					throwable,
-					jobManagerInitializationStarted,
-					isCancelled);
-			}
-		}, getMainThreadExecutor()); // execute in main thread to avoid concurrency issues
+		// error during initialization
+		CompletableFuture<JobManagerRunner> errorCleanup = initializingJobManager.exceptionally(throwable -> null);
+		errorCleanup.thenAcceptAsync(jm -> {
+			DispatcherJob job = runningJobs.get(jobGraph.getJobID());
 
+		 				boolean isCancelled = job != null && job.isCancelled();
+		  				// error during initialization
+		  				onJobManagerInitializationFailure(
+		 					jobGraph,
+		 					throwable,
+		 					jobManagerInitializationStarted,
+		 					isCancelled);
+		 				return null;}
+		 				)
+
+		cleanupComplete.thenAcceptAsync(runner -> {
+			runningJobs.remove(jobGraph.getJobID());
+		}, getMainThreadExecutor());
+
+		/**
+		 * 				DispatcherJob job = runningJobs.get(jobGraph.getJobID());
+		 * 				boolean isCancelled = job != null && job.isCancelled();
+		 * 				// error during initialization
+		 * 				onJobManagerInitializationFailure(
+		 * 					jobGraph,
+		 * 					throwable,
+		 * 					jobManagerInitializationStarted,
+		 * 					isCancelled);
+		 * 				return null;
+		 */
 		if (blocking) {
 			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
 		} else {
@@ -935,10 +949,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		}
 		// store the information we have about the job
 		try {
-			JobStatus finalJobStatus = JobStatus.FAILED;
-			if (isCancelled) {
-				finalJobStatus = JobStatus.CANCELED;
-			}
+			JobStatus finalJobStatus = isCancelled
+				? JobStatus.CANCELED
+				: JobStatus.FAILED;
 			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, finalJobStatus, jobManagerInitializationStarted);
 			archivedExecutionGraphStore.put(archivedGraph);
 		} catch (IOException e) {

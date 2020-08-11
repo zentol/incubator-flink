@@ -92,6 +92,7 @@ public enum ClientUtils {
 			ClassLoader classLoader) throws ProgramInvocationException {
 		checkNotNull(client);
 		checkNotNull(jobGraph);
+		checkNotNull(classLoader);
 		try {
 			return client
 				.submitJob(jobGraph)
