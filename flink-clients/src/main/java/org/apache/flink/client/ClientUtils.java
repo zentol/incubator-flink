@@ -20,6 +20,9 @@ package org.apache.flink.client;
 
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.api.common.time.Deadline;
+import org.apache.flink.api.common.time.Time;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
@@ -31,6 +34,7 @@ import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
 import org.apache.flink.runtime.client.JobExecutionException;
+import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobResult;
@@ -42,10 +46,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.flink.util.FlinkUserCodeClassLoader.NOOP_EXCEPTION_HANDLER;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -87,27 +95,26 @@ public enum ClientUtils {
 		try {
 			return client
 				.submitJob(jobGraph)
-				.thenApply(jobID -> {
-					// wait till initialization is over. Report errors.
-					JobStatus status;
-					try {
-						status = client.getJobStatus(jobID).get();
-						while (status == JobStatus.INITIALIZING) {
-							Thread.sleep(20L); // TODO which timeout to use?
-							status = client.getJobStatus(jobID).get();
-						}
-						if (status == JobStatus.FAILED) {
-							JobResult result = client.requestJobResult(jobID).get();
+				.thenCompose(jobId -> FutureUtils.retrySuccessfulWithDelay(
+					() -> client.getJobStatus(jobId),
+					Time.of(50, TimeUnit.MILLISECONDS),
+					Deadline.fromNow(Duration.ofMinutes(5)),
+					jobStatus -> jobStatus != JobStatus.INITIALIZING,
+					null)
+				.thenApply(status -> Tuple2.of(jobId, status)))
+				.thenCompose(jobIdAndStatus -> {
+				if (jobIdAndStatus.f1 == JobStatus.FAILED) {
+					client.requestJobResult(jobIdAndStatus.f0)
+						.thenAccept(result -> {
 							Optional<SerializedThrowable> maybeError = result.getSerializedThrowable();
-							if (maybeError.isPresent()) {
-								throw maybeError.get().deserializeError(classLoader);
-							}
-						}
-						return jobID;
-					} catch (Throwable e) {
-						throw new CompletionException("Error while waiting for Job initalization", e);
-					}
-				})
+							maybeError.ifPresent(serializedThrowable -> FutureUtils.completedExceptionally(
+								serializedThrowable.deserializeError(classLoader)));
+						});
+					return CompletableFuture.completedFuture(jobIdAndStatus.f0);
+				} else {
+					return CompletableFuture.completedFuture(jobIdAndStatus.f0);
+				}
+			})
 				.thenApply(DetachedJobExecutionResult::new)
 				.get();
 		} catch (InterruptedException | ExecutionException e) {

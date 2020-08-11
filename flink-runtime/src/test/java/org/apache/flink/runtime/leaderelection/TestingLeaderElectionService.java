@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
  * calls to the contender.
  */
 public class TestingLeaderElectionService implements LeaderElectionService {
+
 	private LeaderContender contender = null;
 	private boolean hasLeadership = false;
 	private CompletableFuture<LeaderConnectionInfo> confirmationFuture = null;
