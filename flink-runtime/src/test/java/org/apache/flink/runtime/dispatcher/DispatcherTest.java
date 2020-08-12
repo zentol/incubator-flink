@@ -440,7 +440,6 @@ public class DispatcherTest extends TestLogger {
 		// submission has succeeded, now cancel the job
 		dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
 
-
 		// wait till job is running
 		JobStatus status;
 		do {
