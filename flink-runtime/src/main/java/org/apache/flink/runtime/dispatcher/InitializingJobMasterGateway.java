@@ -51,12 +51,16 @@ import org.apache.flink.runtime.query.KvStateLocation;
 import org.apache.flink.runtime.registration.RegistrationResponse;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
 import org.apache.flink.runtime.rest.handler.legacy.backpressure.OperatorBackPressureStatsResponse;
+import org.apache.flink.runtime.rpc.akka.AkkaRpcService;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorToJobManagerHeartbeatPayload;
 import org.apache.flink.runtime.taskexecutor.slot.SlotOffer;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
 import org.apache.flink.runtime.taskmanager.UnresolvedTaskManagerLocation;
 import org.apache.flink.util.SerializedValue;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -69,6 +73,8 @@ import java.util.concurrent.CompletableFuture;
  */
 @Internal
 public class InitializingJobMasterGateway implements JobMasterGateway {
+	private static final Logger LOG = LoggerFactory.getLogger(InitializingJobMasterGateway.class);
+
 	private final CompletableFuture<JobManagerRunner> initializingJobManager;
 	private final JobID jobId;
 	private final String jobName;
@@ -85,6 +91,7 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
 		return CompletableFuture.supplyAsync(() -> {
 			initializingJobManager.cancel(true);
+			LOG.debug("JM future cancelled");
 			return Acknowledge.get();
 		});
 	}

@@ -363,7 +363,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		JobGraph jobGraph,
 		Throwable throwable,
 		JobStatus finalJobStatus,
-		long jobManagerInitializationStarted) {
+		long initializationTimestamp) {
 		long failureTime = System.currentTimeMillis();
 		final int numberVertices = jobGraph.getNumberOfVertices();
 
@@ -374,7 +374,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 
 		final long[] timestamps = new long[JobStatus.values().length];
 		timestamps[JobStatus.FAILED.ordinal()] = failureTime;
-		timestamps[JobStatus.INITIALIZING.ordinal()] = jobManagerInitializationStarted;
+		timestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
 
 		String jsonPlan = "{}";
 		try {

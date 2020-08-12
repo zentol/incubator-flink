@@ -385,8 +385,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			.thenAcceptAsync(throwable -> {
 					DispatcherJob job = runningJobs.get(jobGraph.getJobID());
 					boolean isCancelled = job != null
-						&& job.getInitializingJobMasterGatewayFuture() != null
-						&& job.getInitializingJobMasterGatewayFuture().isCancelled();
+						&& job.getJobManagerRunnerFuture() != null
+						&& job.getJobManagerRunnerFuture().isCancelled();
 					// error during initialization
 					onJobManagerInitializationFailure(
 						jobGraph,
@@ -394,7 +394,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 						jobManagerInitializationStarted,
 						isCancelled);
 			}, getRpcService().getExecutor()) // perform IO heavy cleanups in separate thread
-			.thenAcceptAsync(ign -> runningJobs.remove(jobGraph.getJobID()), getMainThreadExecutor()); // remove job in main thread
+			.thenAcceptAsync(ign -> {
+				runningJobs.remove(jobGraph.getJobID());
+			}, getMainThreadExecutor()); // remove job in main thread
 
 		if (blocking) {
 			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
@@ -709,12 +711,19 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
+		log.info("removeJob");
 		DispatcherJob job = runningJobs.remove(jobId);
+
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
 		final CompletableFuture<Void> jobManagerRunnerTerminationFuture;
 		if (jobManagerRunnerFuture != null) {
-			jobManagerRunnerTerminationFuture = jobManagerRunnerFuture.thenCompose(JobManagerRunner::closeAsync);
+			if (job.isInitializing()) {
+				jobManagerRunnerFuture.cancel(true);
+				jobManagerRunnerTerminationFuture = CompletableFuture.completedFuture(null);
+			} else {
+				jobManagerRunnerTerminationFuture = jobManagerRunnerFuture.thenCompose(JobManagerRunner::closeAsync);
+			}
 		} else {
 			jobManagerRunnerTerminationFuture = CompletableFuture.completedFuture(null);
 		}
@@ -932,6 +941,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		Throwable throwable,
 		long jobManagerInitializationStarted,
 		boolean isCancelled) {
+		log.debug("JobManager initialization for job {} failed", jobGraph.getJobID(), throwable);
+
 		// try removing job graph (this is only necessary in HA case)
 		try {
 			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
