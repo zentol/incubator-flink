@@ -364,58 +364,49 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private CompletableFuture<Void> runJob(JobGraph jobGraph, boolean blocking) {
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 		long jobManagerInitializationStarted = System.currentTimeMillis();
-		DispatcherJob dispatcherJob = new DispatcherJob();
-		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
 
-		CompletableFuture<JobManagerRunner> initializingJobManager = createJobManagerRunner(jobGraph);
-		dispatcherJob.setInitializingJobManagerRunnerFuture(initializingJobManager);
-		CompletableFuture<JobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph, dispatcherJob),
-			getRpcService().getExecutor());
-		dispatcherJob.setInitializingJobMasterGatewayFuture(initializingJobMasterGateway);
-
-		initializingJobManager.thenApplyAsync(
+		CompletableFuture<JobManagerRunner> initializingJobManager = createJobManagerRunner(jobGraph)
+			.thenApplyAsync(
 				FunctionUtils.uncheckedFunction((runner) -> {
 					JobManagerRunner r = startJobManagerRunner(runner);
-					dispatcherJob.setInitializingJobMasterGatewayFuture(null);
+					onJobManagerInitializationFinished(jobGraph.getJobID());
 					return r;
 				}),
-				getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
+			getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
+		CompletableFuture<JobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph),
+			getRpcService().getExecutor());
 
-		// error during initialization
-		CompletableFuture<JobManagerRunner> errorCleanup = initializingJobManager.exceptionally(throwable -> null);
-		errorCleanup.thenAcceptAsync(jm -> {
-			DispatcherJob job = runningJobs.get(jobGraph.getJobID());
+		DispatcherJob dispatcherJob = new DispatcherJob(initializingJobManager, initializingJobMasterGateway);
+		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
 
-		 				boolean isCancelled = job != null && job.isCancelled();
-		  				// error during initialization
-		  				onJobManagerInitializationFailure(
-		 					jobGraph,
-		 					throwable,
-		 					jobManagerInitializationStarted,
-		 					isCancelled);
-		 				return null;}
-		 				)
+		// handle errors during initialization
+		CompletableFuture<Throwable> errorHandler = initializingJobManager.thenApply(jm -> null);
+			errorHandler.exceptionally(Function.identity())
+			.thenAcceptAsync(throwable -> {
+					DispatcherJob job = runningJobs.get(jobGraph.getJobID());
+					boolean isCancelled = job != null
+						&& job.getInitializingJobMasterGatewayFuture() != null
+						&& job.getInitializingJobMasterGatewayFuture().isCancelled();
+					// error during initialization
+					onJobManagerInitializationFailure(
+						jobGraph,
+						throwable,
+						jobManagerInitializationStarted,
+						isCancelled);
+			}, getRpcService().getExecutor()) // perform IO heavy cleanups in separate thread
+			.thenAcceptAsync(ign -> runningJobs.remove(jobGraph.getJobID()), getMainThreadExecutor()); // remove job in main thread
 
-		cleanupComplete.thenAcceptAsync(runner -> {
-			runningJobs.remove(jobGraph.getJobID());
-		}, getMainThreadExecutor());
-
-		/**
-		 * 				DispatcherJob job = runningJobs.get(jobGraph.getJobID());
-		 * 				boolean isCancelled = job != null && job.isCancelled();
-		 * 				// error during initialization
-		 * 				onJobManagerInitializationFailure(
-		 * 					jobGraph,
-		 * 					throwable,
-		 * 					jobManagerInitializationStarted,
-		 * 					isCancelled);
-		 * 				return null;
-		 */
 		if (blocking) {
 			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
 		} else {
 			return CompletableFuture.completedFuture(null);
 		}
+	}
+
+	private void onJobManagerInitializationFinished(JobID jid) {
+		DispatcherJob job = runningJobs.get(jid);
+		Preconditions.checkNotNull(job);
+		job.setInitializingJobMasterGatewayFuture(null);
 	}
 
 	JobManagerRunner startJobManagerRunner(JobManagerRunner jobManagerRunner) throws Exception {
@@ -958,6 +949,5 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			log.warn("Error while archiving execution graph of job that failed during initialization.", e);
 		}
 		cleanUpJobData(jobGraph.getJobID(), true);
-		runningJobs.remove(jobGraph.getJobID());
 	}
 }

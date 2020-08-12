@@ -73,21 +73,20 @@ public class InitializingJobMasterGateway implements JobMasterGateway {
 	private final JobID jobId;
 	private final String jobName;
 	private final int jobNumTasks;
-	private final DispatcherJob dispatcherJob;
 
-	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph, DispatcherJob dispatcherJob) {
+	public InitializingJobMasterGateway(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph) {
 		this.initializingJobManager = initializingJobManager;
 		jobId = jobGraph.getJobID();
 		jobName = jobGraph.getName();
 		jobNumTasks = jobGraph.getVerticesAsArray().length;
-		this.dispatcherJob = dispatcherJob;
 	}
 
 	@Override
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
-		dispatcherJob.setCancelled(true);
-		initializingJobManager.cancel(true);
-		return CompletableFuture.completedFuture(Acknowledge.get());
+		return CompletableFuture.supplyAsync(() -> {
+			initializingJobManager.cancel(true);
+			return Acknowledge.get();
+		});
 	}
 
 	@Override

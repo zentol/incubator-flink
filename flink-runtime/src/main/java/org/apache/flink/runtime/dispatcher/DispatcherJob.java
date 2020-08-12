@@ -27,11 +27,24 @@ import java.util.concurrent.CompletableFuture;
  * Representation of a job while the JobManager is initializing, managed by the {@link Dispatcher}.
  */
 public class DispatcherJob {
-	private CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
+	/**
+	 * This future returns the JobManagerRunner. The future might get cancelled during initialization.
+	 * The job is then considered cancelled.
+	 */
+	private final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 
-	// as long as this future is set, the job is initializing
+	/**
+	 * During initialization, this future is set to a "fake" JobManagerGateway that
+	 * has some methods available. Once the initialization is done, this future is set to null.
+	 */
 	private CompletableFuture<JobMasterGateway> initializingJobMasterGatewayFuture;
-	private boolean cancelled = false;
+
+	public DispatcherJob(
+		CompletableFuture<JobManagerRunner> initializingJobManager,
+		CompletableFuture<JobMasterGateway> initializingJobMasterGateway) {
+		this.jobManagerRunnerFuture = initializingJobManager;
+		this.initializingJobMasterGatewayFuture = initializingJobMasterGateway;
+	}
 
 	public boolean isInitializing() {
 		return initializingJobMasterGatewayFuture != null;
@@ -47,17 +60,5 @@ public class DispatcherJob {
 
 	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
 		return jobManagerRunnerFuture;
-	}
-
-	public void setInitializingJobManagerRunnerFuture(CompletableFuture<JobManagerRunner> initializingJobManager) {
-		this.jobManagerRunnerFuture = initializingJobManager;
-	}
-
-	public void setCancelled(boolean val) {
-		this.cancelled = val;
-	}
-
-	public boolean isCancelled() {
-		return cancelled;
 	}
 }

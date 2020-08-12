@@ -401,7 +401,7 @@ public class DispatcherTest extends TestLogger {
 		Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
 		// this call is supposed to fail
-		boolean execptionSeen = false;
+		boolean exceptionSeen = false;
 		try {
 			CompletableFuture<String> savepointFuture = dispatcherGateway.triggerSavepoint(
 				blockingJobGraph.getJobID(),
@@ -411,9 +411,9 @@ public class DispatcherTest extends TestLogger {
 			savepointFuture.get();
 		} catch (ExecutionException t) {
 			Assert.assertTrue(t.getCause() instanceof UnsupportedOperationException);
-			execptionSeen = true;
+			exceptionSeen = true;
 		}
-		Assert.assertTrue(execptionSeen);
+		Assert.assertTrue(exceptionSeen);
 
 		// submission has succeeded, let the initialization finish.
 		blockingJobVertex.unblock();
