@@ -185,6 +185,7 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 				LOG.info("Cancel recovered job {}.", jobGraph.getJobID());
 				// cancellation of the job should remove everything
 
+				todo: this cancellation doesn't work. fixit
 				nextDispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
 				LOG.info("Cancellation successful");
 				// TODO this future was created before the cancellation. Intentionally?
