@@ -383,8 +383,8 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 
 		ExecutionConfig ec;
 		try {
-			// note: this is using the system classloader, not the usercode cl, thus it
-			// will fail in some cases.
+			// note: this is using the system classloader, not the usercode classloader, thus it
+			// will fail in some cases. We can not access the usercode CL, when a JobManager initialization is detected.
 			ec = jobGraph.getSerializedExecutionConfig().deserializeValue(ArchivedExecutionGraph.class.getClassLoader());
 		} catch (Throwable ignored) {
 			ec = new ExecutionConfig();
