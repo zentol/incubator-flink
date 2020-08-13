@@ -20,7 +20,6 @@ package org.apache.flink.runtime.testutils;
 
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Deadline;
-import org.apache.flink.runtime.minicluster.TestingMiniCluster;
 import org.apache.flink.util.FileUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
