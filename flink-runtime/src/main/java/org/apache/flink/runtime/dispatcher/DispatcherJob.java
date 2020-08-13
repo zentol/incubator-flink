@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.dispatcher;
 
+import org.apache.flink.runtime.jobmaster.InitializingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 
@@ -37,11 +38,11 @@ public class DispatcherJob {
 	 * During initialization, this future is set to a "fake" JobManagerGateway that
 	 * has some methods available. Once the initialization is done, this future is set to null.
 	 */
-	private CompletableFuture<JobMasterGateway> initializingJobMasterGatewayFuture;
+	private CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGatewayFuture;
 
 	public DispatcherJob(
 		CompletableFuture<JobManagerRunner> initializingJobManager,
-		CompletableFuture<JobMasterGateway> initializingJobMasterGateway) {
+		CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway) {
 		this.jobManagerRunnerFuture = initializingJobManager;
 		this.initializingJobMasterGatewayFuture = initializingJobMasterGateway;
 	}
@@ -50,11 +51,11 @@ public class DispatcherJob {
 		return initializingJobMasterGatewayFuture != null;
 	}
 
-	public CompletableFuture<JobMasterGateway> getInitializingJobMasterGatewayFuture() {
+	public CompletableFuture<InitializingJobMasterGateway> getInitializingJobMasterGatewayFuture() {
 		return initializingJobMasterGatewayFuture;
 	}
 
-	public void setInitializingJobMasterGatewayFuture(CompletableFuture<JobMasterGateway> initializingJobMasterGateway) {
+	public void setInitializingJobMasterGatewayFuture(CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway) {
 		this.initializingJobMasterGatewayFuture = initializingJobMasterGateway;
 	}
 

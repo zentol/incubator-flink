@@ -72,6 +72,7 @@ import org.apache.flink.runtime.util.TestingFatalErrorHandlerResource;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.hamcrest.Matchers;
@@ -740,6 +741,7 @@ public class DispatcherTest extends TestLogger {
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 		final CompletableFuture<Acknowledge> submissionFuture = dispatcherGateway.submitJob(jobGraph, TIMEOUT);
 		submissionFuture.get();
+		//CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
 		assertThat(dispatcher.getNumberJobs(TIMEOUT).get(), Matchers.is(1));
 
 		dispatcher.close();

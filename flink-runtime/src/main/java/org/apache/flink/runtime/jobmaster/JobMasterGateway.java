@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.jobmaster;
 
-import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinatorGateway;
@@ -35,7 +34,6 @@ import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.messages.Acknowledge;
-import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
 import org.apache.flink.runtime.registration.RegistrationResponse;
@@ -55,22 +53,15 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link JobMaster} rpc gateway interface.
+ * {@link JobMaster} rpc gateway interface, with RPC calls available after initialization.
  */
 public interface JobMasterGateway extends
+	InitializingJobMasterGateway,
 	CheckpointCoordinatorGateway,
 	FencedRpcGateway<JobMasterId>,
 	KvStateLocationOracle,
 	KvStateRegistryGateway,
 	JobMasterOperatorEventGateway {
-
-	/**
-	 * Cancels the currently executed job.
-	 *
-	 * @param timeout of this operation
-	 * @return Future acknowledge of the operation
-	 */
-	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
 
 	/**
 	 * Updates the task execution state for a given task.
@@ -196,22 +187,6 @@ public interface JobMasterGateway extends
 	 * @param resourceID unique id of the resource manager
 	 */
 	void heartbeatFromResourceManager(final ResourceID resourceID);
-
-	/**
-	 * Request the details of the executed job.
-	 *
-	 * @param timeout for the rpc call
-	 * @return Future details of the executed job
-	 */
-	CompletableFuture<JobDetails> requestJobDetails(@RpcTimeout Time timeout);
-
-	/**
-	 * Requests the current job status.
-	 *
-	 * @param timeout for the rpc call
-	 * @return Future containing the current job status
-	 */
-	CompletableFuture<JobStatus> requestJobStatus(@RpcTimeout Time timeout);
 
 	/**
 	 * Requests the {@link ArchivedExecutionGraph} of the executed job.

@@ -42,6 +42,7 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobmanager.JobGraphWriter;
+import org.apache.flink.runtime.jobmaster.InitializingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobManagerRunnerImpl;
 import org.apache.flink.runtime.jobmaster.JobManagerSharedServices;
@@ -91,6 +92,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -373,7 +375,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					return r;
 				}),
 			getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
-		CompletableFuture<JobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGateway(initializingJobManager, jobGraph),
+		CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGatewayImpl(initializingJobManager, jobGraph),
 			getRpcService().getExecutor());
 
 		DispatcherJob dispatcherJob = new DispatcherJob(initializingJobManager, initializingJobMasterGateway);
@@ -495,9 +497,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<Acknowledge> cancelJob(JobID jobId, Time timeout) {
-		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
+		final CompletableFuture<? extends InitializingJobMasterGateway> jobMasterGatewayFuture = getInitializingJobMasterGatewayFuture(jobId);
 
-		return jobMasterGatewayFuture.thenCompose((JobMasterGateway jobMasterGateway) -> jobMasterGateway.cancel(timeout));
+		return jobMasterGatewayFuture.thenCompose((InitializingJobMasterGateway jobMasterGateway) -> jobMasterGateway.cancel(timeout));
 	}
 
 	@Override
@@ -505,7 +507,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		CompletableFuture<ResourceOverview> taskManagerOverviewFuture = runResourceManagerCommand(resourceManagerGateway -> resourceManagerGateway.requestResourceOverview(timeout));
 
 		final List<CompletableFuture<Optional<JobStatus>>> optionalJobInformation = queryJobMastersForInformation(
-			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout));
+			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout),
+			this::getJobMasterGatewayFuture);
 
 		CompletableFuture<Collection<Optional<JobStatus>>> allOptionalJobsFuture = FutureUtils.combineAll(optionalJobInformation);
 
@@ -524,7 +527,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public CompletableFuture<MultipleJobsDetails> requestMultipleJobDetails(Time timeout) {
 		List<CompletableFuture<Optional<JobDetails>>> individualOptionalJobDetails = queryJobMastersForInformation(
-			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobDetails(timeout));
+			(InitializingJobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobDetails(timeout),
+			jobID -> (CompletableFuture<InitializingJobMasterGateway>) getInitializingJobMasterGatewayFuture(jobID));
 
 		CompletableFuture<Collection<Optional<JobDetails>>> optionalCombinedJobDetails = FutureUtils.combineAll(
 			individualOptionalJobDetails);
@@ -547,10 +551,10 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(JobID jobId, Time timeout) {
 
-		final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
+		final CompletableFuture<? extends InitializingJobMasterGateway> initializingJobMasterGatewayFuture = getInitializingJobMasterGatewayFuture(jobId);
 
-		final CompletableFuture<JobStatus> jobStatusFuture = jobMasterGatewayFuture.thenCompose(
-			(JobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout));
+		final CompletableFuture<JobStatus> jobStatusFuture = initializingJobMasterGatewayFuture.thenCompose(
+			(InitializingJobMasterGateway jobMasterGateway) -> jobMasterGateway.requestJobStatus(timeout));
 
 		return jobStatusFuture.exceptionally(
 			(Throwable throwable) -> {
@@ -839,14 +843,30 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		onFatalError(new FlinkException(String.format("JobMaster for job %s failed.", jobId), cause));
 	}
 
-	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
+	private CompletableFuture<? extends InitializingJobMasterGateway> getInitializingJobMasterGatewayFuture(JobID jobId) {
 		DispatcherJob job = runningJobs.get(jobId);
 		if (job == null) {
 			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 		}
 		if (job.isInitializing()) {
 			return job.getInitializingJobMasterGatewayFuture();
+		} else {
+			return getJobMasterGatewayFuture(jobId);
 		}
+	}
+
+	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
+		DispatcherJob job = runningJobs.get(jobId);
+		if (job == null) {
+			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
+		}
+		if (job.isInitializing()) {
+			// todo: difference between completedExceptionally and throwing the exception here
+			// when completedExceptionally, errors are not
+			throw new UnsupportedOperationException("Unable to get JobMasterGateway for initializing job. "
+				+ "The requested operation is not available while the JobManager is still initializing.");
+		}
+
 		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = job.getJobManagerRunnerFuture();
 
 		if (jobManagerRunnerFuture == null) {
@@ -883,14 +903,14 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	@Nonnull
-	private <T> List<CompletableFuture<Optional<T>>> queryJobMastersForInformation(Function<JobMasterGateway, CompletableFuture<T>> queryFunction) {
+	private <T, G> List<CompletableFuture<Optional<T>>> queryJobMastersForInformation(Function<G, CompletableFuture<T>> queryFunction, Function<JobID, CompletableFuture<G>> gatewaySupplier) {
 		final int numberJobsRunning = getNumberOfJobsRunning();
 
 		ArrayList<CompletableFuture<Optional<T>>> optionalJobInformation = new ArrayList<>(
 			numberJobsRunning);
 
 		for (JobID jobId : runningJobs.keySet()) {
-			final CompletableFuture<JobMasterGateway> jobMasterGatewayFuture = getJobMasterGatewayFuture(jobId);
+			final CompletableFuture<G> jobMasterGatewayFuture = gatewaySupplier.apply(jobId);
 
 			final CompletableFuture<Optional<T>> optionalRequest = jobMasterGatewayFuture
 				.thenCompose(queryFunction::apply)
