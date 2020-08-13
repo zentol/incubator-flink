@@ -44,9 +44,9 @@ public class DispatcherJob {
 	private CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGatewayFuture;
 
 	public DispatcherJob(
-		CompletableFuture<JobManagerRunner> initializingJobManager,
+		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
 		CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway) {
-		this.jobManagerRunnerFuture = initializingJobManager;
+		this.jobManagerRunnerFuture = jobManagerRunnerFuture;
 		this.initializingJobMasterGatewayFuture = initializingJobMasterGateway;
 	}
 

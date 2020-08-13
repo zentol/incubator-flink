@@ -367,7 +367,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 		long jobManagerInitializationStarted = System.currentTimeMillis();
 
-		CompletableFuture<JobManagerRunner> initializingJobManager = createJobManagerRunner(jobGraph)
+		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = createJobManagerRunner(jobGraph)
 			.thenApplyAsync(
 				FunctionUtils.uncheckedFunction((runner) -> {
 					JobManagerRunner r = startJobManagerRunner(runner);
@@ -375,37 +375,37 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					return r;
 				}),
 			getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
-		CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGatewayImpl(initializingJobManager, jobGraph),
-			getRpcService().getExecutor());
-
-		DispatcherJob dispatcherJob = new DispatcherJob(initializingJobManager, initializingJobMasterGateway);
-		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
 
 		// handle errors during initialization
-		CompletableFuture<Throwable> errorHandler = initializingJobManager.thenApply(jm -> null);
-			errorHandler.exceptionally(Function.identity())
-			.thenAcceptAsync(throwable -> {
-				if (throwable == null) {
-					// future has completed normally. No need for cleaning up.
-					throw new CancellationException();
-				}
-				DispatcherJob job = runningJobs.get(jobGraph.getJobID());
-				boolean isCancelled = job != null
-					&& job.getJobManagerRunnerFuture() != null
-					&& job.getJobManagerRunnerFuture().isCancelled();
-				// error during initialization
-				onJobManagerInitializationFailure(
-					jobGraph,
-					throwable,
-					jobManagerInitializationStarted,
-					isCancelled);
-			}, getRpcService().getExecutor()) // perform IO heavy cleanups in separate thread
-			.thenAcceptAsync(ign -> {
-				runningJobs.remove(jobGraph.getJobID());
-			}, getMainThreadExecutor()); // remove job in main thread
+		CompletableFuture<Throwable> futureAsThrowable = jobManagerRunnerFuture.thenApply(jm -> null);
+		CompletableFuture<Void> errorHandler = futureAsThrowable.exceptionally(Function.identity())
+		.thenAcceptAsync(throwable -> {
+			if (throwable == null) {
+				// future has completed normally. No need for cleaning up.
+				throw new CancellationException();
+			}
+			DispatcherJob job = runningJobs.get(jobGraph.getJobID());
+			boolean isCancelled = job != null
+				&& job.getJobManagerRunnerFuture() != null
+				&& job.getJobManagerRunnerFuture().isCancelled();
+			// error during initialization
+			onJobManagerInitializationFailure(
+				jobGraph,
+				throwable,
+				jobManagerInitializationStarted,
+				isCancelled);
+		}, getRpcService().getExecutor()) // perform IO heavy cleanups in separate thread
+		.thenAcceptAsync(ign -> {
+			runningJobs.remove(jobGraph.getJobID());
+		}, getMainThreadExecutor()); // remove job in main thread
+
+		CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGateway = CompletableFuture.supplyAsync(() -> new InitializingJobMasterGatewayImpl(jobManagerRunnerFuture, errorHandler, jobGraph), getRpcService().getExecutor());
+
+		DispatcherJob dispatcherJob = new DispatcherJob(jobManagerRunnerFuture, initializingJobMasterGateway);
+		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
 
 		if (blocking) {
-			return dispatcherJob.getJobManagerRunnerFuture().thenApply(FunctionUtils.nullFn());
+			return jobManagerRunnerFuture.thenApply(FunctionUtils.nullFn());
 		} else {
 			return CompletableFuture.completedFuture(null);
 		}

@@ -45,9 +45,14 @@ public class InitializingJobMasterGatewayImpl implements InitializingJobMasterGa
 	private final JobID jobId;
 	private final String jobName;
 	private final int jobNumTasks;
+	private final CompletableFuture<Void> initializationErrorHandlingFuture;
 
-	public InitializingJobMasterGatewayImpl(CompletableFuture<JobManagerRunner> initializingJobManager, JobGraph jobGraph) {
+	public InitializingJobMasterGatewayImpl(
+		CompletableFuture<JobManagerRunner> initializingJobManager,
+		CompletableFuture<Void> initializationErrorHandlingFuture,
+		JobGraph jobGraph) {
 		this.initializingJobManager = initializingJobManager;
+		this.initializationErrorHandlingFuture = initializationErrorHandlingFuture;
 		jobId = jobGraph.getJobID();
 		jobName = jobGraph.getName();
 		jobNumTasks = jobGraph.getVerticesAsArray().length;
@@ -55,11 +60,12 @@ public class InitializingJobMasterGatewayImpl implements InitializingJobMasterGa
 
 	@Override
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
+		// cancel the JM initialization future & wait for the error handling to be completed
 		return CompletableFuture.supplyAsync(() -> {
 			initializingJobManager.cancel(true);
 			LOG.debug("JM future cancelled");
 			return Acknowledge.get();
-		});
+		}).thenCombine(initializationErrorHandlingFuture, (ign, ore) -> Acknowledge.get());
 	}
 
 	@Override
