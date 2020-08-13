@@ -35,6 +35,7 @@ import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.concurrent.FutureUtils;
+import org.apache.flink.runtime.concurrent.ScheduledExecutorServiceAdapter;
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobResult;
@@ -52,6 +53,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
@@ -93,16 +95,20 @@ public enum ClientUtils {
 		checkNotNull(client);
 		checkNotNull(jobGraph);
 		checkNotNull(classLoader);
+		// todo fixme
+		ScheduledExecutorServiceAdapter executor = new ScheduledExecutorServiceAdapter(Executors.newScheduledThreadPool(1));
 		try {
 			return client
 				.submitJob(jobGraph)
-				.thenCompose(jobId -> FutureUtils.retrySuccessfulWithDelay(
-					() -> client.getJobStatus(jobId),
-					Time.of(50, TimeUnit.MILLISECONDS),
-					Deadline.fromNow(Duration.ofMinutes(5)),
-					jobStatus -> jobStatus != JobStatus.INITIALIZING,
-					null)
-				.thenApply(status -> Tuple2.of(jobId, status)))
+				.thenCompose(jobId -> {
+					return FutureUtils.retrySuccessfulWithDelay(
+						() -> client.getJobStatus(jobId),
+						Time.of(50, TimeUnit.MILLISECONDS),
+						Deadline.fromNow(Duration.ofMinutes(5)),
+						jobStatus -> jobStatus != JobStatus.INITIALIZING,
+						executor)
+						.thenApply(status -> Tuple2.of(jobId, status));
+				})
 				.thenCompose(jobIdAndStatus -> {
 				if (jobIdAndStatus.f1 == JobStatus.FAILED) {
 					client.requestJobResult(jobIdAndStatus.f0)
