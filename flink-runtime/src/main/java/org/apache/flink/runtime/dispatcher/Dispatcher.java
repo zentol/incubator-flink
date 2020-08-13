@@ -385,16 +385,20 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		CompletableFuture<Throwable> errorHandler = initializingJobManager.thenApply(jm -> null);
 			errorHandler.exceptionally(Function.identity())
 			.thenAcceptAsync(throwable -> {
-					DispatcherJob job = runningJobs.get(jobGraph.getJobID());
-					boolean isCancelled = job != null
-						&& job.getJobManagerRunnerFuture() != null
-						&& job.getJobManagerRunnerFuture().isCancelled();
-					// error during initialization
-					onJobManagerInitializationFailure(
-						jobGraph,
-						throwable,
-						jobManagerInitializationStarted,
-						isCancelled);
+				if (throwable == null) {
+					// future has completed normally. No need for cleaning up.
+					throw new CancellationException();
+				}
+				DispatcherJob job = runningJobs.get(jobGraph.getJobID());
+				boolean isCancelled = job != null
+					&& job.getJobManagerRunnerFuture() != null
+					&& job.getJobManagerRunnerFuture().isCancelled();
+				// error during initialization
+				onJobManagerInitializationFailure(
+					jobGraph,
+					throwable,
+					jobManagerInitializationStarted,
+					isCancelled);
 			}, getRpcService().getExecutor()) // perform IO heavy cleanups in separate thread
 			.thenAcceptAsync(ign -> {
 				runningJobs.remove(jobGraph.getJobID());

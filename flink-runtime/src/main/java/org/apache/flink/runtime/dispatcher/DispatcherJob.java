@@ -22,6 +22,8 @@ import org.apache.flink.runtime.jobmaster.InitializingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 
+import javax.annotation.Nullable;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -38,6 +40,7 @@ public class DispatcherJob {
 	 * During initialization, this future is set to a "fake" JobManagerGateway that
 	 * has some methods available. Once the initialization is done, this future is set to null.
 	 */
+	@Nullable
 	private CompletableFuture<InitializingJobMasterGateway> initializingJobMasterGatewayFuture;
 
 	public DispatcherJob(

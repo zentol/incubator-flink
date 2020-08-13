@@ -737,11 +737,11 @@ public class DispatcherTest extends TestLogger {
 			.build();
 
 		dispatcher.start();
+		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
-		final CompletableFuture<Acknowledge> submissionFuture = dispatcherGateway.submitJob(jobGraph, TIMEOUT);
-		submissionFuture.get();
-		//CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
+		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
 		assertThat(dispatcher.getNumberJobs(TIMEOUT).get(), Matchers.is(1));
 
 		dispatcher.close();
@@ -755,10 +755,12 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testJobSuspensionWhenDispatcherIsTerminated() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
+		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
 
 		final CompletableFuture<JobResult> jobResultFuture = dispatcherGateway.requestJobResult(jobGraph.getJobID(), TIMEOUT);
 
