@@ -592,6 +592,7 @@ log.debug("submission finished");
 
 		assertThat(jobStatusFuture.isDone(), is(false));
 
+		log.debug("status not done");
 		// Make sure that the jobstatus request is blocking after it has left the INITIALIZING status
 		boolean timeoutSeen = false;
 		while (!timeoutSeen) {

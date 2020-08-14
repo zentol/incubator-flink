@@ -105,6 +105,12 @@ public class DispatcherJob implements AutoCloseableAsync {
 					log.warn("JobManager initialization has been cancelled for {}. Stopping JobManager.", jobGraph.getJobID());
 					// todo consider exposing a method in the JobManagerRunner to properly forward an exception
 					initializationFailedWith(null, JobStatus.CANCELED);
+					// todo introduce intermediate state cancelling
+					// todo return result only after cancellation finished
+					/*get gateway, cancel:
+					jobManagerRunner.getJobMasterGateway().
+
+					then forward FutureUtils.forward */
 					CompletableFuture<Void> jmCloseFuture = jobManagerRunner.closeAsync();
 					FutureUtils.assertNoException(jmCloseFuture.whenComplete((ign, ore) -> {
 						cancellationFuture.complete(Acknowledge.get());
