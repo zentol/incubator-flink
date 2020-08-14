@@ -109,7 +109,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					// the JobManager will complete the job result future with state CANCELLED.
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 				} else {
-					jobStatus = JobStatus.RUNNING; // this status should never be exposed from the DispatcherJob
+					jobStatus = JobStatus.RUNNING; // this status should never be exposed from the DispatcherJob. Only used internally for tracking runnin state
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 				}
 			} else {
@@ -169,7 +169,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 
 	public boolean isRunning() {
 		// todo revisit definition of isRunning. alternative definition: once gateway is available = when is leader
-		return jobManagerRunnerFuture.isDone();
+		return jobStatus == JobStatus.RUNNING;
 	}
 
 	public CompletableFuture<JobMasterGateway> getJobMasterGateway() {
@@ -187,7 +187,9 @@ public final class DispatcherJob implements AutoCloseableAsync {
 		if (isRunning()) {
 			return jobManagerRunnerFuture.thenAccept(AutoCloseableAsync::closeAsync);
 		} else if (jobManagerRunnerFuture.isDone()) {
-			Preconditions.checkState(jobManagerRunnerFuture.isCompletedExceptionally(), "initialization has failed");
+			// if this precondition fails, then an assumption in the jobManagerRunnerFuture.handle() is wrong
+			// we assume that is !isRunning() && jobManagerRunnerFuture.isDone == error during initialization.
+			Preconditions.checkState(jobManagerRunnerFuture.isCompletedExceptionally(), "Expecting error during initialization");
 			return CompletableFuture.completedFuture(null);
 		} else {
 			return cancelInternal().thenApply(ack -> null);
