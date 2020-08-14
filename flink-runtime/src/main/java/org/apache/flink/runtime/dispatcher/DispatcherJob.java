@@ -20,6 +20,7 @@ package org.apache.flink.runtime.dispatcher;
 
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -28,6 +29,8 @@ import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
+import org.apache.flink.runtime.rpc.RpcGateway;
+import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.Preconditions;
 
@@ -94,17 +97,23 @@ public class DispatcherJob implements AutoCloseableAsync {
 		this.initializationTimestamp = initializationTimestamp;
 		jobResultFuture = new CompletableFuture<>();
 		jobMasterGatewayFuture = new CompletableFuture<>();
-		jobManagerRunnerFuture.handle((jobManagerRunner, throwable) -> {
+		FutureUtils.assertNoException(jobManagerRunnerFuture.handle((jobManagerRunner, throwable) -> {
 			// this gets called when the JM has been initialized
 			log.info("jm runner handle called", throwable);
 			if (throwable == null) {
 				if (cancellationFuture != null) {
 					log.warn("JobManager initialization has been cancelled for {}. Stopping JobManager.", jobGraph.getJobID());
 					// todo consider exposing a method in the JobManagerRunner to properly forward an exception
-					cancellationFuture
-						.thenRun(() -> initializationFailedWith(null, JobStatus.CANCELED))
-						.thenCombine(jobManagerRunner.closeAsync(), (ign, ore) -> Acknowledge.get());
-
+					initializationFailedWith(null, JobStatus.CANCELED);
+					CompletableFuture<Void> jmCloseFuture = jobManagerRunner.closeAsync();
+					FutureUtils.assertNoException(jmCloseFuture.whenComplete((ign, ore) -> {
+						cancellationFuture.complete(Acknowledge.get());
+					}));
+					log.warn("cancellation future right now: " + cancellationFuture);
+					cancellationFuture.handleAsync((ack, thr) -> {
+						log.info("cancellation future finished with " + ack + " thr = " + thr);
+						return null;
+					});
 				} else {
 					// request JobMaster gateway
 					jobManagerRunner
@@ -117,7 +126,7 @@ public class DispatcherJob implements AutoCloseableAsync {
 				initializationFailedWith(throwable, JobStatus.FAILED);
 			}
 			return null;
-		});
+		}));
 	}
 
 	private BiFunction<ArchivedExecutionGraph, Throwable, Void> getJobManagerResultHandler() {
@@ -132,8 +141,9 @@ public class DispatcherJob implements AutoCloseableAsync {
 		});
 	}
 
-	private void initializationFailedWith(Throwable throwable, JobStatus status) {
+	private void initializationFailedWith(@Nullable Throwable throwable, JobStatus status) {
 		jobResultFuture.complete(ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, status, initializationTimestamp));
+		log.debug("initializationFailedWith: completed: " + jobResultFuture);
 	}
 
 	public CompletableFuture<ArchivedExecutionGraph> getResultFuture() {
@@ -174,8 +184,10 @@ public class DispatcherJob implements AutoCloseableAsync {
 
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
 		if (isRunning()) {
+			log.debug("requestJobStatus: gateway");
 			return getJobMasterGateway().requestJobStatus(timeout);
 		} else {
+			log.debug("requestJobStatus: self");
 			return CompletableFuture.completedFuture(cancellationFuture != null ? JobStatus.CANCELED : JobStatus.INITIALIZING);
 		}
 	}
@@ -204,5 +216,9 @@ public class DispatcherJob implements AutoCloseableAsync {
 		} else {
 			return cancelInternal().thenApply(ack -> null);
 		}
+	}
+
+	public CompletableFuture<JobManagerRunner> getJobManagerRunnerFuture() {
+		return jobManagerRunnerFuture;
 	}
 }

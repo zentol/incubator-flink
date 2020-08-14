@@ -361,7 +361,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	 */
 	public static ArchivedExecutionGraph createFromFailedInit(
 		JobGraph jobGraph,
-		Throwable throwable,
+		@Nullable Throwable throwable,
 		JobStatus finalJobStatus,
 		long initializationTimestamp) {
 		long failureTime = System.currentTimeMillis();
@@ -390,7 +390,10 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			ec = new ExecutionConfig();
 		}
 
-		ErrorInfo failureInfo = new ErrorInfo(throwable, failureTime);
+		ErrorInfo failureInfo = null;
+		if (throwable != null) {
+			failureInfo = new ErrorInfo(throwable, failureTime);
+		}
 
 		return new ArchivedExecutionGraph(
 			jobGraph.getJobID(),

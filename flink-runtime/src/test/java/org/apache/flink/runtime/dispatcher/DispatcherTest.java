@@ -412,7 +412,7 @@ public class DispatcherTest extends TestLogger {
 				TIMEOUT);
 			savepointFuture.get();
 		} catch (ExecutionException t) {
-			Assert.assertTrue(t.getCause() instanceof UnsupportedOperationException);
+			Assert.assertTrue(t.getCause() instanceof UnavailableDispatcherOperationException);
 			exceptionSeen = true;
 		}
 		Assert.assertTrue(exceptionSeen);
