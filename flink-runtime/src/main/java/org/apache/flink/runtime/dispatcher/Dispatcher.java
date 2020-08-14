@@ -664,12 +664,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void registerJobManagerRunnerTerminationFuture(JobID jobId, CompletableFuture<Void> jobManagerRunnerTerminationFuture) {
 		Preconditions.checkState(!jobManagerTerminationFutures.containsKey(jobId));
-
+log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTerminationFuture);
 		jobManagerTerminationFutures.put(jobId, jobManagerRunnerTerminationFuture);
 
 		// clean up the pending termination future
 		jobManagerRunnerTerminationFuture.thenRunAsync(
 			() -> {
+				log.debug("Clean up pending termination future for " + jobId);
 				final CompletableFuture<Void> terminationFuture = jobManagerTerminationFutures.remove(jobId);
 
 				//noinspection ObjectEquality
@@ -681,6 +682,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
+		log.debug("removeJob: " + jobId + " running jobs " + runningJobs);
 		DispatcherJob job = runningJobs.remove(jobId);
 
 		final CompletableFuture<Void> jobManagerRunnerTerminationFuture;
@@ -689,13 +691,14 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		} else {
 			jobManagerRunnerTerminationFuture = CompletableFuture.completedFuture(null);
 		}
-
+		log.debug("future state = " + jobManagerRunnerTerminationFuture);
 		return jobManagerRunnerTerminationFuture.thenRunAsync(
 			() -> cleanUpJobData(jobId, cleanupHA),
 			getRpcService().getExecutor());
 	}
 
 	private void cleanUpJobData(JobID jobId, boolean cleanupHA) {
+		log.info("cleanUpJobData");
 		jobManagerMetricGroup.removeJob(jobId);
 
 		boolean cleanupHABlobs = false;
@@ -723,6 +726,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		}
 
 		blobServer.cleanupJob(jobId, cleanupHABlobs);
+		log.debug("cleanUpJobData: done");
 	}
 
 	/**

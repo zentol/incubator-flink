@@ -31,7 +31,6 @@ import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.Preconditions;
 
-import akka.remote.artery.SystemMessageDelivery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +84,7 @@ public class DispatcherJob implements AutoCloseableAsync {
 	}
 
 	static DispatcherJob createForRecovery(CompletableFuture<JobManagerRunner> bla) {
-		return null;
+		return null; // TODO handle HA case
 	}
 
 	private DispatcherJob(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
@@ -97,6 +96,7 @@ public class DispatcherJob implements AutoCloseableAsync {
 		jobMasterGatewayFuture = new CompletableFuture<>();
 		jobManagerRunnerFuture.handle((jobManagerRunner, throwable) -> {
 			// this gets called when the JM has been initialized
+			log.info("jm runner handle called", throwable);
 			if (throwable == null) {
 				if (cancellationFuture != null) {
 					log.warn("JobManager initialization has been cancelled for {}. Stopping JobManager.", jobGraph.getJobID());
@@ -167,7 +167,9 @@ public class DispatcherJob implements AutoCloseableAsync {
 	}
 
 	private CompletableFuture<Acknowledge> cancelInternal() {
-		return this.cancellationFuture = new CompletableFuture<>();
+		log.debug("cancelInternal");
+		this.cancellationFuture = new CompletableFuture<>();
+		return cancellationFuture;
 	}
 
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
@@ -193,8 +195,12 @@ public class DispatcherJob implements AutoCloseableAsync {
 
 	@Override
 	public CompletableFuture<Void> closeAsync() {
+		log.debug("closeAsync: running=" + isRunning() + " isDone=" + jobManagerRunnerFuture.isDone());
 		if (isRunning()) {
 			return jobManagerRunnerFuture.thenAccept(AutoCloseableAsync::closeAsync);
+		} else if (jobManagerRunnerFuture.isDone()) {
+			Preconditions.checkState(jobManagerRunnerFuture.isCompletedExceptionally(), "initialization has failed");
+			return CompletableFuture.completedFuture(null);
 		} else {
 			return cancelInternal().thenApply(ack -> null);
 		}

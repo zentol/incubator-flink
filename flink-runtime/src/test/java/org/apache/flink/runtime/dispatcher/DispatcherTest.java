@@ -476,7 +476,7 @@ public class DispatcherTest extends TestLogger {
 
 		// job submission needs to return within a reasonable timeframe
 		Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
-
+log.debug("submission finished");
 		// wait till job is running
 		JobStatus status;
 		do {
@@ -484,6 +484,7 @@ public class DispatcherTest extends TestLogger {
 				blockingJobGraph.getJobID(),
 				TIMEOUT);
 			status = statusFuture.get();
+			log.info("status = " + status);
 			Thread.sleep(50);
 			Assert.assertThat(
 				status,
@@ -494,6 +495,7 @@ public class DispatcherTest extends TestLogger {
 		ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
 		Assert.assertNotNull(execGraph.getFailureInfo());
 		Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
+		log.info("test finished");
 	}
 
 	/**
@@ -654,7 +656,7 @@ public class DispatcherTest extends TestLogger {
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
-
+log.debug("job submitted");
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		final CompletableFuture<Collection<String>> metricQueryServiceAddressesFuture = dispatcherGateway.requestMetricQueryServiceAddresses(Time.seconds(5L));
@@ -662,13 +664,14 @@ public class DispatcherTest extends TestLogger {
 		assertThat(metricQueryServiceAddressesFuture.get(), is(empty()));
 
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
-
+log.debug("before unlock");
 		jobManagerRunnerCreationLatch.trigger();
-
+log.debug("wait for running");
 		CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
 			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
-
+log.debug("running");
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.RUNNING));
+		log.debug("all good");
 	}
 
 	/**
