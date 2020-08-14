@@ -364,77 +364,41 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 		long jobManagerInitializationStarted = System.currentTimeMillis();
 
-		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = createJobManagerRunner(jobGraph)
-			.thenApplyAsync(
-				FunctionUtils.uncheckedFunction(jobManagerRunner -> {
-					jobManagerRunner.start();
-					return jobManagerRunner;
-				}),
-			getRpcService().getExecutor()); // execute in separate pool to avoid blocking the Dispatcher
+		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = createJobManagerRunner(jobGraph);
 
-		DispatcherJob dispatcherJob;
+		DispatcherJob submissionDispatcherJob;
 		if (isRecovery) {
-			dispatcherJob = DispatcherJob.createForRecovery(jobManagerRunnerFuture);
+			submissionDispatcherJob = DispatcherJob.createForRecovery(jobManagerRunnerFuture);
 		} else {
-			dispatcherJob = DispatcherJob.createForSubmission(jobManagerRunnerFuture, jobGraph, jobManagerInitializationStarted);
+			submissionDispatcherJob = DispatcherJob.createForSubmission(jobManagerRunnerFuture, jobGraph, jobManagerInitializationStarted);
 		}
-		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
+		runningJobs.put(jobGraph.getJobID(), submissionDispatcherJob);
 
 		// register handler JM failures & successful job completion
 		final JobID jobId = jobGraph.getJobID();
-		log.debug("reg handler on " + dispatcherJob.getResultFuture());
+		log.debug("reg handler on " + submissionDispatcherJob.getResultFuture());
 		FutureUtils.assertNoException(
-			dispatcherJob.getResultFuture().handleAsync(
+			submissionDispatcherJob.getResultFuture().handleAsync(
 				(ArchivedExecutionGraph archivedExecutionGraph, Throwable throwable) -> {
-					/**
-					 * Cases
-					 *
-					 * A) JobManagerRunner initialization failed
-					 * 	- we have no jobmanager runner instance
-					 * 	- the exception is in the archived exec graph
-					 *
-					 * B) JobManager initialized but failed
-					 *  - we have no archived exec graph, but an exception
-					 *
-					 * C) JobManager returns ArchivedExecutionGraph
-					 *  - store the graph
-					 *
-					 * D) We are not the active JobManagerRunner anymore --> ignore
-					 *
-					 */
 					log.debug("resultFuture.handleAsync: aeg=" + archivedExecutionGraph +" thrw=" + throwable);
 					// check if we are still the active JobManagerRunner by checking the identity
 
 					DispatcherJob job = runningJobs.get(jobId);
-					if (job == null) {
-						log.debug("Job {} is not registered anymore at dispatcher", jobId);
-					} else {
-						CompletableFuture<JobManagerRunner> jobJMRunnerFuture = job.getJobManagerRunnerFuture();
-						if (jobJMRunnerFuture.isCompletedExceptionally()) {
-							// ... because JMRunner errors always result in an archived exec graph
-							Preconditions.checkNotNull(archivedExecutionGraph, "Expecting archived execution graph");
-							archiveExecutionGraph(archivedExecutionGraph);
-							jobNotFinished(jobId);
-							return null;
-						}
-						JobManagerRunner runner = jobJMRunnerFuture.getNow(null);
-						if (runner == null) {
-							log.debug("There is a newer JobManagerRunner for the job {}.", jobId);
+					if (job == submissionDispatcherJob) {
+						if (archivedExecutionGraph != null) {
+							jobReachedGloballyTerminalState(archivedExecutionGraph);
 						} else {
-							if (archivedExecutionGraph != null) {
-								jobReachedGloballyTerminalState(archivedExecutionGraph);
-							} else {
-								final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
+							final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
 
-								if (strippedThrowable instanceof JobNotFinishedException) {
-									jobNotFinished(jobId);
-								} else {
-									jobMasterFailed(jobId, strippedThrowable);
-								}
+							if (strippedThrowable instanceof JobNotFinishedException) {
+								jobNotFinished(jobId);
+							} else {
+								jobMasterFailed(jobId, strippedThrowable);
 							}
 						}
+					} else {
+						log.debug("Job {} is not registered anymore at dispatcher", jobId);
 					}
-
 					return null;
 				}, getMainThreadExecutor()));
 
@@ -453,7 +417,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		return CompletableFuture.supplyAsync(
 			() -> {
 				try {
-					JobManagerRunner r = jobManagerRunnerFactory.createJobManagerRunner(
+					JobManagerRunner runner = jobManagerRunnerFactory.createJobManagerRunner(
 						jobGraph,
 						configuration,
 						rpcService,
@@ -462,7 +426,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 						jobManagerSharedServices,
 						new DefaultJobManagerJobMetricGroupFactory(jobManagerMetricGroup),
 						fatalErrorHandler);
-					return r;
+					runner.start();
+					return runner;
 				} catch (Exception e) {
 					throw new CompletionException(new JobExecutionException(jobGraph.getJobID(), "Could not instantiate JobManager.", e));
 				}
@@ -590,8 +555,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			}
 		};
 		try {
-			CompletableFuture<ArchivedExecutionGraph> jobFuture = getJobMasterGateway(jobId).requestJob(
-				timeout);
+			CompletableFuture<ArchivedExecutionGraph> jobFuture = getJobMasterGateway(jobId).thenCompose(gateway -> gateway.requestJob(timeout));
 			return jobFuture.exceptionally(onJobNotFound);
 		} catch (Throwable e) {
 			return CompletableFuture.completedFuture(onJobNotFound.apply(e));
@@ -829,11 +793,10 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		onFatalError(new FlinkException(String.format("JobMaster for job %s failed.", jobId), cause));
 	}
 
-
 	/**
 	 * Ensures that the JobMasterGateway is available.
 	 */
-	private JobMasterGateway getJobMasterGateway(JobID jobId) throws
+	private CompletableFuture<JobMasterGateway> getJobMasterGateway(JobID jobId) throws
 		FlinkJobNotFoundException,
 		UnavailableDispatcherOperationException {
 		DispatcherJob job = runningJobs.get(jobId);
@@ -849,7 +812,7 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 
 	private <T> CompletableFuture<T> performOperationOnJobMasterGateway(JobID jobId, Function<JobMasterGateway, CompletableFuture<T>> operation) {
 		try {
-			return operation.apply(getJobMasterGateway(jobId));
+			return getJobMasterGateway(jobId).thenCompose(operation);
 		} catch (Throwable e) {
 			return FutureUtils.completedExceptionally(e);
 		}
@@ -919,31 +882,5 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		return CompletableFuture.runAsync(
 			() -> removeJobAndRegisterTerminationFuture(jobId, false),
 			getMainThreadExecutor());
-	}
-
-	private void onJobManagerInitializationFailure(
-		JobGraph jobGraph,
-		Throwable throwable,
-		long jobManagerInitializationStarted,
-		boolean isCancelled) {
-		log.debug("JobManager initialization for job {} failed", jobGraph.getJobID(), throwable);
-
-		// try removing job graph (this is only necessary in HA case)
-		try {
-			jobGraphWriter.removeJobGraph(jobGraph.getJobID());
-		} catch (Exception e) {
-			log.warn("Error while removing job graph.", e);
-		}
-		// store the information we have about the job
-		try {
-			JobStatus finalJobStatus = isCancelled
-				? JobStatus.CANCELED
-				: JobStatus.FAILED;
-			ArchivedExecutionGraph archivedGraph = ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, finalJobStatus, jobManagerInitializationStarted);
-			archivedExecutionGraphStore.put(archivedGraph);
-		} catch (IOException e) {
-			log.warn("Error while archiving execution graph of job that failed during initialization.", e);
-		}
-		cleanUpJobData(jobGraph.getJobID(), true);
 	}
 }
