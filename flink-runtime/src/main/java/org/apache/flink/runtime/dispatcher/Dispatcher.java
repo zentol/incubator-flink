@@ -645,6 +645,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	 * @param cleanupHA True iff HA data shall also be cleaned up
 	 */
 	private void removeJobAndRegisterTerminationFuture(JobID jobId, boolean cleanupHA) {
+		log.info("removeJobAndRegisterTerminationFuture");
 		final CompletableFuture<Void> cleanupFuture = removeJob(jobId, cleanupHA);
 
 		registerJobManagerRunnerTerminationFuture(jobId, cleanupFuture);
@@ -879,8 +880,12 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 	}
 
 	public CompletableFuture<Void> onRemovedJobGraph(JobID jobId) {
+		log.info("onRemovedJobGraph; " + getMainThreadExecutor());
 		return CompletableFuture.runAsync(
-			() -> removeJobAndRegisterTerminationFuture(jobId, false),
+			() -> {
+				log.info("run async:");
+				removeJobAndRegisterTerminationFuture(jobId, false);
+			},
 			getMainThreadExecutor());
 	}
 }
