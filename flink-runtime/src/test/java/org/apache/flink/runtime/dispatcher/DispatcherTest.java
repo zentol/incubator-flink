@@ -439,22 +439,17 @@ public class DispatcherTest extends TestLogger {
 
 		log.info("submission done. is initing");
 		// submission has succeeded, now cancel the job
-		dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
+		CompletableFuture<Acknowledge> cancallationFuture = dispatcherGateway.cancelJob(
+			blockingJobGraph.getJobID(),
+			TIMEOUT);
 
-		// wait till job is running
-		JobStatus status;
-		do {
-			CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(
-				blockingJobGraph.getJobID(),
-				TIMEOUT);
-			status = statusFuture.get();
-			log.info("status = " + status);
-			Thread.sleep(50);
-			/*Assert.assertThat(
-				status,
-				either(is(JobStatus.INITIALIZING)).or(is(JobStatus.CANCELED))); */
-		} while (status != JobStatus.CANCELED);
-		log.info("cancellation done");
+		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.CANCELLING));
+
+		Assert.assertThat(cancallationFuture.isDone(), is(false));
+		// unblock
+		blockingJobVertex.unblock();
+		// wait until cancelled
+		cancallationFuture.get();
 		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.CANCELED));
 	}
 

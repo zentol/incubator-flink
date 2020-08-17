@@ -76,17 +76,21 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	@Nullable
 	private CompletableFuture<Acknowledge> cancellationFuture = null;
 
+	private enum SubmissionType {
+		INITIAL, RECOVERY
+	}
+
 	static DispatcherJob createForSubmission(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture, JobGraph jobGraph, long initializationTimestamp) {
-		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp);
+		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp, SubmissionType.INITIAL);
 	}
 
 	static DispatcherJob createForRecovery(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture, JobGraph jobGraph, long initializationTimestamp) {
-		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp);
+		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp, SubmissionType.RECOVERY);
 		// TODO handle HA case
 	}
 
 	private DispatcherJob(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
-		JobGraph jobGraph, long initializationTimestamp) {
+		JobGraph jobGraph, long initializationTimestamp, SubmissionType submissionType) {
 		this.jobManagerRunnerFuture = jobManagerRunnerFuture;
 		this.jobGraph = jobGraph;
 		this.initializationTimestamp = initializationTimestamp;
@@ -103,7 +107,6 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					CompletableFuture<Acknowledge> cancelJobFuture = jobManagerRunner.getJobMasterGateway().thenCompose(
 						gw -> gw.cancel(Time.seconds(60))); // TODO set better timeout
 					cancelJobFuture.whenComplete((ack, cancelThrowable) -> {
-						log.debug("cancellation done", cancelThrowable);
 						jobStatus = JobStatus.CANCELED;
 					});
 					// forward our cancellation future
@@ -114,10 +117,17 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					jobStatus = JobStatus.RUNNING; // this status should never be exposed from the DispatcherJob. Only used internally for tracking runnin state
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 				}
-			} else {
-				// failure during initialization
+			} else { // failure during initialization
 				jobStatus = JobStatus.FAILED;
-				jobResultFuture.complete(ArchivedExecutionGraph.createFromFailedInit(jobGraph, throwable, jobStatus, initializationTimestamp));
+				if (submissionType == SubmissionType.RECOVERY) {
+					jobResultFuture.completeExceptionally(throwable);
+				} else {
+					jobResultFuture.complete(ArchivedExecutionGraph.createFromFailedInit(
+						jobGraph,
+						throwable,
+						jobStatus,
+						initializationTimestamp));
+				}
 			}
 			return null;
 		}));
@@ -186,7 +196,19 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	@Override
 	public CompletableFuture<Void> closeAsync() {
 		log.debug("closeAsync: running=" + isRunning() + " isDone=" + jobManagerRunnerFuture.isDone());
-		if (isRunning()) {
+		switch(jobStatus) {
+			case RUNNING:
+				return jobManagerRunnerFuture.thenAccept(AutoCloseableAsync::closeAsync);
+			case CANCELED:
+			case FAILED:
+				return CompletableFuture.completedFuture(null);
+			case INITIALIZING:
+				return cancelInternal().thenApply(ack -> null);
+			default:
+				throw new IllegalStateException("Job is in a status that is not covered by the dispatcher job: " + jobStatus);
+
+		}
+		/*if (isRunning()) {
 			return jobManagerRunnerFuture.thenAccept(AutoCloseableAsync::closeAsync);
 		} else if (jobManagerRunnerFuture.isDone()) {
 			// if this precondition fails, then an assumption in the jobManagerRunnerFuture.handle() is wrong
@@ -195,7 +217,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 			return CompletableFuture.completedFuture(null);
 		} else {
 			return cancelInternal().thenApply(ack -> null);
-		}
+		} */
 	}
 
 }
