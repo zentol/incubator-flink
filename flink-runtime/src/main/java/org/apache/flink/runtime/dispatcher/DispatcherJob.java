@@ -80,8 +80,9 @@ public final class DispatcherJob implements AutoCloseableAsync {
 		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp);
 	}
 
-	static DispatcherJob createForRecovery(CompletableFuture<JobManagerRunner> bla) {
-		return null; // TODO handle HA case
+	static DispatcherJob createForRecovery(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture, JobGraph jobGraph, long initializationTimestamp) {
+		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp);
+		// TODO handle HA case
 	}
 
 	private DispatcherJob(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
@@ -102,6 +103,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					CompletableFuture<Acknowledge> cancelJobFuture = jobManagerRunner.getJobMasterGateway().thenCompose(
 						gw -> gw.cancel(Time.seconds(60))); // TODO set better timeout
 					cancelJobFuture.whenComplete((ack, cancelThrowable) -> {
+						log.debug("cancellation done", cancelThrowable);
 						jobStatus = JobStatus.CANCELED;
 					});
 					// forward our cancellation future

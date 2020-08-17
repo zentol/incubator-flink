@@ -802,14 +802,15 @@ log.debug("running");
 			.setJobGraphWriter(testingJobGraphStore)
 			.build();
 		dispatcher.start();
-		// add dispatcher leader election service
-		//.isLeader(UUID.randomUUID()).get();
-		//jobMasterLeaderElectionService.getConfirmationFuture().get();
-log.info("dispatcher started");
+		dispatcher.waitUntilStarted();
+
+		// we need to elect a jobmaster leader to be able to cancel the job on the JobMaster.
+		jobMasterLeaderElectionService.isLeader(UUID.randomUUID()).get();
+
 		final CompletableFuture<Void> processFuture = dispatcher.onRemovedJobGraph(jobGraph.getJobID());
-log.info("waiting for future");
+
 		processFuture.join();
-log.info("done waiting");
+
 		try {
 			removeJobGraphFuture.get(10L, TimeUnit.MILLISECONDS);
 			fail("onRemovedJobGraph should not remove the job from the JobGraphStore.");
