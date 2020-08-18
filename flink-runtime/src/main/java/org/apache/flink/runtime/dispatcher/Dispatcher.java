@@ -86,7 +86,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -214,12 +213,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		try {
 			runJob(recoveredJob, true);
 		} catch (Throwable throwable) {
-			// ignore failures caused by CancellationException.
-			if (!ExceptionUtils.findThrowable(throwable, CancellationException.class).isPresent()) {
-				onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", recoveredJob.getJobID()), throwable));
-			} else {
-				log.debug("JobManager initialization was cancelled", throwable);
-			}
+			onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", recoveredJob.getJobID()), throwable));
 		}
 	}
 
@@ -359,15 +353,24 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 		DispatcherJob submissionDispatcherJob;
 		if (isRecovery) {
-			submissionDispatcherJob = DispatcherJob.createForRecovery(jobManagerRunnerFuture, jobGraph, jobManagerInitializationStarted);
+			submissionDispatcherJob = DispatcherJob.createForRecovery(
+				jobManagerRunnerFuture,
+				getMainThreadExecutor(),
+				jobGraph.getJobID(),
+				jobGraph.getName(),
+				jobManagerInitializationStarted);
 		} else {
-			submissionDispatcherJob = DispatcherJob.createForSubmission(jobManagerRunnerFuture, jobGraph, jobManagerInitializationStarted);
+			submissionDispatcherJob = DispatcherJob.createForSubmission(
+				jobManagerRunnerFuture,
+				getMainThreadExecutor(),
+				jobGraph.getJobID(),
+				jobGraph.getName(),
+				jobManagerInitializationStarted);
 		}
 		runningJobs.put(jobGraph.getJobID(), submissionDispatcherJob);
 
 		// register handler JM failures & successful job completion
 		final JobID jobId = jobGraph.getJobID();
-		log.debug("reg handler on " + submissionDispatcherJob.getResultFuture());
 		FutureUtils.assertNoException(
 			submissionDispatcherJob.getResultFuture().handleAsync(
 				(ArchivedExecutionGraph archivedExecutionGraph, Throwable throwable) -> {
@@ -442,20 +445,17 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<Acknowledge> cancelJob(JobID jobId, Time timeout) {
-		try {
-			return getDispatcherJob(jobId).cancel(timeout);
-		} catch (FlinkJobNotFoundException e) {
+		Optional<DispatcherJob> maybeJob = getDispatcherJob(jobId);
+		if (maybeJob.isPresent()) {
+			return maybeJob.get().cancel(timeout);
+		} else {
 			log.debug("Dispatcher is unable to cancel job {}: not found", jobId);
-			return FutureUtils.completedExceptionally(e);
+			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 		}
 	}
 
-	private DispatcherJob getDispatcherJob(JobID jobId) throws FlinkJobNotFoundException {
-		DispatcherJob job = runningJobs.get(jobId);
-		if (job == null) {
-			throw new FlinkJobNotFoundException(jobId);
-		}
-		return job;
+	private Optional<DispatcherJob> getDispatcherJob(JobID jobId) {
+		return Optional.ofNullable(runningJobs.get(jobId));
 	}
 
 	@Override
@@ -502,13 +502,14 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<JobStatus> requestJobStatus(JobID jobId, Time timeout) {
-		try {
-			return getDispatcherJob(jobId).requestJobStatus(timeout);
-		} catch (FlinkJobNotFoundException e) {
+		Optional<DispatcherJob> maybeJob = getDispatcherJob(jobId);
+		if (maybeJob.isPresent()) {
+			return maybeJob.get().requestJobStatus(timeout);
+		} else {
 			// is it a completed job?
 			final JobDetails jobDetails = archivedExecutionGraphStore.getAvailableJobDetails(jobId);
 			if (jobDetails == null) {
-				return FutureUtils.completedExceptionally(e);
+				return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 			} else {
 				return CompletableFuture.completedFuture(jobDetails.getStatus());
 			}

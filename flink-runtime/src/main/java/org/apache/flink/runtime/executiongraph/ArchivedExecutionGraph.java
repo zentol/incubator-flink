@@ -24,9 +24,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
-import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
-import org.apache.flink.runtime.jobgraph.jsonplan.JsonPlanGenerator;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.Preconditions;
@@ -360,15 +358,15 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	 * Note: Some elements in the ArchivedExecutionGraph will be filled on a best-effort basis
 	 */
 	public static ArchivedExecutionGraph createFromFailedInit(
-		JobGraph jobGraph,
+		JobID jobId,
+		String jobName,
 		@Nullable Throwable throwable,
 		JobStatus finalJobStatus,
 		long initializationTimestamp) {
-		long failureTime = System.currentTimeMillis();
-		final int numberVertices = jobGraph.getNumberOfVertices();
 
-		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = new HashMap<>(numberVertices);
-		List<ArchivedExecutionJobVertex> archivedVerticesInCreationOrder = new ArrayList<>(numberVertices);
+		long failureTime = System.currentTimeMillis();
+		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = Collections.emptyMap();
+		List<ArchivedExecutionJobVertex> archivedVerticesInCreationOrder = Collections.emptyList();
 		final Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators = Collections.emptyMap();
 		StringifiedAccumulatorResult[] archivedUserAccumulators = new StringifiedAccumulatorResult[]{};
 
@@ -377,18 +375,6 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		timestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
 
 		String jsonPlan = "{}";
-		try {
-			jsonPlan = JsonPlanGenerator.generatePlan(jobGraph);
-		} catch (Throwable ignored) {}
-
-		ExecutionConfig ec;
-		try {
-			// note: this is using the system classloader, not the usercode classloader, thus it
-			// will fail in some cases. We can not access the usercode CL, when a JobManager initialization is detected.
-			ec = jobGraph.getSerializedExecutionConfig().deserializeValue(ArchivedExecutionGraph.class.getClassLoader());
-		} catch (Throwable ignored) {
-			ec = new ExecutionConfig();
-		}
 
 		ErrorInfo failureInfo = null;
 		if (throwable != null) {
@@ -396,8 +382,8 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		}
 
 		return new ArchivedExecutionGraph(
-			jobGraph.getJobID(),
-			jobGraph.getName(),
+			jobId,
+			jobName,
 			archivedTasks,
 			archivedVerticesInCreationOrder,
 			timestamps,
@@ -406,7 +392,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			jsonPlan,
 			archivedUserAccumulators,
 			serializedUserAccumulators,
-			ec.archive(),
+			new ExecutionConfig().archive(),
 			false,
 			null,
 			null,

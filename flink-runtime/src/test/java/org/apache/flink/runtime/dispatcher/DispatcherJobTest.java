@@ -21,10 +21,13 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
+import org.apache.flink.runtime.executiongraph.TestingComponentMainThreadExecutor;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
+import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.TestingJobManagerRunner;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGatewayBuilder;
@@ -40,6 +43,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.hamcrest.core.Is.is;
 
@@ -53,27 +58,36 @@ public class DispatcherJobTest extends TestLogger {
 	private static final Time TIMEOUT = Time.seconds(10L);
 	private static final JobID TEST_JOB_ID = new JobID();
 
+	private static final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+	private static final TestingComponentMainThreadExecutor mainThreadExecutor =
+		new TestingComponentMainThreadExecutor(
+			ComponentMainThreadExecutorServiceAdapter.forSingleThreadExecutor(scheduledExecutorService));
+
 	@Test
 	public void testInitialSubmissionError() throws ExecutionException, InterruptedException {
-		TestContext testContext = createDispatcherJob();
-		DispatcherJob dispatcherJob = testContext.dispatcherJob;
+		CompletableFuture<Void> future = mainThreadExecutor.execute(() -> {
+			TestContext testContext = createDispatcherJob();
+			DispatcherJob dispatcherJob = testContext.dispatcherJob;
 
-		Assert.assertThat(dispatcherJob.isRunning(), is(false));
-		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.INITIALIZING));
-		Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.INITIALIZING));
-		Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(false));
+			Assert.assertThat(dispatcherJob.isRunning(), is(false));
+			Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.INITIALIZING));
+			Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.INITIALIZING));
+			Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(false));
 
-		// now fail
-		testContext.jobManagerRunnerCompletableFuture.completeExceptionally(new RuntimeException("Artificial test failure"));
+			// now fail
+			testContext.jobManagerRunnerCompletableFuture.completeExceptionally(new RuntimeException("Artificial failure in runner initialization"));
 
-		Assert.assertThat(dispatcherJob.isRunning(), is(false));
-		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.FAILED));
-		Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.FAILED));
-		Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(true));
-		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
-		Assert.assertThat(ExceptionUtils.findThrowableSerializedAware(
-			aeg.getFailureInfo().getException(), RuntimeException.class, ClassLoader.getSystemClassLoader()).isPresent(),
-			is(true));
+			Assert.assertThat(dispatcherJob.isRunning(), is(false));
+			Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.FAILED));
+			Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.FAILED));
+			Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(true));
+			ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
+			Assert.assertThat(ExceptionUtils.findThrowableSerializedAware(
+				aeg.getFailureInfo().getException(), RuntimeException.class, ClassLoader.getSystemClassLoader()).isPresent(),
+				is(true));
+			return null;
+		});
+		future.get();
 	}
 
 	@Test
@@ -108,7 +122,9 @@ public class DispatcherJobTest extends TestLogger {
 
 		ctx.jobGraph = new JobGraph(TEST_JOB_ID, "testJob", testVertex);
 		ctx.jobManagerRunnerCompletableFuture = new CompletableFuture<>();
-		ctx.dispatcherJob = DispatcherJob.createForSubmission(ctx.jobManagerRunnerCompletableFuture, ctx.jobGraph, 1337);
+		ctx.dispatcherJob = DispatcherJob.createForSubmission(ctx.jobManagerRunnerCompletableFuture,
+			mainThreadExecutor.getMainThreadExecutor(),
+			ctx.jobGraph.getJobID(), ctx.jobGraph.getName(), 1337);
 
 		return ctx;
 	}
