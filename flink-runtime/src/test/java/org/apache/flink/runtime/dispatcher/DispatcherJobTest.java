@@ -21,6 +21,7 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
@@ -29,6 +30,7 @@ import org.apache.flink.runtime.jobmaster.TestingJobManagerRunner;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGatewayBuilder;
 import org.apache.flink.runtime.messages.Acknowledge;
+import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
 import org.apache.flink.util.TestLogger;
 
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.core.Is.is;
@@ -84,21 +87,46 @@ public class DispatcherJobTest extends TestLogger {
 		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
 		Assert.assertThat(closeFuture.isDone(), is(false));
 
-		// finish initialization, so that we can cancel the job now:
-
 		// create a jobmanager runner with a mocked JobMaster gateway, that cancels right away.
 		TestingJobManagerRunner jobManagerRunner =
 			new TestingJobManagerRunner(testContext.jobGraph.getJobID(), false);
-		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
-			.setCancelFunction(() -> CompletableFuture.completedFuture(Acknowledge.get())).build();
-		jobManagerRunner.getJobMasterGateway().complete(mockRunningJobMasterGateway);
-
-		Assert.assertThat(closeFuture.isDone(), is(false));
 
 		// complete JobManager runner future to indicate to the DispatcherJob that the Runner has been initialized
 		testContext.jobManagerRunnerCompletableFuture.complete(jobManagerRunner);
 
 		// this future should now complete (because we were able to cancel the job)
+		closeFuture.get();
+	}
+
+	@Test
+	public void testCloseWhileRunning() throws Exception {
+		TestContext testContext = createDispatcherJob();
+		DispatcherJob dispatcherJob = testContext.dispatcherJob;
+
+		OneShotLatch cancellationLatch = new OneShotLatch();
+		// create a jobmanager runner with a mocked JobMaster gateway
+		TestingJobManagerRunner jobManagerRunner =
+			new TestingJobManagerRunner(testContext.jobGraph.getJobID(), true);
+		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
+			.setRequestJobDetailsSupplier(() -> {
+				JobDetails jobDetails = new JobDetails(testContext.jobGraph.getJobID(), "", 0, 0, 0, JobStatus.RUNNING, 0,
+					new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
+				return CompletableFuture.completedFuture(jobDetails);
+			})
+			.build();
+		jobManagerRunner.getJobMasterGateway().complete(mockRunningJobMasterGateway);
+
+		// complete JobManager runner future to indicate to the DispatcherJob that the Runner has been initialized
+		testContext.jobManagerRunnerCompletableFuture.complete(jobManagerRunner);
+
+		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.RUNNING));
+
+		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
+
+		Assert.assertThat(closeFuture.isDone(), is(false));
+
+		jobManagerRunner.getTerminationFuture().complete(null);
+
 		closeFuture.get();
 	}
 
