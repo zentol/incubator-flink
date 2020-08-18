@@ -355,14 +355,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		if (isRecovery) {
 			submissionDispatcherJob = DispatcherJob.createForRecovery(
 				jobManagerRunnerFuture,
-				getMainThreadExecutor(),
 				jobGraph.getJobID(),
 				jobGraph.getName(),
 				jobManagerInitializationStarted);
 		} else {
 			submissionDispatcherJob = DispatcherJob.createForSubmission(
 				jobManagerRunnerFuture,
-				getMainThreadExecutor(),
 				jobGraph.getJobID(),
 				jobGraph.getName(),
 				jobManagerInitializationStarted);
