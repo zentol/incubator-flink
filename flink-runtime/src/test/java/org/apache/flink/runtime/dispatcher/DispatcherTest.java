@@ -918,7 +918,7 @@ log.debug("running");
 		}
 	}
 
-	private static class FailingInitializationJobVertex extends JobVertex{
+	private static class FailingInitializationJobVertex extends JobVertex {
 		public FailingInitializationJobVertex(String name) {
 			super(name);
 		}

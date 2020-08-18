@@ -212,23 +212,16 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	void runRecoveredJob(final JobGraph recoveredJob) {
 		checkNotNull(recoveredJob);
-		FutureUtils.assertNoException(runJob(recoveredJob, true)
-			.handle(handleRecoveredJobStartError(recoveredJob.getJobID())));
-	}
-
-	private BiFunction<Void, Throwable, Void> handleRecoveredJobStartError(JobID jobId) {
-		return (ignored, throwable) -> {
-			if (throwable != null) {
-				// ignore failures caused by CancellationException.
-				if (!ExceptionUtils.findThrowable(throwable, CancellationException.class).isPresent()) {
-					onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", jobId), throwable));
-				} else {
-					log.debug("JobManager initialization was cancelled", throwable);
-				}
+		try {
+			runJob(recoveredJob, true);
+		} catch (Throwable throwable) {
+			// ignore failures caused by CancellationException.
+			if (!ExceptionUtils.findThrowable(throwable, CancellationException.class).isPresent()) {
+				onFatalError(new DispatcherException(String.format("Could not start recovered job %s.", recoveredJob.getJobID()), throwable));
+			} else {
+				log.debug("JobManager initialization was cancelled", throwable);
 			}
-
-			return null;
-		};
+		}
 	}
 
 	private void handleStartDispatcherServicesException(Exception e) throws Exception {
@@ -336,7 +329,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private CompletableFuture<Acknowledge> internalSubmitJob(JobGraph jobGraph) {
 		log.info("Submitting job {} ({}).", jobGraph.getJobID(), jobGraph.getName());
 
-		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobGraph.getJobID(), jobGraph, this::persistAndRunJob)
+		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobGraph.getJobID(), jobGraph, jg -> {
+			persistAndRunJob(jg); return null; })
 			.thenApply(ignored -> Acknowledge.get());
 
 		return persistAndRunFuture.handleAsync((acknowledge, throwable) -> {
@@ -353,14 +347,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		}, getRpcService().getExecutor());
 	}
 
-	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
+	private void persistAndRunJob(JobGraph jobGraph) throws Exception {
 		jobGraphWriter.putJobGraph(jobGraph);
-		return runJob(jobGraph, false);
+		runJob(jobGraph, false);
 	}
 
-	// TODO remove future
-	// same error in recovery -- kill process
-	private CompletableFuture<Void> runJob(JobGraph jobGraph, boolean isRecovery) {
+
+	private void runJob(JobGraph jobGraph, boolean isRecovery) {
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 		long jobManagerInitializationStarted = System.currentTimeMillis();
 
@@ -401,8 +394,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					}
 					return null;
 				}, getMainThreadExecutor()));
-
-		return CompletableFuture.completedFuture(null);
 	}
 
 	// is it a recovered job
@@ -850,7 +841,7 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		return optionalJobInformation;
 	}
 
-	private CompletableFuture<Void> waitForTerminatingJobManager(JobID jobId, JobGraph jobGraph, FunctionWithException<JobGraph, CompletableFuture<Void>, ?> action) {
+	private CompletableFuture<Void> waitForTerminatingJobManager(JobID jobId, JobGraph jobGraph, FunctionWithException<JobGraph, Void, ?> action) {
 		final CompletableFuture<Void> jobManagerTerminationFuture = getJobTerminationFuture(jobId)
 			.exceptionally((Throwable throwable) -> {
 				throw new CompletionException(
@@ -861,7 +852,8 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		return jobManagerTerminationFuture.thenComposeAsync(
 			FunctionUtils.uncheckedFunction((ignored) -> {
 				jobManagerTerminationFutures.remove(jobId);
-				return action.apply(jobGraph);
+				action.apply(jobGraph);
+				return null;
 			}),
 			getMainThreadExecutor());
 	}

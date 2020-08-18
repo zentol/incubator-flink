@@ -86,7 +86,6 @@ public final class DispatcherJob implements AutoCloseableAsync {
 
 	static DispatcherJob createForRecovery(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture, JobGraph jobGraph, long initializationTimestamp) {
 		return new DispatcherJob(jobManagerRunnerFuture, jobGraph, initializationTimestamp, SubmissionType.RECOVERY);
-		// TODO handle HA case
 	}
 
 	private DispatcherJob(CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
