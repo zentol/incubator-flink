@@ -21,19 +21,15 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
-import org.apache.flink.runtime.executiongraph.TestingComponentMainThreadExecutor;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
-import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.TestingJobManagerRunner;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGateway;
 import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGatewayBuilder;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
-import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.Assert;
@@ -67,16 +63,15 @@ public class DispatcherJobTest extends TestLogger {
 		Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(false));
 
 		// now fail
-		testContext.jobManagerRunnerCompletableFuture.completeExceptionally(new RuntimeException("Artificial failure in runner initialization"));
+		RuntimeException exception = new RuntimeException("Artificial failure in runner initialization");
+		testContext.jobManagerRunnerCompletableFuture.completeExceptionally(exception);
 
 		Assert.assertThat(dispatcherJob.isRunning(), is(false));
 		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.FAILED));
 		Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.FAILED));
 		Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(true));
 		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
-		Assert.assertThat(ExceptionUtils.findThrowableSerializedAware(
-			aeg.getFailureInfo().getException(), RuntimeException.class, ClassLoader.getSystemClassLoader()).isPresent(),
-			is(true));
+		Assert.assertThat(aeg.getFailureInfo().getException().deserializeError(ClassLoader.getSystemClassLoader()),	is(exception));
 	}
 
 	@Test
@@ -87,8 +82,9 @@ public class DispatcherJobTest extends TestLogger {
 		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
+		Assert.assertThat(closeFuture.isDone(), is(false));
 
-		// finish initialization, so that we can cancel the job
+		// finish initialization, so that we can cancel the job now:
 
 		// create a jobmanager runner with a mocked JobMaster gateway, that cancels right away.
 		TestingJobManagerRunner jobManagerRunner =
@@ -96,6 +92,8 @@ public class DispatcherJobTest extends TestLogger {
 		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
 			.setCancelFunction(() -> CompletableFuture.completedFuture(Acknowledge.get())).build();
 		jobManagerRunner.getJobMasterGateway().complete(mockRunningJobMasterGateway);
+
+		Assert.assertThat(closeFuture.isDone(), is(false));
 
 		// complete JobManager runner future to indicate to the DispatcherJob that the Runner has been initialized
 		testContext.jobManagerRunnerCompletableFuture.complete(jobManagerRunner);

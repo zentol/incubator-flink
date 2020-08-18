@@ -21,7 +21,6 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
@@ -94,7 +93,6 @@ public final class DispatcherJob implements AutoCloseableAsync {
 		long initializationTimestamp,
 		SubmissionType submissionType) {
 		this.jobManagerRunnerFuture = jobManagerRunnerFuture;
-		//this.mainThreadExecutor = mainThreadExecutor;
 		this.jobId = jobId;
 		this.jobName = jobName;
 		this.initializationTimestamp = initializationTimestamp;
@@ -112,8 +110,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 							"JobManager initialization has been cancelled for job {}. Cancelling job.",
 							jobId);
 
-						CompletableFuture<Acknowledge> cancelJobFuture = jobManagerRunner.getJobMasterGateway().thenCompose(
-							gw -> gw.cancel(RpcUtils.INF_TIMEOUT));
+						jobManagerRunner.getJobMasterGateway().thenCompose(gw -> gw.cancel(RpcUtils.INF_TIMEOUT));
 						// cancellation will eventually complete the jobResultFuture
 						jobResultFuture.whenComplete((archivedExecutionGraph, resultThrowable) -> {
 							synchronized (lock) {
