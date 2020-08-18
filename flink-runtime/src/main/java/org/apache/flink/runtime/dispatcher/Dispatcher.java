@@ -89,7 +89,6 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -352,7 +351,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		runJob(jobGraph, false);
 	}
 
-
 	private void runJob(JobGraph jobGraph, boolean isRecovery) {
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 		long jobManagerInitializationStarted = System.currentTimeMillis();
@@ -373,9 +371,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		FutureUtils.assertNoException(
 			submissionDispatcherJob.getResultFuture().handleAsync(
 				(ArchivedExecutionGraph archivedExecutionGraph, Throwable throwable) -> {
-					log.debug("resultFuture.handleAsync: aeg=" + archivedExecutionGraph +" thrw=" + throwable);
 					// check if we are still the active JobManagerRunner by checking the identity
-
 					DispatcherJob job = runningJobs.get(jobId);
 					if (job == submissionDispatcherJob) {
 						if (archivedExecutionGraph != null) {
@@ -395,13 +391,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 					return null;
 				}, getMainThreadExecutor()));
 	}
-
-	// is it a recovered job
-	// is it a job submission flag
-	// handle differently (don't kill process on job submission, only on recovered job)
-
-	// return archived execution graph : failed state / throwable
-	// DispatcherJob (getResultFuture)
 
 	CompletableFuture<JobManagerRunner> createJobManagerRunner(JobGraph jobGraph) {
 		final RpcService rpcService = getRpcService();
@@ -636,7 +625,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	 * @param cleanupHA True iff HA data shall also be cleaned up
 	 */
 	private void removeJobAndRegisterTerminationFuture(JobID jobId, boolean cleanupHA) {
-		log.info("removeJobAndRegisterTerminationFuture");
 		final CompletableFuture<Void> cleanupFuture = removeJob(jobId, cleanupHA);
 
 		registerJobManagerRunnerTerminationFuture(jobId, cleanupFuture);
@@ -644,13 +632,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void registerJobManagerRunnerTerminationFuture(JobID jobId, CompletableFuture<Void> jobManagerRunnerTerminationFuture) {
 		Preconditions.checkState(!jobManagerTerminationFutures.containsKey(jobId));
-log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTerminationFuture);
 		jobManagerTerminationFutures.put(jobId, jobManagerRunnerTerminationFuture);
 
 		// clean up the pending termination future
 		jobManagerRunnerTerminationFuture.thenRunAsync(
 			() -> {
-				log.debug("Clean up pending termination future for " + jobId);
 				final CompletableFuture<Void> terminationFuture = jobManagerTerminationFutures.remove(jobId);
 
 				//noinspection ObjectEquality
@@ -662,7 +648,6 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
-		log.debug("removeJob: " + jobId + " running jobs " + runningJobs);
 		DispatcherJob job = runningJobs.remove(jobId);
 
 		final CompletableFuture<Void> jobManagerRunnerTerminationFuture;
@@ -671,14 +656,12 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		} else {
 			jobManagerRunnerTerminationFuture = CompletableFuture.completedFuture(null);
 		}
-		log.debug("future state = " + jobManagerRunnerTerminationFuture);
 		return jobManagerRunnerTerminationFuture.thenRunAsync(
 			() -> cleanUpJobData(jobId, cleanupHA),
 			getRpcService().getExecutor());
 	}
 
 	private void cleanUpJobData(JobID jobId, boolean cleanupHA) {
-		log.info("cleanUpJobData");
 		jobManagerMetricGroup.removeJob(jobId);
 
 		boolean cleanupHABlobs = false;
@@ -706,7 +689,6 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 		}
 
 		blobServer.cleanupJob(jobId, cleanupHABlobs);
-		log.debug("cleanUpJobData: done");
 	}
 
 	/**
@@ -849,7 +831,7 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 						String.format("Termination of previous JobManager for job %s failed. Cannot submit job under the same job id.", jobId),
 						throwable)); });
 
-		return jobManagerTerminationFuture.thenComposeAsync(
+		return jobManagerTerminationFuture.thenApplyAsync(
 			FunctionUtils.uncheckedFunction((ignored) -> {
 				jobManagerTerminationFutures.remove(jobId);
 				action.apply(jobGraph);
@@ -872,10 +854,8 @@ log.debug("registerJobManagerRunnerTerminationFuture: " + jobManagerRunnerTermin
 	}
 
 	public CompletableFuture<Void> onRemovedJobGraph(JobID jobId) {
-		log.info("onRemovedJobGraph; " + getMainThreadExecutor());
 		return CompletableFuture.runAsync(
 			() -> {
-				log.info("run async:");
 				removeJobAndRegisterTerminationFuture(jobId, false);
 			},
 			getMainThreadExecutor());

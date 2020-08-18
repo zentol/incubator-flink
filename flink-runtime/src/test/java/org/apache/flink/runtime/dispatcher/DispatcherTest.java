@@ -43,14 +43,18 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmanager.JobGraphWriter;
 import org.apache.flink.runtime.jobmaster.JobManagerRunner;
 import org.apache.flink.runtime.jobmaster.JobManagerSharedServices;
+import org.apache.flink.runtime.jobmaster.JobMasterGateway;
 import org.apache.flink.runtime.jobmaster.JobNotFinishedException;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.runtime.jobmaster.TestingJobManagerRunner;
 import org.apache.flink.runtime.jobmaster.factories.JobManagerJobMetricGroupFactory;
+import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGateway;
+import org.apache.flink.runtime.jobmaster.utils.TestingJobMasterGatewayBuilder;
 import org.apache.flink.runtime.leaderelection.TestingLeaderElectionService;
 import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
+import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.resourcemanager.utils.TestingResourceManagerGateway;
@@ -89,6 +93,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -641,13 +646,19 @@ log.debug("submission finished");
 	 *
 	 * <p>See FLINK-10314
 	 */
-	@Test(timeout = 1000)
+	@Test
 	public void testBlockingJobManagerRunner() throws Exception {
 		final OneShotLatch jobManagerRunnerCreationLatch = new OneShotLatch();
+		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
+			.setRequestJobDetailsSupplier(() -> {
+				JobDetails jobDetails = new JobDetails(jobGraph.getJobID(), "", 0, 0, 0, JobStatus.RUNNING, 0,
+					new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
+				return CompletableFuture.completedFuture(jobDetails);
+			}).build();
 		dispatcher = createAndStartDispatcher(
 			heartbeatServices,
 			haServices,
-			new BlockingJobManagerRunnerFactory(jobManagerRunnerCreationLatch::await));
+			new BlockingJobManagerRunnerFactory(jobManagerRunnerCreationLatch::await, mockRunningJobMasterGateway));
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
@@ -662,8 +673,14 @@ log.debug("job submitted");
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
 log.debug("before unlock");
 		jobManagerRunnerCreationLatch.trigger();
+
+
 log.debug("wait for running");
-		CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
+		CommonTestUtils.waitUntilCondition(() -> {
+			JobStatus s = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get();
+			log.info("status = " + s);
+			return s == JobStatus.RUNNING;
+			},
 			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
 log.debug("running");
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.RUNNING));
@@ -677,7 +694,12 @@ log.debug("running");
 	public void testFailingJobManagerRunnerCleanup() throws Exception {
 		final FlinkException testException = new FlinkException("Test exception.");
 		final ArrayBlockingQueue<Optional<Exception>> queue = new ArrayBlockingQueue<>(2);
-
+		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
+			.setRequestJobDetailsSupplier(() -> {
+				JobDetails jobDetails = new JobDetails(jobGraph.getJobID(), "", 0, 0, 0, JobStatus.RUNNING, 0,
+					new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
+				return CompletableFuture.completedFuture(jobDetails);
+			}).build();
 		dispatcher = createAndStartDispatcher(
 			heartbeatServices,
 			haServices,
@@ -688,7 +710,7 @@ log.debug("running");
 				if (exception != null) {
 					throw exception;
 				}
-			}));
+			}, mockRunningJobMasterGateway));
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
@@ -816,16 +838,23 @@ log.debug("running");
 
 		@Nonnull
 		private final ThrowingRunnable<Exception> jobManagerRunnerCreationLatch;
+		@Nullable
+		private final JobMasterGateway jobMasterGateway;
 
-		BlockingJobManagerRunnerFactory(@Nonnull ThrowingRunnable<Exception> jobManagerRunnerCreationLatch) {
+		BlockingJobManagerRunnerFactory(@Nonnull ThrowingRunnable<Exception> jobManagerRunnerCreationLatch, @Nullable JobMasterGateway jobMasterGateway) {
 			this.jobManagerRunnerCreationLatch = jobManagerRunnerCreationLatch;
+			this.jobMasterGateway = jobMasterGateway;
 		}
 
 		@Override
 		public TestingJobManagerRunner createJobManagerRunner(JobGraph jobGraph, Configuration configuration, RpcService rpcService, HighAvailabilityServices highAvailabilityServices, HeartbeatServices heartbeatServices, JobManagerSharedServices jobManagerSharedServices, JobManagerJobMetricGroupFactory jobManagerJobMetricGroupFactory, FatalErrorHandler fatalErrorHandler) throws Exception {
 			jobManagerRunnerCreationLatch.run();
 
-			return super.createJobManagerRunner(jobGraph, configuration, rpcService, highAvailabilityServices, heartbeatServices, jobManagerSharedServices, jobManagerJobMetricGroupFactory, fatalErrorHandler);
+			TestingJobManagerRunner runner = super.createJobManagerRunner(jobGraph, configuration, rpcService, highAvailabilityServices, heartbeatServices, jobManagerSharedServices, jobManagerJobMetricGroupFactory, fatalErrorHandler);
+			if (jobMasterGateway != null) {
+				runner.getJobMasterGateway().complete(jobMasterGateway);
+			}
+			return runner;
 		}
 	}
 

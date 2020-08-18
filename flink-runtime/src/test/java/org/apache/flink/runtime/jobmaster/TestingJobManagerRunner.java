@@ -58,13 +58,6 @@ public class TestingJobManagerRunner implements JobManagerRunner {
 
 	@Override
 	public void start() throws Exception {
-		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
-			.setRequestJobDetailsSupplier(() -> {
-			JobDetails jobDetails = new JobDetails(jobId, "", 0, 0, 0, JobStatus.RUNNING, 0,
-				new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
-			return CompletableFuture.completedFuture(jobDetails);
-		}).build();
-		jobMasterGatewayFuture.complete(mockRunningJobMasterGateway);
 	}
 
 	@Override
