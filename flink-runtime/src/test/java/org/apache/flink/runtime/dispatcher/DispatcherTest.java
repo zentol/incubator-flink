@@ -663,7 +663,7 @@ log.debug("submission finished");
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
-log.debug("job submitted");
+
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		final CompletableFuture<Collection<String>> metricQueryServiceAddressesFuture = dispatcherGateway.requestMetricQueryServiceAddresses(Time.seconds(5L));
@@ -671,20 +671,12 @@ log.debug("job submitted");
 		assertThat(metricQueryServiceAddressesFuture.get(), is(empty()));
 
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
-log.debug("before unlock");
+
 		jobManagerRunnerCreationLatch.trigger();
 
-
-log.debug("wait for running");
-		CommonTestUtils.waitUntilCondition(() -> {
-			JobStatus s = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get();
-			log.info("status = " + s);
-			return s == JobStatus.RUNNING;
-			},
+		CommonTestUtils.waitUntilCondition(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get() == JobStatus.RUNNING,
 			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
-log.debug("running");
 		assertThat(dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.RUNNING));
-		log.debug("all good");
 	}
 
 	/**
