@@ -371,7 +371,6 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		StringifiedAccumulatorResult[] archivedUserAccumulators = new StringifiedAccumulatorResult[]{};
 
 		final long[] timestamps = new long[JobStatus.values().length];
-		timestamps[JobStatus.FAILED.ordinal()] = failureTime;
 		timestamps[JobStatus.CREATED.ordinal()] = initializationTimestamp;
 		timestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
 
@@ -380,6 +379,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		ErrorInfo failureInfo = null;
 		if (throwable != null) {
 			failureInfo = new ErrorInfo(throwable, failureTime);
+			timestamps[JobStatus.FAILED.ordinal()] = failureTime;
 		}
 
 		return new ArchivedExecutionGraph(

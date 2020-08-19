@@ -139,11 +139,11 @@ public class CommonTestUtils {
 		waitUntilJobManagerIsInitialized(jobStatusSupplier, Deadline.fromNow(Duration.of(1,
 			ChronoUnit.MINUTES)));
 	}
+
 	public static void waitUntilJobManagerIsInitialized(Supplier<JobStatus> jobStatusSupplier, Deadline timeout) throws
 		Exception {
 		CommonTestUtils.waitUntilCondition(() ->
 			jobStatusSupplier.get() != JobStatus.INITIALIZING, timeout, 20L);
-
 	}
 
 	/**

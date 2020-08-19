@@ -754,7 +754,9 @@ log.debug("submission finished");
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+
 		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
+
 		assertThat(dispatcher.getNumberJobs(TIMEOUT).get(), Matchers.is(1));
 
 		dispatcher.close();
