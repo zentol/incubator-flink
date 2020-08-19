@@ -854,9 +854,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	public CompletableFuture<Void> onRemovedJobGraph(JobID jobId) {
 		return CompletableFuture.runAsync(
-			() -> {
-				removeJobAndRegisterTerminationFuture(jobId, false);
-			},
+			() -> removeJobAndRegisterTerminationFuture(jobId, false),
 			getMainThreadExecutor());
 	}
 }

@@ -55,7 +55,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link JobMaster} rpc gateway interface, with RPC calls available after initialization.
+ * {@link JobMaster} rpc gateway interface.
  */
 public interface JobMasterGateway extends
 	CheckpointCoordinatorGateway,
@@ -63,22 +63,6 @@ public interface JobMasterGateway extends
 	KvStateLocationOracle,
 	KvStateRegistryGateway,
 	JobMasterOperatorEventGateway {
-
-	/**
-	 * Cancels the currently executed job.
-	 *
-	 * @param timeout of this operation
-	 * @return Future acknowledge of the operation
-	 */
-	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
-
-	/**
-	 * Request the details of the executed job.
-	 *
-	 * @param timeout for the rpc call
-	 * @return Future details of the executed job
-	 */
-	CompletableFuture<JobDetails> requestJobDetails(@RpcTimeout Time timeout);
 
 	/**
 	 * Requests the current job status.
@@ -212,6 +196,22 @@ public interface JobMasterGateway extends
 	 * @param resourceID unique id of the resource manager
 	 */
 	void heartbeatFromResourceManager(final ResourceID resourceID);
+
+	/**
+	 * Cancels the currently executed job.
+	 *
+	 * @param timeout of this operation
+	 * @return Future acknowledge of the operation
+	 */
+	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
+
+	/**
+	 * Request the details of the executed job.
+	 *
+	 * @param timeout for the rpc call
+	 * @return Future details of the executed job
+	 */
+	CompletableFuture<JobDetails> requestJobDetails(@RpcTimeout Time timeout);
 
 	/**
 	 * Requests the {@link ArchivedExecutionGraph} of the executed job.

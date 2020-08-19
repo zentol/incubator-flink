@@ -20,6 +20,7 @@ package org.apache.flink.runtime.jobmaster;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -52,8 +53,7 @@ public class TestingJobManagerRunner implements JobManagerRunner {
 	}
 
 	@Override
-	public void start() throws Exception {
-	}
+	public void start() throws Exception {}
 
 	@Override
 	public CompletableFuture<JobMasterGateway> getJobMasterGateway() {
