@@ -200,10 +200,13 @@ public enum ClientUtils {
 
 	/**
 	 * This method blocks until the job status is not INITIALIZING anymore.
+	 * If the job is FAILED, it throws an CompletionException with the failure cause.
 	 * @param jobStatusSupplier supplier returning the job status.
 	 */
-	public static void waitUntilJobInitializationFinished(SupplierWithException<JobStatus, Exception> jobStatusSupplier) throws
-		CompletionException {
+	public static void waitUntilJobInitializationFinished(
+		SupplierWithException<JobStatus, Exception> jobStatusSupplier,
+		SupplierWithException<JobResult, Exception> jobResultSupplier
+		) throws CompletionException {
 		LOG.debug("Wait until job initialization is finished");
 		WaitStrategy waitStrategy = new ExponentialWaitStrategy(50, 2000);
 		try {
@@ -213,10 +216,15 @@ public enum ClientUtils {
 				Thread.sleep(waitStrategy.sleepTime(attempt++));
 				status = jobStatusSupplier.get();
 			}
-		} catch (InterruptedException ie) {
-			// we stop waiting and reset the interrupted flag.
-			Thread.interrupted();
+			if (status == JobStatus.FAILED) {
+				JobResult result = jobResultSupplier.get();
+				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
+				if (throwable.isPresent()) {
+					throw throwable.get();
+				}
+			}
 		} catch (Exception e) {
+			ExceptionUtils.checkInterrupted(e);
 			throw new CompletionException("Error while waiting until Job initialization has finished", e);
 		}
 	}
