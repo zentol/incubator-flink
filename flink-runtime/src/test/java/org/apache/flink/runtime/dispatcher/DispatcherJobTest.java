@@ -54,7 +54,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testInitialSubmissionError() throws ExecutionException, InterruptedException {
-		TestContext testContext = createDispatcherJob();
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.dispatcherJob;
 
 		Assert.assertThat(dispatcherJob.isRunning(), is(false));
@@ -76,7 +76,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testCloseWhileInitializing() throws Exception {
-		TestContext testContext = createDispatcherJob();
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.dispatcherJob;
 
 		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.INITIALIZING));
@@ -97,7 +97,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testCloseWhileRunning() throws Exception {
-		TestContext testContext = createDispatcherJob();
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.dispatcherJob;
 
 		// create a jobmanager runner with a mocked JobMaster gateway
@@ -126,7 +126,19 @@ public class DispatcherJobTest extends TestLogger {
 		closeFuture.get();
 	}
 
-	private TestContext createDispatcherJob() {
+	@Test
+	public void testRequestJobWhileInitializing() throws Exception {
+		TestContext testContext = createTestContext();
+		DispatcherJob dispatcherJob = testContext.dispatcherJob;
+
+		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(JobStatus.INITIALIZING));
+
+		ArchivedExecutionGraph job = dispatcherJob.requestJob(TIMEOUT).get();
+		Assert.assertThat(job.getState(), is(JobStatus.INITIALIZING));
+		Assert.assertThat(job.getJobID(), is(testContext.jobGraph.getJobID()));
+	}
+
+	private TestContext createTestContext() {
 		final JobVertex testVertex = new JobVertex("testVertex");
 		testVertex.setInvokableClass(NoOpInvokable.class);
 		TestContext ctx = new TestContext();

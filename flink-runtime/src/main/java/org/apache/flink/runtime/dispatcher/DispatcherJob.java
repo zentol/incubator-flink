@@ -106,8 +106,8 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 
 					if (jobStatus == JobStatus.CANCELLING) {
-						log.warn(
-							"JobManager initialization has been cancelled for job {}. Cancelling job.",
+						log.info(
+							"Cancellation during initialization has been requested for job {}. Initialization completed, cancelling job.",
 							jobId);
 
 						jobManagerRunner.getJobMasterGateway().thenCompose(gw -> gw.cancel(RpcUtils.INF_TIMEOUT));
@@ -129,7 +129,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					if (submissionType == SubmissionType.RECOVERY) {
 						jobResultFuture.completeExceptionally(throwable);
 					} else {
-						jobResultFuture.complete(ArchivedExecutionGraph.createFromFailedInit(
+						jobResultFuture.complete(ArchivedExecutionGraph.createFromInitializingJob(
 							jobId,
 							jobName,
 							throwable,
@@ -173,6 +173,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.cancel(
 					timeout));
 			} else {
+				log.info("Cancellation during initialization requested for job {}. Job will be cancelled once JobManager has been initialized.", jobId);
 				jobStatus = JobStatus.CANCELLING;
 				return jobResultFuture.thenApply(ignored -> Acknowledge.get());
 			}
@@ -186,6 +187,17 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					timeout));
 			} else {
 				return CompletableFuture.completedFuture(jobStatus);
+			}
+		}
+	}
+
+	public CompletableFuture<ArchivedExecutionGraph> requestJob(Time timeout) {
+		synchronized (lock) {
+			if (isRunning()) {
+				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
+					timeout));
+			} else {
+				return CompletableFuture.supplyAsync(() -> ArchivedExecutionGraph.createFromInitializingJob(jobId, jobName, null, jobStatus, initializationTimestamp));
 			}
 		}
 	}

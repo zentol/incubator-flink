@@ -523,21 +523,20 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	@Override
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(JobID jobId, Time timeout) {
-		final Function<Throwable, ArchivedExecutionGraph> onJobNotFound = throwable ->  {
-			final ArchivedExecutionGraph serializableExecutionGraph = archivedExecutionGraphStore.get(jobId);
-
-			// check whether it is a completed job
-			if (serializableExecutionGraph == null) {
-				throw new CompletionException(ExceptionUtils.stripCompletionException(throwable));
-			} else {
-				return serializableExecutionGraph;
-			}
-		};
-		try {
-			CompletableFuture<ArchivedExecutionGraph> jobFuture = getJobMasterGateway(jobId).thenCompose(gateway -> gateway.requestJob(timeout));
-			return jobFuture.exceptionally(onJobNotFound);
-		} catch (Throwable e) {
-			return CompletableFuture.completedFuture(onJobNotFound.apply(e));
+		Optional<DispatcherJob> maybeJob = getDispatcherJob(jobId);
+		if (maybeJob.isPresent()) {
+			DispatcherJob job = maybeJob.get();
+			return job.requestJob(timeout).exceptionally(throwable ->  {
+				// check whether it is a completed job
+				final ArchivedExecutionGraph serializableExecutionGraph = archivedExecutionGraphStore.get(jobId);
+				if (serializableExecutionGraph == null) {
+					throw new CompletionException(ExceptionUtils.stripCompletionException(throwable));
+				} else {
+					return serializableExecutionGraph;
+				}
+			});
+		} else {
+			return FutureUtils.completedExceptionally(new FlinkJobNotFoundException(jobId));
 		}
 	}
 

@@ -24,6 +24,7 @@ export const COLOR_MAP = {
   FINISHED: '#1890ff',
   CANCELED: '#fa8c16',
   CANCELING: '#faad14',
+  INITIALIZING: '#738df8',
   CREATED: '#2f54eb',
   DEPLOYING: '#13c2c2',
   RECONCILING: '#eb2f96',

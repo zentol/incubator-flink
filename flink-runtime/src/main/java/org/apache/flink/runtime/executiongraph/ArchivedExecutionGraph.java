@@ -357,7 +357,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	 * Create ArchivedExecutionGraph from failed JobGraph.
 	 * Note: Some elements in the ArchivedExecutionGraph will be filled on a best-effort basis
 	 */
-	public static ArchivedExecutionGraph createFromFailedInit(
+	public static ArchivedExecutionGraph createFromInitializingJob(
 		JobID jobId,
 		String jobName,
 		@Nullable Throwable throwable,
@@ -372,6 +372,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 
 		final long[] timestamps = new long[JobStatus.values().length];
 		timestamps[JobStatus.FAILED.ordinal()] = failureTime;
+		timestamps[JobStatus.CREATED.ordinal()] = initializationTimestamp;
 		timestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
 
 		String jsonPlan = "{}";
