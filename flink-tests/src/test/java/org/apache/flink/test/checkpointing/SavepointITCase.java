@@ -209,7 +209,7 @@ public class SavepointITCase extends TestLogger {
 		ClusterClient<?> client = cluster.getClusterClient();
 
 		try {
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			StatefulCounter.getProgressLatch().await();
 
@@ -253,7 +253,7 @@ public class SavepointITCase extends TestLogger {
 		ClusterClient<?> client = cluster.getClusterClient();
 
 		try {
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			// Await state is restored
 			StatefulCounter.getRestoreLatch().await();
@@ -337,7 +337,7 @@ public class SavepointITCase extends TestLogger {
 		final JobGraph graph = new JobGraph(vertex);
 
 		try {
-			ClientUtils.submitJob(client, graph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, graph);
 
 			client.triggerSavepoint(graph.getJobID(), null).get();
 
@@ -452,7 +452,7 @@ public class SavepointITCase extends TestLogger {
 
 			JobGraph originalJobGraph = env.getStreamGraph().getJobGraph();
 
-			JobSubmissionResult submissionResult = ClientUtils.submitJob(client, originalJobGraph, getClass().getClassLoader());
+			JobSubmissionResult submissionResult = ClientUtils.submitJob(client, originalJobGraph);
 			JobID jobID = submissionResult.getJobID();
 
 			// wait for the Tasks to be ready
@@ -502,7 +502,7 @@ public class SavepointITCase extends TestLogger {
 					"savepoint path " + savepointPath + " in detached mode.");
 
 			// Submit the job
-			ClientUtils.submitJob(client, modifiedJobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, modifiedJobGraph);
 			// Await state is restored
 			assertTrue(StatefulCounter.getRestoreLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
 
@@ -696,7 +696,7 @@ public class SavepointITCase extends TestLogger {
 
 		String savepointPath = null;
 		try {
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 			for (OneShotLatch latch : iterTestSnapshotWait) {
 				latch.await();
 			}
@@ -710,7 +710,7 @@ public class SavepointITCase extends TestLogger {
 			jobGraph = streamGraph.getJobGraph();
 			jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 			for (OneShotLatch latch : iterTestRestoreWait) {
 				latch.await();
 			}

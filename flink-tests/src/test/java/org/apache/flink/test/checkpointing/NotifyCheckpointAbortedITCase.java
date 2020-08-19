@@ -174,7 +174,7 @@ public class NotifyCheckpointAbortedITCase extends TestLogger {
 		JobGraph jobGraph = env.getStreamGraph().getJobGraph();
 		JobID jobID = jobGraph.getJobID();
 
-		ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+		ClientUtils.submitJob(clusterClient, jobGraph);
 
 		TestingCompletedCheckpointStore.addCheckpointLatch.await();
 		TestingCompletedCheckpointStore.abortCheckpointLatch.trigger();

@@ -97,7 +97,7 @@ public abstract class CancelingTestBase extends TestLogger {
 		final long rpcTimeout = AkkaUtils.getTimeoutAsTime(configuration).toMilliseconds();
 
 		ClusterClient<?> client = CLUSTER.getClusterClient();
-		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph);
 
 		Deadline submissionDeadLine = new FiniteDuration(2, TimeUnit.MINUTES).fromNow();
 

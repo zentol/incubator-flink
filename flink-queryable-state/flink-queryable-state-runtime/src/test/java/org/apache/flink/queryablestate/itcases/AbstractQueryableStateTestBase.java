@@ -187,7 +187,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			final AtomicLongArray counts = new AtomicLongArray(numKeys);
 
@@ -346,7 +346,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 			executeValueQuery(deadline, client, jobId, "hakuna", valueState, numElements);
 		}
 	}
@@ -380,7 +380,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 
 		try (AutoCancellableJob closableJobGraph = new AutoCancellableJob(deadline, clusterClient, env)) {
 
-			ClientUtils.submitJob(clusterClient, closableJobGraph.getJobGraph(), getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, closableJobGraph.getJobGraph());
 
 			CompletableFuture<JobStatus> jobStatusFuture =
 				clusterClient.getJobStatus(closableJobGraph.getJobId());
@@ -481,7 +481,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 					BasicTypeInfo.INT_TYPE_INFO,
 					valueState);
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 			executeValueQuery(deadline, client, jobId, "hakuna", valueState, expected);
 		}
 	}
@@ -528,7 +528,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			// Now query
 			int key = 0;
@@ -596,7 +596,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 			executeValueQuery(deadline, client, jobId, "matata", stateDesc, numElements);
 		}
 	}
@@ -640,7 +640,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			final String expected = Integer.toString(numElements * (numElements + 1) / 2);
 
@@ -712,7 +712,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			final long expected = numElements * (numElements + 1L) / 2L;
 
@@ -804,7 +804,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			final long expected = numElements * (numElements + 1L) / 2L;
 
@@ -894,7 +894,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			final Map<Integer, Set<Long>> results = new HashMap<>();
 
@@ -979,7 +979,7 @@ public abstract class AbstractQueryableStateTestBase extends TestLogger {
 			final JobID jobId = autoCancellableJob.getJobId();
 			final JobGraph jobGraph = autoCancellableJob.getJobGraph();
 
-			ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(clusterClient, jobGraph);
 
 			for (int key = 0; key < maxParallelism; key++) {
 				boolean success = false;

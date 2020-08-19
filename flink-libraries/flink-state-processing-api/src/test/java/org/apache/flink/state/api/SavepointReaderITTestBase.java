@@ -172,7 +172,7 @@ public abstract class SavepointReaderITTestBase extends AbstractTestBase {
 		String dirPath = getTempDirPath(new AbstractID().toHexString());
 
 		try {
-			JobSubmissionResult result = ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			JobSubmissionResult result = ClientUtils.submitJob(client, jobGraph);
 
 			boolean finished = false;
 			while (deadline.hasTimeLeft()) {

@@ -260,7 +260,7 @@ public class WebFrontendITCase extends TestLogger {
 		final JobID jid = jobGraph.getJobID();
 
 		ClusterClient<?> clusterClient = CLUSTER.getClusterClient();
-		ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+		ClientUtils.submitJob(clusterClient, jobGraph);
 
 		// wait for job to show up
 		while (getRunningJobs(CLUSTER.getClusterClient()).isEmpty()) {
@@ -318,7 +318,7 @@ public class WebFrontendITCase extends TestLogger {
 		final JobID jid = jobGraph.getJobID();
 
 		ClusterClient<?> clusterClient = CLUSTER.getClusterClient();
-		ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+		ClientUtils.submitJob(clusterClient, jobGraph);
 
 		// wait for job to show up
 		while (getRunningJobs(CLUSTER.getClusterClient()).isEmpty()) {

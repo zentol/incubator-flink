@@ -153,7 +153,6 @@ public class EmbeddedExecutor implements PipelineExecutor {
 					}
 
 					return dispatcherGateway.submitJob(jobGraph, rpcTimeout);
-				})
-				.thenApply(ack -> jobGraph.getJobID());
+				}).thenApply(ack -> jobGraph.getJobID());
 	}
 }

@@ -56,7 +56,7 @@ public abstract class SavepointTestBase extends AbstractTestBase {
 		ClusterClient<?> client = miniClusterResource.getClusterClient();
 
 		try {
-			JobSubmissionResult result = ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			JobSubmissionResult result = ClientUtils.submitJob(client, jobGraph);
 
 			return CompletableFuture
 				.runAsync(waitingSource::awaitSource)

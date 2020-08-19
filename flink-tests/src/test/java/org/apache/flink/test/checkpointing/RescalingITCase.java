@@ -188,7 +188,7 @@ public class RescalingITCase extends TestLogger {
 
 			final JobID jobID = jobGraph.getJobID();
 
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			// wait til the sources have emitted numberElements for each key and completed a checkpoint
 			assertTrue(SubtaskIndexFlatMapper.workCompletedLatch.await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -267,7 +267,7 @@ public class RescalingITCase extends TestLogger {
 
 			final JobID jobID = jobGraph.getJobID();
 
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			// wait until the operator is started
 			StateSourceBase.workStartedLatch.await();
@@ -332,7 +332,7 @@ public class RescalingITCase extends TestLogger {
 
 			final JobID jobID = jobGraph.getJobID();
 
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			// wait til the sources have emitted numberElements for each key and completed a checkpoint
 			assertTrue(SubtaskIndexFlatMapper.workCompletedLatch.await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -454,7 +454,7 @@ public class RescalingITCase extends TestLogger {
 
 			final JobID jobID = jobGraph.getJobID();
 
-			ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+			ClientUtils.submitJob(client, jobGraph);
 
 			// wait until the operator is started
 			StateSourceBase.workStartedLatch.await();

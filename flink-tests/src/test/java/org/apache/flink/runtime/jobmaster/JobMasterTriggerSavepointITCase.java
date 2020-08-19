@@ -115,7 +115,7 @@ public class JobMasterTriggerSavepointITCase extends AbstractTestBase {
 				0),
 			null));
 
-		ClientUtils.submitJob(clusterClient, jobGraph, getClass().getClassLoader());
+		ClientUtils.submitJob(clusterClient, jobGraph);
 		assertTrue(invokeLatch.await(60, TimeUnit.SECONDS));
 		waitForJob();
 	}

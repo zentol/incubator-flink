@@ -132,7 +132,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 
 		try {
 			if (detached) {
-				ClientUtils.submitJob(client, jobGraph, getClass().getClassLoader());
+				ClientUtils.submitJob(client, jobGraph);
 			} else {
 				ClientUtils.submitJobAndWaitForResult(client, jobGraph, JobSubmissionFailsITCase.class.getClassLoader());
 			}
