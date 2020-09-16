@@ -199,7 +199,9 @@ public class ConfigOptionsDocsCompletenessITCase {
 			})
 			.flatMap(file -> {
 				try {
-					return parseDocumentedOptionsFromFile(file).stream();
+					List<DocumentedOption> documentedOptions = parseDocumentedOptionsFromFile(file);
+					checkSortOrder(file, documentedOptions);
+					return documentedOptions.stream();
 				} catch (IOException ignored) {
 					return Stream.empty();
 				}
@@ -207,7 +209,17 @@ public class ConfigOptionsDocsCompletenessITCase {
 			.collect(Collectors.groupingBy(option -> option.key, Collectors.toList()));
 	}
 
-	private static Collection<DocumentedOption> parseDocumentedOptionsFromFile(Path file) throws IOException {
+	private static void checkSortOrder(Path file, List<DocumentedOption> options) {
+		for (int i = 0; i < options.size() - 1; i++) {
+			String left = options.get(i).key;
+			String right = options.get(i + 1).key;
+			if (left.compareTo(right) >= 0) {
+				Assert.fail(String.format("The options in file %s are not sorted alphabetically. %s should occur before %s", file.getFileName(), right, left));
+			}
+		}
+	}
+
+	private static List<DocumentedOption> parseDocumentedOptionsFromFile(Path file) throws IOException {
 		Document document = Jsoup.parse(file.toFile(), StandardCharsets.UTF_8.name());
 		document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
 		document.outputSettings().prettyPrint(false);
