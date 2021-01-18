@@ -26,7 +26,6 @@ import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
 import java.util.Collections;
-import java.util.Map;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -85,7 +84,7 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_OPERATOR_ID, String.valueOf(operatorID));
         variables.put(ScopeFormat.SCOPE_OPERATOR_NAME, operatorName);
         // we don't enter the subtask_index as the task group does that already

@@ -144,18 +144,17 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
             int cachingIndex, Set<String> excludedVariables) {
         if (variables[cachingIndex] == null) {
             Map<String, String> tmpVariables = new HashMap<>();
+            final VariableSetter variableSetter =
+                    new VariableSetter(tmpVariables, excludedVariables);
 
-            putVariables(tmpVariables);
-            excludedVariables.forEach(tmpVariables::remove);
+            putVariables(variableSetter);
 
             if (parent != null) { // not true for Job-/TaskManagerMetricGroup
                 // explicitly call getAllVariables() to prevent cascading caching operations
                 // upstream, to prevent
                 // caching in groups which are never directly passed to reporters
                 for (Map.Entry<String, String> entry : parent.getAllVariables().entrySet()) {
-                    if (!excludedVariables.contains(entry.getKey())) {
-                        tmpVariables.put(entry.getKey(), entry.getValue());
-                    }
+                    variableSetter.put(entry.getKey(), entry.getValue());
                 }
             }
             variables[cachingIndex] = tmpVariables;
@@ -169,7 +168,7 @@ public abstract class AbstractMetricGroup<A extends AbstractMetricGroup<?>> impl
      *
      * @param variables map to enter variables and their values into
      */
-    protected void putVariables(Map<String, String> variables) {}
+    protected void putVariables(VariableSetter variables) {}
 
     /**
      * Returns the logical scope of this group, for example {@code "taskmanager.job.task"}.

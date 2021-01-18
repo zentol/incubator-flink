@@ -27,8 +27,6 @@ import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
 import javax.annotation.Nullable;
 
-import java.util.Map;
-
 /**
  * Special abstract {@link org.apache.flink.metrics.MetricGroup} representing everything belonging
  * to a specific job.
@@ -79,7 +77,7 @@ public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_JOB_ID, jobId.toString());
         variables.put(ScopeFormat.SCOPE_JOB_NAME, jobName);
     }

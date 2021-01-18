@@ -24,8 +24,6 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
-import java.util.Map;
-
 /**
  * A {@link GenericMetricGroup} for representing the value part of a key-value metric group pair.
  *
@@ -46,7 +44,7 @@ public class GenericValueMetricGroup extends GenericMetricGroup {
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.asVariable(this.key), value);
     }
 

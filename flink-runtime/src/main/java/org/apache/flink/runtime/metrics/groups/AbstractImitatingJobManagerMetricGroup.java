@@ -23,8 +23,6 @@ import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
-import java.util.Map;
-
 /**
  * Base class which imitates the reporting of the existing {@link JobManagerMetricGroup} in order to
  * guarantee backwards compatibility of metrics which are factored out of the {@link
@@ -52,7 +50,7 @@ class AbstractImitatingJobManagerMetricGroup extends AbstractMetricGroup<Abstrac
     }
 
     @Override
-    protected final void putVariables(Map<String, String> variables) {
+    protected final void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_HOST, hostname);
     }
 

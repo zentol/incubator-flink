@@ -143,7 +143,7 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_HOST, hostname);
         variables.put(ScopeFormat.SCOPE_TASKMANAGER_ID, taskManagerId);
     }

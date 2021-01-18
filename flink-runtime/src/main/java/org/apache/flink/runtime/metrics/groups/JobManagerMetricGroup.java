@@ -104,7 +104,7 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_HOST, hostname);
     }
 

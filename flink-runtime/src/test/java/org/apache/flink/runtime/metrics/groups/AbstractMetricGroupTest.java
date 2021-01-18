@@ -43,7 +43,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -104,7 +103,7 @@ public class AbstractMetricGroupTest extends TestLogger {
         AbstractMetricGroup<?> group =
                 new GenericMetricGroup(registry, null, "test") {
                     @Override
-                    protected void putVariables(Map<String, String> variables) {
+                    protected void putVariables(VariableSetter variables) {
                         variables.put("k1", "v1");
                         variables.put("k2", "v2");
                     }

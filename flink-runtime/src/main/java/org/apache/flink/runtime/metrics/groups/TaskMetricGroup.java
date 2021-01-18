@@ -184,7 +184,7 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
     // ------------------------------------------------------------------------
 
     @Override
-    protected void putVariables(Map<String, String> variables) {
+    protected void putVariables(VariableSetter variables) {
         variables.put(ScopeFormat.SCOPE_TASK_VERTEX_ID, vertexId.toString());
         variables.put(ScopeFormat.SCOPE_TASK_NAME, taskName);
         variables.put(ScopeFormat.SCOPE_TASK_ATTEMPT_ID, executionId.toString());
