@@ -1,0 +1,6 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| state.backend.rocksdb.checkpoint.transfer.thread.num | 1 | Integer | The number of threads (per stateful operator) used to transfer (download and upload) files in RocksDBStateBackend. |
+| state.backend.rocksdb.localdir | (none) | String | The local directory (on the TaskManager) where RocksDB puts its files. |
+| state.backend.rocksdb.options-factory | "org.apache.flink.contrib.streaming.state.DefaultConfigurableOptionsFactory" | String | The options factory class for RocksDB to create DBOptions and ColumnFamilyOptions. The default options factory is org.apache.flink.contrib.streaming.state.DefaultConfigurableOptionsFactory, and it would read the configured options which provided in 'RocksDBConfigurableOptions'. |
+| state.backend.rocksdb.predefined-options | "DEFAULT" | String | The predefined settings for RocksDB DBOptions and ColumnFamilyOptions by Flink community. Current supported candidate predefined-options are DEFAULT, SPINNING_DISK_OPTIMIZED, SPINNING_DISK_OPTIMIZED_HIGH_MEM or FLASH_SSD_OPTIMIZED. Note that user customized options and options from the RocksDBOptionsFactory are applied on top of these predefined ones. |

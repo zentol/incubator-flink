@@ -313,11 +313,17 @@ public class ExecutionConfigOptions {
             key("table.exec.disabled-operators")
                     .noDefaultValue()
                     .withDescription(
-                            "Mainly for testing. A comma-separated list of operator names, each name "
-                                    + "represents a kind of disabled operator.\n"
-                                    + "Operators that can be disabled include \"NestedLoopJoin\", \"ShuffleHashJoin\", \"BroadcastHashJoin\", "
-                                    + "\"SortMergeJoin\", \"HashAgg\", \"SortAgg\".\n"
-                                    + "By default no operator is disabled.");
+                            Description.builder()
+                                    .text(
+                                            "Mainly for testing. A comma-separated list of operator names, each name "
+                                                    + "represents a kind of disabled operator.")
+                                    .linebreak()
+                                    .text(
+                                            "Operators that can be disabled include \"NestedLoopJoin\", \"ShuffleHashJoin\", \"BroadcastHashJoin\", "
+                                                    + "\"SortMergeJoin\", \"HashAgg\", \"SortAgg\".")
+                                    .linebreak()
+                                    .text("By default no operator is disabled.")
+                                    .build());
 
     @Documentation.TableOption(execMode = Documentation.ExecMode.BATCH)
     public static final ConfigOption<String> TABLE_EXEC_SHUFFLE_MODE =

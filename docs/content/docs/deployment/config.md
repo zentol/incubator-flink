@@ -111,7 +111,7 @@ Setups using resource orchestration frameworks (K8s, Yarn, Mesos) typically use 
 
 You do not need to configure any TaskManager hosts and ports, unless the setup requires the use of specific port ranges or specific network interfaces to bind to.
 
-{{< generated/common_host_port_section >}}
+{{% generated/common_host_port_section %}}
 
 ### Fault Tolerance
 
@@ -120,15 +120,15 @@ By configuring these options in your `flink-conf.yaml`, you define the cluster's
 
 The default restart strategy will only take effect if no job specific restart strategy has been configured via the `ExecutionConfig`.
 
-{{< generated/restart_strategy_configuration >}}
+{{% generated/restart_strategy_configuration %}}
 
 **Fixed Delay Restart Strategy**
 
-{{< generated/fixed_delay_restart_strategy_configuration >}}
+{{% generated/fixed_delay_restart_strategy_configuration %}}
 
 **Failure Rate Restart Strategy**
 
-{{< generated/failure_rate_restart_strategy_configuration >}}
+{{% generated/failure_rate_restart_strategy_configuration %}}
 
 ### Checkpoints and State Backends
 
@@ -137,7 +137,7 @@ These options control the basic setup of state backends and checkpointing behavi
 The options are only relevant for jobs/applications executing in a continuous streaming fashion.
 Jobs/applications executing in a batch fashion do not use state backends and checkpoints, but different internal data structures that are optimized for batch processing.
 
-{{< generated/common_state_backends_section >}}
+{{% generated/common_state_backends_section %}}
 
 ### High Availability
 
@@ -145,11 +145,11 @@ High-availability here refers to the ability of the JobManager process to recove
 
 The JobManager ensures consistency during recovery across TaskManagers. For the JobManager itself to recover consistently, an external service must store a minimal amount of recovery metadata (like "ID of last committed checkpoint"), as well as help to elect and lock which JobManager is the leader (to avoid split-brain situations).
 
-{{< generated/common_high_availability_section >}}
+{{% generated/common_high_availability_section %}}
 
 **Options for high-availability setups with ZooKeeper**
 
-{{< generated/common_high_availability_zk_section >}}
+{{% generated/common_high_availability_zk_section %}}
 
 ### Memory Configuration
 
@@ -162,11 +162,11 @@ For a detailed explanation of how these options interact,
 see the documentation on [TaskManager]({{< ref "docs/deployment/memory/mem_setup_tm" >}}) and
 [JobManager]({{< ref "docs/deployment/memory/mem_setup_jobmanager" >}} ) memory configurations.
 
-{{< generated/common_memory_section >}}
+{{% generated/common_memory_section %}}
 
 ### Miscellaneous Options
 
-{{< generated/common_miscellaneous_section >}}
+{{% generated/common_miscellaneous_section %}}
 
 ----
 ----
@@ -179,7 +179,7 @@ Options for configuring Flink's security and secure interaction with external sy
 
 Flink's network connections can be secured via SSL. Please refer to the [SSL Setup Docs]({{< ref "docs/deployment/security/security-ssl" >}}) for detailed setup guide and background.
 
-{{< generated/security_ssl_section >}}
+{{% generated/security_ssl_section %}}
 
 
 ### Auth with External Systems
@@ -188,13 +188,13 @@ Flink's network connections can be secured via SSL. Please refer to the [SSL Set
 
 These options are necessary when connecting to a secured ZooKeeper quorum.
 
-{{< generated/security_auth_zk_section >}}
+{{% generated/security_auth_zk_section %}}
 
 **Kerberos-based Authentication / Authorization**
 
 Please refer to the [Flink and Kerberos Docs]({{< ref "docs/deployment/security/security-kerberos" >}}) for a setup guide and a list of external system to which Flink can authenticate itself via Kerberos.
 
-{{< generated/security_auth_kerberos_section >}}
+{{% generated/security_auth_kerberos_section %}}
 
 ----
 ----
@@ -210,19 +210,19 @@ The options in this section are necessary for setups where Flink itself actively
 
 ### YARN
 
-{{< generated/yarn_config_configuration >}}
+{{% generated/yarn_config_configuration %}}
 
 ### Kubernetes
 
-{{< generated/kubernetes_config_configuration >}}
+{{% generated/kubernetes_config_configuration %}}
 
 ### Mesos
 
-{{< generated/mesos_configuration >}}
+{{% generated/mesos_configuration %}}
 
 **Mesos TaskManager**
 
-{{< generated/mesos_task_manager_configuration >}}
+{{% generated/mesos_task_manager_configuration %}}
 
 ----
 ----
@@ -235,7 +235,7 @@ Please refer to the [State Backend Documentation]({{< ref "docs/ops/state/state_
 
 These are the options commonly needed to configure the RocksDB state backend. See the [Advanced RocksDB Backend Section](#advanced-rocksdb-state-backends-options) for options necessary for advanced low level configurations and trouble-shooting.
 
-{{< generated/state_backend_rocksdb_section >}}
+{{% generated/state_backend_rocksdb_section %}}
 
 ----
 ----
@@ -244,7 +244,7 @@ These are the options commonly needed to configure the RocksDB state backend. Se
 
 Please refer to the [metrics system documentation]({{< ref "docs/ops/metrics" >}}) for background on Flink's metrics infrastructure.
 
-{{< generated/metric_configuration >}}
+{{% generated/metric_configuration %}}
 
 ### RocksDB Native Metrics
 
@@ -255,7 +255,7 @@ The metrics here are scoped to the operators and then further broken down by col
 Enabling RocksDB's native metrics may cause degraded performance and should be set carefully. 
 {{< /hint >}}
 
-{{< generated/rocksdb_native_metric_configuration >}}
+{{% generated/rocksdb_native_metric_configuration %}}
 
 ----
 ----
@@ -266,7 +266,7 @@ The history server keeps the information of completed jobs (graphs, runtimes, st
 
 See the [History Server Docs]({{< ref "docs/deployment/advanced/historyserver" >}}) for details.
 
-{{< generated/history_server_configuration >}}
+{{% generated/history_server_configuration %}}
 
 ----
 ----
@@ -280,7 +280,7 @@ See the [History Server Docs]({{< ref "docs/deployment/advanced/historyserver" >
 *Queryable State* is an experimental features that gives lets you access Flink's internal state like a key/value store.
 See the [Queryable State Docs]({{< ref "docs/dev/datastream/fault-tolerance/queryable_state" >}}) for details.
 
-{{< generated/queryable_state_configuration >}}
+{{% generated/queryable_state_configuration %}}
 
 ----
 ----
@@ -297,110 +297,114 @@ Flink dynamically loads the code for jobs submitted to a session cluster. In add
 
 Please refer to the [Debugging Classloading Docs]({{< ref "docs/ops/debugging/debugging_classloading" >}}) for details.
 
-{{< generated/expert_class_loading_section >}}
+{{% generated/expert_class_loading_section %}}
 
 ### Advanced Options for the debugging
 
-{{< generated/expert_debugging_and_tuning_section >}}
+{{% generated/expert_debugging_and_tuning_section %}}
 
 ### Advanced State Backends Options
 
-{{< generated/expert_state_backends_section >}}
+{{% generated/expert_state_backends_section %}}
 
 ### Advanced RocksDB State Backends Options
 
 Advanced options to tune RocksDB and RocksDB checkpoints.
 
-{{< generated/expert_rocksdb_section >}}
+{{% generated/expert_rocksdb_section %}}
 
 **RocksDB Configurable Options**
 
 These options give fine-grained control over the behavior and resoures of ColumnFamilies.
 With the introduction of `state.backend.rocksdb.memory.managed` and `state.backend.rocksdb.memory.fixed-per-slot` (Apache Flink 1.10), it should be only necessary to use the options here for advanced performance tuning. These options here can also be specified in the application program via `RocksDBStateBackend.setRocksDBOptions(RocksDBOptionsFactory)`.
 
-{{< generated/rocksdb_configurable_configuration >}}
+{{% generated/rocksdb_configurable_configuration %}}
 
 ### Advanced Fault Tolerance Options
 
 *These parameters can help with problems related to failover and to components erroneously considering each other as failed.*
 
-{{< generated/expert_fault_tolerance_section >}}
+{{% generated/expert_fault_tolerance_section %}}
 
 ### Advanced Cluster Options
 
-{{< generated/expert_cluster_section >}}
+{{% generated/expert_cluster_section %}}
 
 ### Advanced Scheduling Options
 
 *These parameters can help with fine-tuning scheduling for specific situations.*
 
-{{< generated/expert_scheduling_section >}}
+{{% generated/expert_scheduling_section %}}
 
 ### Advanced High-availability Options
 
-{{< generated/expert_high_availability_section >}}
+{{% generated/expert_high_availability_section %}}
 
 ### Advanced High-availability ZooKeeper Options
 
-{{< generated/expert_high_availability_zk_section >}}
+{{% generated/expert_high_availability_zk_section %}}
 
 ### Advanced High-availability Kubernetes Options
 
-{{< generated/expert_high_availability_k8s_section >}}
+{{% generated/expert_high_availability_k8s_section %}}
 
 ### Advanced SSL Security Options
 
-{{< generated/expert_security_ssl_section >}}
+{{% generated/expert_security_ssl_section %}}
 
 ### Advanced Options for the REST endpoint and Client
 
-{{< generated/expert_rest_section >}}
+{{% generated/expert_rest_section %}}
 
 ### Advanced Options for Flink Web UI
 
-{{< generated/web_configuration >}}
+{{% generated/web_configuration %}}
 
 ### Full JobManager Options
 
 **JobManager**
 
-{{< generated/all_jobmanager_section >}}
+{{% generated/all_jobmanager_section %}}
 
 **Blob Server**
 
 The Blob Server is a component in the JobManager. It is used for distribution of objects that are too large to be attached to a RPC message and that benefit from caching (like Jar files or large serialized code objects).
 
-{{< generated/blob_server_configuration >}}
+{{% generated/blob_server_configuration %}}
 
 **ResourceManager**
 
 These configuration keys control basic Resource Manager behavior, independent of the used resource orchestration management framework (YARN, Mesos, etc.)
 
-{{< generated/resource_manager_configuration >}}
+{{% generated/resource_manager_configuration %}}
 
 ### Full TaskManagerOptions
 
-{{< generated/all_taskmanager_section >}}
+{{% generated/all_taskmanager_section %}}
 
 **Data Transport Network Stack**
 
 These options are for the network stack that handles the streaming and batch data exchanges between TaskManagers.
 
-{{< generated/all_taskmanager_network_section >}}
+{{% generated/all_taskmanager_network_section %}}
 
 ### RPC / Akka
 
 Flink uses Akka for RPC between components (JobManager/TaskManager/ResourceManager).
 Flink does not use Akka for data transport.
 
-{{< generated/akka_configuration >}}
+| A | B | C |
+| - | - | - |
+| T | d | d |
+
+{{% generated/akka_configuration %}}
 
 ----
 ----
 
 # JVM and Logging Options
 
-{{< generated/environment_configuration >}}
+{{% generated/environment_configuration %}}
 
 # Forwarding Environment Variables
 
@@ -422,15 +426,15 @@ These options may be removed in a future release.
 
 **DataSet API Optimizer**
 
-{{< generated/optimizer_configuration >}}
+{{% generated/optimizer_configuration %}}
 
 **DataSet API Runtime Algorithms**
 
-{{< generated/algorithm_configuration >}}
+{{% generated/algorithm_configuration %}}
 
 **DataSet File Sinks**
 
-{{< generated/deprecated_file_sinks_section >}}
+{{% generated/deprecated_file_sinks_section %}}
 
 ----
 ----
@@ -439,21 +443,21 @@ These options may be removed in a future release.
 
 #### Client
 
-{{< generated/client_configuration >}}
+{{% generated/client_configuration %}}
 
 #### Execution
 
-{{< generated/deployment_configuration >}}
-{{< generated/savepoint_config_configuration >}}
-{{< generated/execution_configuration >}}
+{{% generated/deployment_configuration %}}
+{{% generated/savepoint_config_configuration %}}
+{{% generated/execution_configuration %}}
 
 #### Pipeline
 
-{{< generated/pipeline_configuration >}}
-{{< generated/stream_pipeline_configuration >}}
+{{% generated/pipeline_configuration %}}
+{{% generated/stream_pipeline_configuration %}}
 
 #### Checkpointing
 
-{{< generated/execution_checkpointing_configuration >}}
+{{% generated/execution_checkpointing_configuration %}}
 
 {{< top >}}

@@ -25,7 +25,7 @@ import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.description.Formatter;
-import org.apache.flink.configuration.description.HtmlFormatter;
+import org.apache.flink.configuration.description.MarkdownFormatter;
 import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.function.ThrowingConsumer;
 
@@ -102,8 +102,6 @@ public class ConfigOptionsDocGenerator {
 
     static final String DEFAULT_PATH_PREFIX = "src/main/java";
 
-    @VisibleForTesting static final String COMMON_SECTION_FILE_NAME = "common_section.html";
-
     private static final String CLASS_NAME_GROUP = "className";
     private static final String CLASS_PREFIX_GROUP = "classPrefix";
     private static final Pattern CLASS_NAME_PATTERN =
@@ -114,7 +112,16 @@ public class ConfigOptionsDocGenerator {
                             + CLASS_PREFIX_GROUP
                             + ">[a-zA-Z]*)(?:Options|Config|Parameters))(?:\\.java)?");
 
-    private static final Formatter formatter = new HtmlFormatter();
+    @VisibleForTesting
+    static final String TABLE_HEADER = "| Key | Default | Type | Description |\n";
+
+    @VisibleForTesting
+    static final String TABLE_HEADER_SEPARATOR = "|-----|---------|------|-------------|\n";
+
+    @VisibleForTesting static final String TABLE_ROW_TEMPLATE = "| %s | %s | %s | %s |\n";
+
+    @VisibleForTesting static final Formatter FORMATTER = new MarkdownFormatter();
+
     /**
      * This method generates html tables from set of classes containing {@link ConfigOption
      * ConfigOptions}.
@@ -227,7 +234,7 @@ public class ConfigOptionsDocGenerator {
 
     @VisibleForTesting
     static String getSectionFileName(String section) {
-        return section + "_section.html";
+        return section + "_section.md";
     }
 
     private static Collection<OptionWithMetaInfo> findSectionOptions(
@@ -280,7 +287,7 @@ public class ConfigOptionsDocGenerator {
                             name = group.f0.name();
                         }
 
-                        String outputFile = toSnakeCase(name) + "_configuration.html";
+                        String outputFile = toSnakeCase(name) + "_configuration.md";
                         Files.write(
                                 Paths.get(outputDirectory, outputFile),
                                 group.f1.getBytes(StandardCharsets.UTF_8));
@@ -389,24 +396,12 @@ public class ConfigOptionsDocGenerator {
      */
     private static String toHtmlTable(final List<OptionWithMetaInfo> options) {
         StringBuilder htmlTable = new StringBuilder();
-        htmlTable.append("<table class=\"configuration table table-bordered\">\n");
-        htmlTable.append("    <thead>\n");
-        htmlTable.append("        <tr>\n");
-        htmlTable.append("            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n");
-        htmlTable.append("            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n");
-        htmlTable.append("            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n");
-        htmlTable.append(
-                "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n");
-        htmlTable.append("        </tr>\n");
-        htmlTable.append("    </thead>\n");
-        htmlTable.append("    <tbody>\n");
+        htmlTable.append(TABLE_HEADER);
+        htmlTable.append(TABLE_HEADER_SEPARATOR);
 
         for (OptionWithMetaInfo option : options) {
             htmlTable.append(toHtmlString(option));
         }
-
-        htmlTable.append("    </tbody>\n");
-        htmlTable.append("</table>\n");
 
         return htmlTable.toString();
     }
@@ -441,23 +436,12 @@ public class ConfigOptionsDocGenerator {
             }
         }
 
-        return ""
-                + "        <tr>\n"
-                + "            <td><h5>"
-                + escapeCharacters(option.key())
-                + "</h5>"
-                + execModeStringBuilder.toString()
-                + "</td>\n"
-                + "            <td style=\"word-wrap: break-word;\">"
-                + escapeCharacters(addWordBreakOpportunities(defaultValue))
-                + "</td>\n"
-                + "            <td>"
-                + type
-                + "</td>\n"
-                + "            <td>"
-                + formatter.format(option.description())
-                + "</td>\n"
-                + "        </tr>\n";
+        return String.format(
+                TABLE_ROW_TEMPLATE,
+                option.key(),
+                addWordBreakOpportunities(defaultValue),
+                type,
+                FORMATTER.format(option.description()));
     }
 
     private static Class<?> getClazz(ConfigOption<?> option) {
@@ -519,7 +503,7 @@ public class ConfigOptionsDocGenerator {
         }
 
         return String.format(
-                "<p>%s</p>Possible values: %s",
+                "%s<br>Possible values: %s",
                 escapeCharacters(type),
                 escapeCharacters(Arrays.toString(enumClazz.getEnumConstants())));
     }

@@ -1,0 +1,6 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| table.dynamic-table-options.enabled | false | Boolean | Enable or disable the OPTIONS hint used to specify table options dynamically, if disabled, an exception would be thrown if any OPTIONS hint is specified |
+| table.generated-code.max-length | 64000 | Integer | Specifies a threshold where generated code will be split into sub-function calls. Java has a maximum method length of 64 KB. This setting allows for finer granularity if necessary. |
+| table.local-time-zone | "default" | String | The local time zone defines current session time zone id. It is used when converting to/from <code>TIMESTAMP WITH LOCAL TIME ZONE</code>. Internally, timestamps with local time zone are always represented in the UTC time zone. However, when converting to data types that don't include a time zone (e.g. TIMESTAMP, TIME, or simply STRING), the session time zone is used during conversion. The input of option is either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom timezone id such as "GMT-8:00". |
+| table.sql-dialect | "default" | String | The SQL dialect defines how to parse a SQL query. A different SQL dialect may support different SQL grammar. Currently supported dialects are: default and hive |

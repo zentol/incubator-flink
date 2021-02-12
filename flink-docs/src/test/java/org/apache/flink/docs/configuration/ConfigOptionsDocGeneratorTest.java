@@ -43,6 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.TABLE_HEADER;
+import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.TABLE_HEADER_SEPARATOR;
+import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.TABLE_ROW_TEMPLATE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -120,54 +123,15 @@ public class ConfigOptionsDocGeneratorTest {
     @Test
     public void testCreatingTypes() {
         final String expectedTable =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.duration</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">1 min</td>\n"
-                        + "            <td>Duration</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.enum</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">VALUE_1</td>\n"
-                        + "            <td><p>Enum</p>Possible values: [VALUE_1, VALUE_2, VALUE_3]</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.enum.list</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">VALUE_1;<wbr>VALUE_2</td>\n"
-                        + "            <td><p>List&lt;Enum&gt;</p>Possible values: [VALUE_1, VALUE_2, VALUE_3]</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.map</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">key1:value1</td>\n"
-                        + "            <td>Map</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.map.list</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">key1:value1;<wbr>key2:value2</td>\n"
-                        + "            <td>List&lt;Map&gt;</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>option.memory</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">1 kb</td>\n"
-                        + "            <td>MemorySize</td>\n"
-                        + "            <td>Description</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + "| Key | Default | Type | Description |\n"
+                        + "|-----|---------|------|-------------|\n"
+                        + "| option.duration | 1 min | Duration | Description |\n"
+                        + "| option.enum | VALUE_1 | Enum<br>Possible values: [VALUE_1, VALUE_2, VALUE_3] | Description |\n"
+                        + "| option.enum.list | VALUE_1;<wbr>VALUE_2 | List&lt;Enum&gt;<br>Possible values: [VALUE_1, VALUE_2, VALUE_3] | Description |\n"
+                        + "| option.map | key1:value1 | Map | Description |\n"
+                        + "| option.map.list | key1:value1;<wbr>key2:value2 | List&lt;Map&gt; | Description |\n"
+                        + "| option.memory | 1 kb | MemorySize | Description |\n";
         final String htmlTable =
                 ConfigOptionsDocGenerator.generateTablesForClass(TypeTestConfigGroup.class)
                         .get(0)
@@ -179,30 +143,11 @@ public class ConfigOptionsDocGeneratorTest {
     @Test
     public void testCreatingDescription() {
         final String expectedTable =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>first.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">2</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>This is example description for the first option.</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>second.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">(none)</td>\n"
-                        + "            <td>String</td>\n"
-                        + "            <td>This is long example description for the second option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + "| Key | Default | Type | Description |\n"
+                        + "|-----|---------|------|-------------|\n"
+                        + "| first.option.a | 2 | Integer | This is example description for the first option. |\n"
+                        + "| second.option.a | (none) | String | This is long example description for the second option. |\n";
         final String htmlTable =
                 ConfigOptionsDocGenerator.generateTablesForClass(TestConfigGroup.class).get(0).f1;
 
@@ -307,70 +252,23 @@ public class ConfigOptionsDocGeneratorTest {
         }
 
         assertEquals(
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>first.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">2</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>This is example description for the first option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n",
+                ""
+                        + "| Key | Default | Type | Description |\n"
+                        + "|-----|---------|------|-------------|\n"
+                        + "| first.option.a | 2 | Integer | This is example description for the first option. |\n",
                 tablesConverted.get("firstGroup"));
         assertEquals(
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>second.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">(none)</td>\n"
-                        + "            <td>String</td>\n"
-                        + "            <td>This is long example description for the second option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n",
+                ""
+                        + "| Key | Default | Type | Description |\n"
+                        + "|-----|---------|------|-------------|\n"
+                        + "| second.option.a | (none) | String | This is long example description for the second option. |\n",
                 tablesConverted.get("secondGroup"));
         assertEquals(
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>fourth.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">(none)</td>\n"
-                        + "            <td>String</td>\n"
-                        + "            <td>This is long example description for the fourth option.</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>third.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">2</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>This is example description for the third option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n",
+                ""
+                        + "| Key | Default | Type | Description |\n"
+                        + "|-----|---------|------|-------------|\n"
+                        + "| fourth.option.a | (none) | String | This is long example description for the fourth option. |\n"
+                        + "| third.option.a | 2 | Integer | This is example description for the third option. |\n",
                 tablesConverted.get("default"));
     }
 
@@ -393,30 +291,11 @@ public class ConfigOptionsDocGeneratorTest {
     @Test
     public void testOverrideDefault() {
         final String expectedTable =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>first.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">default_1</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>This is example description for the first option.</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>second.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">default_2</td>\n"
-                        + "            <td>String</td>\n"
-                        + "            <td>This is long example description for the second option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + TABLE_HEADER
+                        + TABLE_HEADER_SEPARATOR
+                        + "| first.option.a | default_1 | Integer | This is example description for the first option. |\n"
+                        + "| second.option.a | default_2 | String | This is long example description for the second option. |\n";
         final String htmlTable =
                 ConfigOptionsDocGenerator.generateTablesForClass(
                                 TestConfigGroupWithOverriddenDefault.class)
@@ -442,68 +321,33 @@ public class ConfigOptionsDocGeneratorTest {
         Formatter formatter = new HtmlFormatter();
 
         String expected1 =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>"
-                        + TestCommonOptions.COMMON_POSITIONED_OPTION.key()
-                        + "</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">"
-                        + TestCommonOptions.COMMON_POSITIONED_OPTION.defaultValue()
-                        + "</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>"
-                        + formatter.format(TestCommonOptions.COMMON_POSITIONED_OPTION.description())
-                        + "</td>\n"
-                        + "        </tr>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>"
-                        + TestCommonOptions.COMMON_OPTION.key()
-                        + "</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">"
-                        + TestCommonOptions.COMMON_OPTION.defaultValue()
-                        + "</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>"
-                        + formatter.format(TestCommonOptions.COMMON_OPTION.description())
-                        + "</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + TABLE_HEADER
+                        + TABLE_HEADER_SEPARATOR
+                        + String.format(
+                                TABLE_ROW_TEMPLATE,
+                                TestCommonOptions.COMMON_POSITIONED_OPTION.key(),
+                                TestCommonOptions.COMMON_POSITIONED_OPTION.defaultValue(),
+                                "Integer",
+                                formatter.format(
+                                        TestCommonOptions.COMMON_POSITIONED_OPTION.description()))
+                        + String.format(
+                                TABLE_ROW_TEMPLATE,
+                                TestCommonOptions.COMMON_OPTION.key(),
+                                TestCommonOptions.COMMON_OPTION.defaultValue(),
+                                "Integer",
+                                formatter.format(TestCommonOptions.COMMON_OPTION.description()));
 
         String expected2 =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>"
-                        + TestCommonOptions.COMMON_OPTION.key()
-                        + "</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">"
-                        + TestCommonOptions.COMMON_OPTION.defaultValue()
-                        + "</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>"
-                        + formatter.format(TestCommonOptions.COMMON_OPTION.description())
-                        + "</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + TABLE_HEADER
+                        + TABLE_HEADER_SEPARATOR
+                        + String.format(
+                                TABLE_ROW_TEMPLATE,
+                                TestCommonOptions.COMMON_OPTION.key(),
+                                TestCommonOptions.COMMON_OPTION.defaultValue(),
+                                "Integer",
+                                formatter.format(TestCommonOptions.COMMON_OPTION.description()));
 
         final String fileName1 =
                 ConfigOptionsDocGenerator.getSectionFileName(TestCommonOptions.SECTION_1);
@@ -543,24 +387,10 @@ public class ConfigOptionsDocGeneratorTest {
     @Test
     public void testConfigOptionExclusion() {
         final String expectedTable =
-                "<table class=\"configuration table table-bordered\">\n"
-                        + "    <thead>\n"
-                        + "        <tr>\n"
-                        + "            <th class=\"text-left\" style=\"width: 20%\">Key</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 15%\">Default</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 10%\">Type</th>\n"
-                        + "            <th class=\"text-left\" style=\"width: 55%\">Description</th>\n"
-                        + "        </tr>\n"
-                        + "    </thead>\n"
-                        + "    <tbody>\n"
-                        + "        <tr>\n"
-                        + "            <td><h5>first.option.a</h5></td>\n"
-                        + "            <td style=\"word-wrap: break-word;\">2</td>\n"
-                        + "            <td>Integer</td>\n"
-                        + "            <td>This is example description for the first option.</td>\n"
-                        + "        </tr>\n"
-                        + "    </tbody>\n"
-                        + "</table>\n";
+                ""
+                        + TABLE_HEADER
+                        + TABLE_HEADER_SEPARATOR
+                        + "| first.option.a | 2 | Integer | This is example description for the first option. |\n";
         final String htmlTable =
                 ConfigOptionsDocGenerator.generateTablesForClass(TestConfigGroupWithExclusion.class)
                         .get(0)

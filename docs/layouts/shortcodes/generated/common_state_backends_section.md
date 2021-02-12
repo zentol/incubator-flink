@@ -1,0 +1,9 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| state.backend | (none) | String | The state backend to be used to store and checkpoint state. |
+| state.checkpoints.dir | (none) | String | The default directory used for storing the data files and meta data of checkpoints in a Flink supported filesystem. The storage path must be accessible from all participating processes/nodes(i.e. all TaskManagers and JobManagers). |
+| state.savepoints.dir | (none) | String | The default directory for savepoints. Used by the state backends that write savepoints to file systems (MemoryStateBackend, FsStateBackend, RocksDBStateBackend). |
+| state.backend.incremental | false | Boolean | Option whether the state backend should create incremental checkpoints, if possible. For an incremental checkpoint, only a diff from the previous checkpoint is stored, rather than the complete checkpoint state. Once enabled, the state size shown in web UI or fetched from rest API only represents the delta checkpoint size instead of full checkpoint size. Some state backends may not support incremental checkpoints and ignore this option. |
+| state.backend.local-recovery | false | Boolean | This option configures local recovery for this state backend. By default, local recovery is deactivated. Local recovery currently only covers keyed state backends. Currently, MemoryStateBackend does not support local recovery and ignore this option. |
+| state.checkpoints.num-retained | 1 | Integer | The maximum number of completed checkpoints to retain. |
+| taskmanager.state.local.root-dirs | (none) | String | The config parameter defining the root directories for storing file-based state for local recovery. Local recovery currently only covers keyed state backends. Currently, MemoryStateBackend does not support local recovery and ignore this option |

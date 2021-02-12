@@ -21,17 +21,12 @@ package org.apache.flink.docs.configuration;
 import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigOption;
-import org.apache.flink.configuration.description.Formatter;
-import org.apache.flink.configuration.description.HtmlFormatter;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,10 +39,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.DEFAULT_PATH_PREFIX;
+import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.FORMATTER;
 import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.LOCATIONS;
 import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.extractConfigOptions;
 import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.processConfigOptions;
@@ -62,7 +60,9 @@ import static org.apache.flink.docs.configuration.ConfigOptionsDocGenerator.type
  */
 public class ConfigOptionsDocsCompletenessITCase {
 
-    private static final Formatter htmlFormatter = new HtmlFormatter();
+    private static final Pattern TABLE_LINE_REGEX_PATTERN =
+            Pattern.compile(
+                    "\\| (?<key>.*) \\| (?<default>.*) \\| (?<type>.*) \\| (?<description>.*) \\|");
 
     @Test
     public void testCompleteness() throws IOException, ClassNotFoundException {
@@ -230,8 +230,8 @@ public class ConfigOptionsDocsCompletenessITCase {
                 .filter(
                         (path) -> {
                             final String filename = path.getFileName().toString();
-                            return filename.endsWith("configuration.html")
-                                    || filename.endsWith("_section.html");
+                            return filename.endsWith("configuration.md")
+                                    || filename.endsWith("_section.md");
                         })
                 .flatMap(
                         file -> {
@@ -246,30 +246,32 @@ public class ConfigOptionsDocsCompletenessITCase {
 
     private static Collection<DocumentedOption> parseDocumentedOptionsFromFile(Path file)
             throws IOException {
-        Document document = Jsoup.parse(file.toFile(), StandardCharsets.UTF_8.name());
-        document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
-        document.outputSettings().prettyPrint(false);
-        return document.getElementsByTag("table").stream()
-                .map(element -> element.getElementsByTag("tbody").get(0))
-                .flatMap(element -> element.getElementsByTag("tr").stream())
-                .map(
-                        tableRow -> {
-                            // Use split to exclude document key tag.
-                            String key = tableRow.child(0).text().split(" ")[0];
-                            String defaultValue = tableRow.child(1).text();
-                            String typeValue = tableRow.child(2).text();
-                            String description =
-                                    tableRow.child(3).childNodes().stream()
-                                            .map(Object::toString)
-                                            .collect(Collectors.joining());
-                            return new DocumentedOption(
-                                    key,
-                                    defaultValue,
-                                    typeValue,
-                                    description,
-                                    file.getName(file.getNameCount() - 1));
-                        })
-                .collect(Collectors.toList());
+
+        final List<String> rawLines = Files.readAllLines(file);
+
+        final Collection<DocumentedOption> documentedOptions = new ArrayList<>();
+
+        for (String rawLine : rawLines) {
+            final Matcher matcher = TABLE_LINE_REGEX_PATTERN.matcher(rawLine);
+
+            if (matcher.matches()) {
+                final String key = matcher.group("key");
+
+                if ("Key".equals(key)) {
+                    // header row
+                    continue;
+                }
+
+                documentedOptions.add(
+                        new DocumentedOption(
+                                key,
+                                matcher.group("default").replaceAll("<wbr>", ""),
+                                matcher.group("type"),
+                                matcher.group("description"),
+                                file.getName(file.getNameCount() - 1)));
+            }
+        }
+        return documentedOptions;
     }
 
     private static Map<String, List<ExistingOption>> findExistingOptions(
@@ -304,7 +306,7 @@ public class ConfigOptionsDocsCompletenessITCase {
         String key = optionWithMetaInfo.option.key();
         String defaultValue = stringifyDefault(optionWithMetaInfo);
         String typeValue = typeToHtml(optionWithMetaInfo);
-        String description = htmlFormatter.format(optionWithMetaInfo.option.description());
+        String description = FORMATTER.format(optionWithMetaInfo.option.description());
         boolean isSuffixOption = isSuffixOption(optionWithMetaInfo.field);
         return new ExistingOption(
                 key, defaultValue, typeValue, description, optionsClass, isSuffixOption);

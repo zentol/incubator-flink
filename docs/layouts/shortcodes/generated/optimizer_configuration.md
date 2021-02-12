@@ -1,0 +1,5 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| compiler.delimited-informat.max-line-samples | 10 | Integer | The maximum number of line samples taken by the compiler for delimited inputs. The samples are used to estimate the number of records. This value can be overridden for a specific input with the input format’s parameters. |
+| compiler.delimited-informat.max-sample-len | 2097152 | Integer | The maximal length of a line sample that the compiler takes for delimited inputs. If the length of a single sample exceeds this value (possible because of misconfiguration of the parser), the sampling aborts. This value can be overridden for a specific input with the input format’s parameters. |
+| compiler.delimited-informat.min-line-samples | 2 | Integer | The minimum number of line samples taken by the compiler for delimited inputs. The samples are used to estimate the number of records. This value can be overridden for a specific input with the input format’s parameters |

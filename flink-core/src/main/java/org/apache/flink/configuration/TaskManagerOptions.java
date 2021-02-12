@@ -282,7 +282,7 @@ public class TaskManagerOptions {
                                             "The automatic address binding policy used by the TaskManager if \""
                                                     + HOST.key()
                                                     + "\" is not set."
-                                                    + " The value should be one of the following:\n")
+                                                    + " The value should be one of the following:")
                                     .list(
                                             text("\"name\" - uses hostname as binding address"),
                                             text(

@@ -1,0 +1,11 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| cluster.evenly-spread-out-slots | false | Boolean | Enable the slot spread out allocation strategy. This strategy tries to spread out the slots evenly across all available `TaskExecutors`. |
+| cluster.intercept-user-system-exit | DISABLED | Enum<br>Possible values: [DISABLED, LOG, THROW] | Flag to check user code exiting system by terminating JVM (e.g., System.exit())<ul><li>DISABLED - Flink is not monitoring or intercepting calls to System.exit()</li><li>LOG - Log exit attempt with stack trace but still allowing exit to be performed</li><li>THROW - Throw exception when exit is attempted disallowing JVM termination</li></ul><br />Note that this configuration option can interfere with `cluster.processes.halt-on-fatal-error`: In intercepted user-code, a call to System.exit() will not cause the JVM to halt, when `THROW` is configured. |
+| cluster.io-pool.size | (none) | Integer | The size of the IO executor pool used by the cluster to execute blocking IO operations (Master as well as TaskManager processes). By default it will use 4 * the number of CPU cores (hardware contexts) that the cluster process has access to. Increasing the pool size allows to run more IO operations concurrently. |
+| cluster.processes.halt-on-fatal-error | false | Boolean | Whether processes should halt on fatal errors instead of performing a graceful shutdown. In some environments (e.g. Java 8 with the G1 garbage collector), a regular graceful shutdown can lead to a JVM deadlock. See [FLINK-16510](https://issues.apache.org/jira/browse/FLINK-16510) for details. |
+| cluster.registration.error-delay | 10000 | Long | The pause made after an registration attempt caused an exception (other than timeout) in milliseconds. |
+| cluster.registration.initial-timeout | 100 | Long | Initial registration timeout between cluster components in milliseconds. |
+| cluster.registration.max-timeout | 30000 | Long | Maximum registration timeout between cluster components in milliseconds. |
+| cluster.registration.refused-registration-delay | 30000 | Long | The pause made after the registration attempt was refused in milliseconds. |
+| cluster.services.shutdown-timeout | 30000 | Long | The shutdown timeout for cluster services like executors in milliseconds. |

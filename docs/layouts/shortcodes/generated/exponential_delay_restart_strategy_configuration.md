@@ -1,0 +1,7 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| restart-strategy.exponential-delay.backoff-multiplier | 2.0 | Double | Backoff value is multiplied by this value after every failure,until max backoff is reached if `restart-strategy` has been set to `exponential-delay`. |
+| restart-strategy.exponential-delay.initial-backoff | 1 s | Duration | Starting duration between restarts if `restart-strategy` has been set to `exponential-delay`. It can be specified using notation: "1 min", "20 s" |
+| restart-strategy.exponential-delay.jitter-factor | 0.1 | Double | Jitter specified as a portion of the backoff if `restart-strategy` has been set to `exponential-delay`. It represents how large random value will be added or subtracted to the backoff. Useful when you want to avoid restarting multiple jobs at the same time. |
+| restart-strategy.exponential-delay.max-backoff | 5 min | Duration | The highest possible duration between restarts if `restart-strategy` has been set to `exponential-delay`. It can be specified using notation: "1 min", "20 s" |
+| restart-strategy.exponential-delay.reset-backoff-threshold | 1 h | Duration | Threshold when the backoff is reset to its initial value if `restart-strategy` has been set to `exponential-delay`. It specifies how long the job must be running without failure to reset the exponentially increasing backoff to its initial value. It can be specified using notation: "1 min", "20 s" |

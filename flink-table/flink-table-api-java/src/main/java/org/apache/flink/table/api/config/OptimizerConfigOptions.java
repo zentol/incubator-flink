@@ -21,6 +21,7 @@ package org.apache.flink.table.api.config;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.configuration.ConfigOption;
+import org.apache.flink.configuration.description.Description;
 
 import static org.apache.flink.configuration.ConfigOptions.key;
 
@@ -42,12 +43,21 @@ public class OptimizerConfigOptions {
             key("table.optimizer.agg-phase-strategy")
                     .defaultValue("AUTO")
                     .withDescription(
-                            "Strategy for aggregate phase. Only AUTO, TWO_PHASE or ONE_PHASE can be set.\n"
-                                    + "AUTO: No special enforcer for aggregate stage. Whether to choose two stage aggregate or one"
-                                    + " stage aggregate depends on cost. \n"
-                                    + "TWO_PHASE: Enforce to use two stage aggregate which has localAggregate and globalAggregate. "
-                                    + "Note that if aggregate call does not support optimize into two phase, we will still use one stage aggregate.\n"
-                                    + "ONE_PHASE: Enforce to use one stage aggregate which only has CompleteGlobalAggregate.");
+                            Description.builder()
+                                    .text(
+                                            "Strategy for aggregate phase. Only AUTO, TWO_PHASE or ONE_PHASE can be set.")
+                                    .linebreak()
+                                    .text(
+                                            "AUTO: No special enforcer for aggregate stage. Whether to choose two stage aggregate or one"
+                                                    + " stage aggregate depends on cost.")
+                                    .linebreak()
+                                    .text(
+                                            "TWO_PHASE: Enforce to use two stage aggregate which has localAggregate and globalAggregate. "
+                                                    + "Note that if aggregate call does not support optimize into two phase, we will still use one stage aggregate.")
+                                    .linebreak()
+                                    .text(
+                                            "ONE_PHASE: Enforce to use one stage aggregate which only has CompleteGlobalAggregate.")
+                                    .build());
 
     @Documentation.TableOption(execMode = Documentation.ExecMode.BATCH)
     public static final ConfigOption<Long> TABLE_OPTIMIZER_BROADCAST_JOIN_THRESHOLD =

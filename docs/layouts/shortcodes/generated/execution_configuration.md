@@ -1,0 +1,5 @@
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| execution.buffer-timeout | 100 ms | Duration | The maximum time frequency (milliseconds) for the flushing of the output buffers. By default the output buffers flush frequently to provide low latency and to aid smooth developer experience. Setting the parameter can result in three logical modes:<ul><li>A positive value triggers flushing periodically by that interval</li><li>0 triggers flushing after every record thus minimizing latency</li><li>-1 ms triggers flushing only when the output buffer is full thus maximizing throughput</li></ul> |
+| execution.checkpointing.snapshot-compression | false | Boolean | Tells if we should use compression for the state snapshot data or not |
+| execution.runtime-mode | STREAMING | Enum<br>Possible values: [STREAMING, BATCH, AUTOMATIC] | Runtime execution mode of DataStream programs. Among other things, this controls task scheduling, network shuffle behavior, and time semantics. |
