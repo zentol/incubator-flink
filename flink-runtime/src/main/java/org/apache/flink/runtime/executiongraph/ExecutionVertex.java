@@ -65,7 +65,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 public class ExecutionVertex
         implements AccessExecutionVertex, Archiveable<ArchivedExecutionVertex> {
 
-    private static final Logger LOG = ExecutionGraph.LOG;
+    private static final Logger LOG = DefaultExecutionGraph.LOG;
 
     public static final int MAX_DISTINCT_LOCATIONS_TO_CONSIDER = 8;
 
