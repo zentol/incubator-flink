@@ -18,6 +18,7 @@
 
 package org.apache.flink.formats.avro;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.formats.avro.typeutils.AvroFactory;
@@ -39,6 +40,7 @@ import org.apache.avro.specific.SpecificRecord;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -69,6 +71,20 @@ public class AvroDeserializationSchema<T> implements DeserializationSchema<T> {
     public static <T extends SpecificRecord> AvroDeserializationSchema<T> forSpecific(
             Class<T> tClass) {
         return new AvroDeserializationSchema<>(tClass, null);
+    }
+
+    private static class MyAvroParsingFunction<R> implements MapFunction<String, R> {
+
+        private final DeserializationSchema<R> deserializationSchema;
+
+        private MyAvroParsingFunction(DeserializationSchema<R> deserializationSchema) {
+            this.deserializationSchema = deserializationSchema;
+        }
+
+        @Override
+        public R map(String value) throws Exception {
+            return deserializationSchema.deserialize(value.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     private static final long serialVersionUID = -6766681879020862312L;

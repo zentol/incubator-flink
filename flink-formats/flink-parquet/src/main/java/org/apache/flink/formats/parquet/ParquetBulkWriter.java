@@ -21,6 +21,7 @@ package org.apache.flink.formats.parquet;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.serialization.BulkWriter;
 
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
 
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class ParquetBulkWriter<T> implements BulkWriter<T> {
 
     /** The ParquetWriter to write to. */
     private final ParquetWriter<T> parquetWriter;
+
+    private ParquetReader<T> parquetReader;
 
     /**
      * Creates a new ParquetBulkWriter wrapping the given ParquetWriter.

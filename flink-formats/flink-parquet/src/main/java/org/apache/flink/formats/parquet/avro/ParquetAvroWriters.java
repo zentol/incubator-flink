@@ -27,8 +27,11 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.reflect.ReflectData;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.OutputFile;
 
 import java.io.IOException;
@@ -83,6 +86,12 @@ public class ParquetAvroWriters {
             String schemaString, GenericData dataModel, OutputFile out) throws IOException {
 
         final Schema schema = new Schema.Parser().parse(schemaString);
+
+        final ParquetReader<T> build =
+                AvroParquetReader.<T>builder((InputFile) null)
+                        .withDataModel(GenericData.get())
+                        .build();
+        build.read();
 
         return AvroParquetWriter.<T>builder(out)
                 .withSchema(schema)
