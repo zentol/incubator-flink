@@ -660,7 +660,8 @@ public class StateAssignmentOperationTest extends TestLogger {
         }
 
         JobGraph jobGraph = new JobGraph("Pointwise job", jobVertices);
-        ExecutionGraph eg = TestingDefaultExecutionGraphBuilder.newBuilder().setJobGraph(jobGraph).build();
+        ExecutionGraph eg =
+                TestingDefaultExecutionGraphBuilder.newBuilder().setJobGraph(jobGraph).build();
         return Arrays.stream(jobVertices)
                 .collect(
                         Collectors.toMap(
