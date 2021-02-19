@@ -232,11 +232,6 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
     }
 
     @Override
-    public boolean isArchived() {
-        return true;
-    }
-
-    @Override
     public ArchivedExecutionConfig getArchivedExecutionConfig() {
         return archivedExecutionConfig;
     }

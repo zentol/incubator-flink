@@ -108,7 +108,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /** Default implementation of the {@link ExecutionGraph}. */
-public class DefaultExecutionGraph implements ExecutionGraph {
+public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionGraphAccessor {
 
     /** The log object used for debugging. */
     static final Logger LOG = LoggerFactory.getLogger(ExecutionGraph.class);
@@ -340,11 +340,6 @@ public class DefaultExecutionGraph implements ExecutionGraph {
     // --------------------------------------------------------------------------------------------
 
     @Override
-    public int getNumberOfExecutionJobVertices() {
-        return this.verticesInCreationOrder.size();
-    }
-
-    @Override
     public SchedulingTopology getSchedulingTopology() {
         return executionTopology;
     }
@@ -358,11 +353,6 @@ public class DefaultExecutionGraph implements ExecutionGraph {
     @Nonnull
     public ComponentMainThreadExecutor getJobMasterMainThreadExecutor() {
         return jobMasterMainThreadExecutor;
-    }
-
-    @Override
-    public boolean isArchived() {
-        return false;
     }
 
     @Override
@@ -1411,8 +1401,7 @@ public class DefaultExecutionGraph implements ExecutionGraph {
         executionStateUpdateListener.onStateUpdate(execution.getAttemptId(), newExecutionState);
     }
 
-    @Override
-    public void assertRunningInJobMasterMainThread() {
+    private void assertRunningInJobMasterMainThread() {
         if (!(jobMasterMainThreadExecutor
                 instanceof ComponentMainThreadExecutor.DummyComponentMainThreadExecutor)) {
             jobMasterMainThreadExecutor.assertRunningInMainThread();

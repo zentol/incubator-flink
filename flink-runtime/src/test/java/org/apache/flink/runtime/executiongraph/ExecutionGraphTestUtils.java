@@ -327,7 +327,7 @@ public class ExecutionGraphTestUtils {
         checkNotNull(vertices);
         checkNotNull(timeout);
 
-        return TestingExecutionGraphBuilder.newBuilder()
+        return TestingDefaultExecutionGraphBuilder.newBuilder()
                 .setJobGraph(new JobGraph(vertices))
                 .setFutureExecutor(executor)
                 .setIoExecutor(executor)

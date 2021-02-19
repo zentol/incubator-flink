@@ -220,7 +220,7 @@ public class ExecutionVertexLocalityTest extends TestLogger {
 
         JobGraph testJob = new JobGraph(jobId, "test job", source, target);
 
-        return TestingExecutionGraphBuilder.newBuilder().setJobGraph(testJob).build();
+        return TestingDefaultExecutionGraphBuilder.newBuilder().setJobGraph(testJob).build();
     }
 
     private void initializeLocation(ExecutionVertex vertex, TaskManagerLocation location)

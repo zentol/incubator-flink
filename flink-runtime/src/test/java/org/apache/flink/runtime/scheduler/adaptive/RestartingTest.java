@@ -22,7 +22,7 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
-import org.apache.flink.runtime.executiongraph.TestingExecutionGraphBuilder;
+import org.apache.flink.runtime.executiongraph.TestingDefaultExecutionGraphBuilder;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
 import org.apache.flink.util.TestLogger;
@@ -134,7 +134,7 @@ public class RestartingTest extends TestLogger {
 
     public Restarting createRestartingState(MockRestartingContext ctx)
             throws JobException, JobExecutionException {
-        ExecutionGraph executionGraph = TestingExecutionGraphBuilder.newBuilder().build();
+        ExecutionGraph executionGraph = TestingDefaultExecutionGraphBuilder.newBuilder().build();
         return createRestartingState(ctx, executionGraph);
     }
 

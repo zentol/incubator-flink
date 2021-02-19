@@ -169,7 +169,6 @@ public class ArchivedExecutionGraphTest extends TestLogger {
     private static void compareExecutionGraph(
             AccessExecutionGraph runtimeGraph, AccessExecutionGraph archivedGraph)
             throws IOException, ClassNotFoundException {
-        assertTrue(archivedGraph.isArchived());
         // -------------------------------------------------------------------------------------------------------------
         // ExecutionGraph
         // -------------------------------------------------------------------------------------------------------------

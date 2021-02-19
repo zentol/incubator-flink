@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 public class ExecutionGraphConstructionTest {
 
     private ExecutionGraph createExecutionGraph() throws Exception {
-        return TestingExecutionGraphBuilder.newBuilder().build();
+        return TestingDefaultExecutionGraphBuilder.newBuilder().build();
     }
 
     @Test

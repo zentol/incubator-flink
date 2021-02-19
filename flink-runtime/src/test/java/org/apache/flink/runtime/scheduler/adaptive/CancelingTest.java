@@ -96,8 +96,7 @@ public class CancelingTest extends TestLogger {
             StateTrackingMockExecutionGraph meg = new StateTrackingMockExecutionGraph();
             Canceling canceling = createCancelingState(ctx, meg);
             // register execution at EG
-            ExecutingTest.MockExecutionJobVertex ejv =
-                    new ExecutingTest.MockExecutionJobVertex(canceling.getExecutionGraph());
+            ExecutingTest.MockExecutionJobVertex ejv = new ExecutingTest.MockExecutionJobVertex();
             TaskExecutionStateTransition update =
                     new TaskExecutionStateTransition(
                             new TaskExecutionState(
@@ -115,14 +114,14 @@ public class CancelingTest extends TestLogger {
     @Test
     public void testStateDoesNotExposeGloballyTerminalExecutionGraph() throws Exception {
         try (MockStateWithExecutionGraphContext ctx = new MockStateWithExecutionGraphContext()) {
-            MockExecutionGraph meg = new MockExecutionGraph();
+            StateTrackingMockExecutionGraph meg = new StateTrackingMockExecutionGraph();
             Canceling canceling = createCancelingState(ctx, meg);
 
             // ideally we'd delay the async call to #onGloballyTerminalState instead, but the
             // context does not support that
             ctx.setExpectFinished(eg -> {});
 
-            meg.completeCancellation();
+            meg.completeTerminationFuture(JobStatus.CANCELED);
 
             // this is just a sanity check for the test
             assertThat(meg.getState(), is(JobStatus.CANCELED));

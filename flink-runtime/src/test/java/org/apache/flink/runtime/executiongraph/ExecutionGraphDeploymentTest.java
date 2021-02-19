@@ -104,7 +104,7 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
      *
      * @param eg the execution graph that was created
      */
-    protected void checkJobOffloaded(ExecutionGraph eg) throws Exception {
+    protected void checkJobOffloaded(DefaultExecutionGraph eg) throws Exception {
         assertTrue(eg.getJobInformationOrBlobKey().isLeft());
     }
 
@@ -152,8 +152,8 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
                     v2, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
 
             DirectScheduledExecutorService executor = new DirectScheduledExecutorService();
-            ExecutionGraph eg =
-                    TestingExecutionGraphBuilder.newBuilder()
+            DefaultExecutionGraph eg =
+                    TestingDefaultExecutionGraphBuilder.newBuilder()
                             .setJobGraph(new JobGraph(jobId, "Test Job"))
                             .setFutureExecutor(executor)
                             .setIoExecutor(executor)
@@ -480,7 +480,7 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
 
         final ExecutionGraph eg = scheduler.getExecutionGraph();
 
-        checkJobOffloaded(eg);
+        checkJobOffloaded((DefaultExecutionGraph) eg);
 
         // schedule, this triggers mock deployment
         scheduler.startScheduling();
@@ -537,7 +537,7 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
                         .build();
         final ExecutionGraph eg = scheduler.getExecutionGraph();
 
-        checkJobOffloaded(eg);
+        checkJobOffloaded((DefaultExecutionGraph) eg);
 
         // schedule, this triggers mock deployment
         scheduler.startScheduling();
@@ -677,7 +677,7 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
                                 0),
                         null));
 
-        return TestingExecutionGraphBuilder.newBuilder()
+        return TestingDefaultExecutionGraphBuilder.newBuilder()
                 .setJobGraph(jobGraph)
                 .setJobMasterConfig(configuration)
                 .setBlobWriter(blobWriter)

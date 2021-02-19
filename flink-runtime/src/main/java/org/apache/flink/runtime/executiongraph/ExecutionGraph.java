@@ -24,8 +24,6 @@ import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
-import org.apache.flink.runtime.blob.BlobWriter;
-import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
 import org.apache.flink.runtime.checkpoint.CheckpointIDCounter;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsTracker;
@@ -33,25 +31,18 @@ import org.apache.flink.runtime.checkpoint.CheckpointsCleaner;
 import org.apache.flink.runtime.checkpoint.CompletedCheckpointStore;
 import org.apache.flink.runtime.checkpoint.MasterTriggerRestoreHook;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
-import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.failover.flip1.ResultPartitionAvailabilityChecker;
-import org.apache.flink.runtime.executiongraph.failover.flip1.partitionrelease.PartitionReleaseStrategy;
-import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTracker;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
-import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.runtime.query.KvStateLocationRegistry;
 import org.apache.flink.runtime.scheduler.InternalFailuresListener;
 import org.apache.flink.runtime.scheduler.strategy.SchedulingTopology;
-import org.apache.flink.runtime.shuffle.ShuffleMaster;
 import org.apache.flink.runtime.state.CheckpointStorage;
 import org.apache.flink.runtime.state.StateBackend;
-import org.apache.flink.types.Either;
 import org.apache.flink.util.OptionalFailure;
-import org.apache.flink.util.SerializedValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,7 +50,6 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 /**
  * The execution graph is the central data structure that coordinates the distributed execution of a
@@ -85,21 +75,10 @@ import java.util.concurrent.Executor;
  * </ul>
  */
 public interface ExecutionGraph extends AccessExecutionGraph {
+
     void start(@Nonnull ComponentMainThreadExecutor jobMasterMainThreadExecutor);
 
-    /**
-     * Gets the number of job vertices currently held by this execution graph.
-     *
-     * @return The current number of job vertices.
-     */
-    int getNumberOfExecutionJobVertices();
-
     SchedulingTopology getSchedulingTopology();
-
-    ScheduleMode getScheduleMode();
-
-    @Nonnull
-    ComponentMainThreadExecutor getJobMasterMainThreadExecutor();
 
     void enableCheckpointing(
             CheckpointCoordinatorConfiguration chkConfig,
@@ -118,11 +97,7 @@ public interface ExecutionGraph extends AccessExecutionGraph {
 
     void setJsonPlan(String jsonPlan);
 
-    Either<SerializedValue<JobInformation>, PermanentBlobKey> getJobInformationOrBlobKey();
-
     Configuration getJobConfiguration();
-
-    ClassLoader getUserClassLoader();
 
     Throwable getFailureCause();
 
@@ -150,15 +125,6 @@ public interface ExecutionGraph extends AccessExecutionGraph {
 
     Map<IntermediateDataSetID, IntermediateResult> getAllIntermediateResults();
 
-    BlobWriter getBlobWriter();
-
-    /**
-     * Returns the ExecutionContext associated with this ExecutionGraph.
-     *
-     * @return ExecutionContext associated with this ExecutionGraph
-     */
-    Executor getFutureExecutor();
-
     /**
      * Merges all accumulator results from the tasks previously executed in the Executions.
      *
@@ -175,8 +141,6 @@ public interface ExecutionGraph extends AccessExecutionGraph {
     void updateAccumulators(AccumulatorSnapshot accumulatorSnapshot);
 
     void setInternalTaskFailuresListener(InternalFailuresListener internalTaskFailuresListener);
-
-    void notifyExecutionChange(final Execution execution, final ExecutionState newExecutionState);
 
     void attachJobGraph(List<JobVertex> topologiallySorted) throws JobException;
 
@@ -199,18 +163,6 @@ public interface ExecutionGraph extends AccessExecutionGraph {
      */
     void suspend(Throwable suspensionCause);
 
-    /**
-     * Fails the execution graph globally.
-     *
-     * <p>This global failure is meant to be triggered in cases where the consistency of the
-     * execution graph' state cannot be guaranteed any more (for example when catching unexpected
-     * exceptions that indicate a bug or an unexpected call race), and where a full restart is the
-     * safe way to get consistency back.
-     *
-     * @param t The exception that caused the failure.
-     */
-    void failGlobal(Throwable t);
-
     void failJob(Throwable cause);
 
     /**
@@ -230,10 +182,6 @@ public interface ExecutionGraph extends AccessExecutionGraph {
     void incrementRestarts();
 
     void initFailureCause(Throwable t);
-
-    void vertexFinished();
-
-    void vertexUnFinished();
 
     /**
      * Updates the state of one of the ExecutionVertex's Execution attempts. If the new status if
@@ -258,25 +206,5 @@ public interface ExecutionGraph extends AccessExecutionGraph {
 
     void registerJobStatusListener(JobStatusListener listener);
 
-    void assertRunningInJobMasterMainThread();
-
-    void notifySchedulerNgAboutInternalTaskFailure(
-            ExecutionAttemptID attemptId,
-            Throwable t,
-            boolean cancelTask,
-            boolean releasePartitions);
-
-    ShuffleMaster<?> getShuffleMaster();
-
-    JobMasterPartitionTracker getPartitionTracker();
-
     ResultPartitionAvailabilityChecker getResultPartitionAvailabilityChecker();
-
-    PartitionReleaseStrategy getPartitionReleaseStrategy();
-
-    ExecutionDeploymentListener getExecutionDeploymentListener();
-
-    void registerExecution(Execution exec);
-
-    void deregisterExecution(Execution exec);
 }

@@ -87,7 +87,7 @@ public class ExecutionGraphDeploymentWithBlobServerTest extends ExecutionGraphDe
     }
 
     @Override
-    protected void checkJobOffloaded(ExecutionGraph eg) throws Exception {
+    protected void checkJobOffloaded(DefaultExecutionGraph eg) throws Exception {
         Either<SerializedValue<JobInformation>, PermanentBlobKey> jobInformationOrBlobKey =
                 eg.getJobInformationOrBlobKey();
 

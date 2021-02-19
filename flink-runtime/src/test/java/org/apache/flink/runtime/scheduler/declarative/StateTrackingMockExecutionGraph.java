@@ -27,8 +27,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
-import org.apache.flink.runtime.blob.BlobWriter;
-import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
 import org.apache.flink.runtime.checkpoint.CheckpointIDCounter;
 import org.apache.flink.runtime.checkpoint.CheckpointStatsSnapshot;
@@ -37,34 +35,26 @@ import org.apache.flink.runtime.checkpoint.CheckpointsCleaner;
 import org.apache.flink.runtime.checkpoint.CompletedCheckpointStore;
 import org.apache.flink.runtime.checkpoint.MasterTriggerRestoreHook;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
-import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ErrorInfo;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.executiongraph.ExecutionDeploymentListener;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.executiongraph.IntermediateResult;
-import org.apache.flink.runtime.executiongraph.JobInformation;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
 import org.apache.flink.runtime.executiongraph.TaskExecutionStateTransition;
 import org.apache.flink.runtime.executiongraph.failover.flip1.ResultPartitionAvailabilityChecker;
-import org.apache.flink.runtime.executiongraph.failover.flip1.partitionrelease.PartitionReleaseStrategy;
-import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTracker;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
-import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.runtime.query.KvStateLocationRegistry;
 import org.apache.flink.runtime.scheduler.InternalFailuresListener;
 import org.apache.flink.runtime.scheduler.strategy.SchedulingTopology;
-import org.apache.flink.runtime.shuffle.ShuffleMaster;
 import org.apache.flink.runtime.state.CheckpointStorage;
 import org.apache.flink.runtime.state.StateBackend;
-import org.apache.flink.types.Either;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.SerializedValue;
 
@@ -76,8 +66,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * Mocked ExecutionGraph which (partially) tracks the job status, and provides some basic mocks to
@@ -112,16 +100,6 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     @Override
     public CompletableFuture<JobStatus> getTerminationFuture() {
         return terminationFuture;
-    }
-
-    @Override
-    public Executor getFutureExecutor() {
-        return ForkJoinPool.commonPool();
-    }
-
-    @Override
-    public void registerExecution(Execution exec) {
-        // no-op
     }
 
     @Override
@@ -233,33 +211,12 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     // -- remaining interface implementations: all unsupported
 
     @Override
-    public boolean isArchived() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void start(@Nonnull ComponentMainThreadExecutor jobMasterMainThreadExecutor) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getNumberOfExecutionJobVertices() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public SchedulingTopology getSchedulingTopology() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ScheduleMode getScheduleMode() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Nonnull
-    @Override
-    public ComponentMainThreadExecutor getJobMasterMainThreadExecutor() {
         throw new UnsupportedOperationException();
     }
 
@@ -293,17 +250,7 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     }
 
     @Override
-    public Either<SerializedValue<JobInformation>, PermanentBlobKey> getJobInformationOrBlobKey() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Configuration getJobConfiguration() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ClassLoader getUserClassLoader() {
         throw new UnsupportedOperationException();
     }
 
@@ -333,11 +280,6 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     }
 
     @Override
-    public BlobWriter getBlobWriter() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Map<String, OptionalFailure<Accumulator<?, ?>>> aggregateUserAccumulators() {
         throw new UnsupportedOperationException();
     }
@@ -350,11 +292,6 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
 
     @Override
     public void attachJobGraph(List<JobVertex> topologiallySorted) throws JobException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void failGlobal(Throwable t) {
         throw new UnsupportedOperationException();
     }
 
@@ -379,16 +316,6 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     }
 
     @Override
-    public void vertexFinished() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void vertexUnFinished() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void notifyPartitionDataAvailable(ResultPartitionID partitionId) {
         throw new UnsupportedOperationException();
     }
@@ -409,51 +336,7 @@ class StateTrackingMockExecutionGraph implements ExecutionGraph {
     }
 
     @Override
-    public void assertRunningInJobMasterMainThread() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void notifySchedulerNgAboutInternalTaskFailure(
-            ExecutionAttemptID attemptId,
-            Throwable t,
-            boolean cancelTask,
-            boolean releasePartitions) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ShuffleMaster<?> getShuffleMaster() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public JobMasterPartitionTracker getPartitionTracker() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ResultPartitionAvailabilityChecker getResultPartitionAvailabilityChecker() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public PartitionReleaseStrategy getPartitionReleaseStrategy() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ExecutionDeploymentListener getExecutionDeploymentListener() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void deregisterExecution(Execution exec) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void notifyExecutionChange(Execution execution, ExecutionState newExecutionState) {
         throw new UnsupportedOperationException();
     }
 }

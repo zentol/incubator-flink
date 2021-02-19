@@ -163,13 +163,6 @@ public interface AccessExecutionGraph extends JobStatusProvider {
     Map<String, SerializedValue<OptionalFailure<Object>>> getAccumulatorsSerialized();
 
     /**
-     * Returns whether this execution graph was archived.
-     *
-     * @return true, if the execution graph was archived, false otherwise
-     */
-    boolean isArchived();
-
-    /**
      * Returns the state backend name for this ExecutionGraph.
      *
      * @return The state backend name, or an empty Optional in the case of batch jobs

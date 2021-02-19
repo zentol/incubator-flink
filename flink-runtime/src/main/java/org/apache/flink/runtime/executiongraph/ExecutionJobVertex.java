@@ -89,7 +89,7 @@ public class ExecutionJobVertex
 
     private final Object stateMonitor = new Object();
 
-    private final ExecutionGraph graph;
+    private final InternalExecutionGraphAccessor graph;
 
     private final JobVertex jobVertex;
 
@@ -127,7 +127,7 @@ public class ExecutionJobVertex
 
     @VisibleForTesting
     public ExecutionJobVertex(
-            ExecutionGraph graph,
+            InternalExecutionGraphAccessor graph,
             JobVertex jobVertex,
             int defaultParallelism,
             int maxPriorAttemptsHistoryLength,
@@ -297,7 +297,7 @@ public class ExecutionJobVertex
         this.maxParallelism = maxParallelism;
     }
 
-    public ExecutionGraph getGraph() {
+    public InternalExecutionGraphAccessor getGraph() {
         return graph;
     }
 
