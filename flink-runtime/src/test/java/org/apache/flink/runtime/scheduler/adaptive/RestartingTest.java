@@ -22,7 +22,6 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
-import org.apache.flink.runtime.executiongraph.TestingDefaultExecutionGraphBuilder;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
 import org.apache.flink.util.TestLogger;
@@ -71,8 +70,7 @@ public class RestartingTest extends TestLogger {
     @Test
     public void testSuspend() throws Exception {
         try (MockRestartingContext ctx = new MockRestartingContext()) {
-            CancellableExecutionGraph cancellableExecutionGraph = new CancellableExecutionGraph();
-            Restarting restarting = createRestartingState(ctx, cancellableExecutionGraph);
+            Restarting restarting = createRestartingState(ctx);
             ctx.setExpectFinished(
                     archivedExecutionGraph ->
                             assertThat(archivedExecutionGraph.getState(), is(JobStatus.SUSPENDED)));
@@ -84,8 +82,7 @@ public class RestartingTest extends TestLogger {
     @Test
     public void testGlobalFailuresAreIgnored() throws Exception {
         try (MockRestartingContext ctx = new MockRestartingContext()) {
-            CancellableExecutionGraph cancellableExecutionGraph = new CancellableExecutionGraph();
-            Restarting restarting = createRestartingState(ctx, cancellableExecutionGraph);
+            Restarting restarting = createRestartingState(ctx);
             restarting.handleGlobalFailure(new RuntimeException());
             ctx.assertNoStateTransition();
         }
@@ -94,10 +91,13 @@ public class RestartingTest extends TestLogger {
     @Test
     public void testStateDoesNotExposeGloballyTerminalExecutionGraph() throws Exception {
         try (MockRestartingContext ctx = new MockRestartingContext()) {
-            Restarting restarting = createRestartingState(ctx);
+            StateTrackingMockExecutionGraph mockExecutionGraph =
+                    new StateTrackingMockExecutionGraph();
+            Restarting restarting = createRestartingState(ctx, mockExecutionGraph);
 
             // ideally we'd just delay the state transitions, but the context does not support that
             ctx.setExpectWaitingForResources();
+            mockExecutionGraph.completeTerminationFuture(JobStatus.CANCELED);
 
             // this is just a sanity check for the test
             assertThat(restarting.getExecutionGraph().getState(), is(JobStatus.CANCELED));
@@ -134,8 +134,8 @@ public class RestartingTest extends TestLogger {
 
     public Restarting createRestartingState(MockRestartingContext ctx)
             throws JobException, JobExecutionException {
-        ExecutionGraph executionGraph = TestingDefaultExecutionGraphBuilder.newBuilder().build();
-        return createRestartingState(ctx, executionGraph);
+        // ExecutionGraph executionGraph = TestingDefaultExecutionGraphBuilder.newBuilder().build();
+        return createRestartingState(ctx, new StateTrackingMockExecutionGraph());
     }
 
     private static class MockRestartingContext extends MockStateWithExecutionGraphContext
