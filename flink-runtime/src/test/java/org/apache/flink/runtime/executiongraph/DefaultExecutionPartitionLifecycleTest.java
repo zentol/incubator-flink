@@ -69,14 +69,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-/** Tests for the {@link Execution}. */
-public class ExecutionPartitionLifecycleTest extends TestLogger {
+/** Tests for the {@link DefaultExecution}. */
+public class DefaultExecutionPartitionLifecycleTest extends TestLogger {
 
     @ClassRule
     public static final TestingComponentMainThreadExecutor.Resource EXECUTOR_RESOURCE =
             new TestingComponentMainThreadExecutor.Resource();
 
-    private Execution execution;
+    private DefaultExecution execution;
     private ResultPartitionDeploymentDescriptor descriptor;
     private ResourceID taskExecutorResourceId;
     private JobID jobId;
@@ -84,23 +84,24 @@ public class ExecutionPartitionLifecycleTest extends TestLogger {
     @Test
     public void testPartitionReleaseOnFinishWhileCanceling() throws Exception {
         testPartitionReleaseOnStateTransitionsAfterRunning(
-                Execution::cancel, Execution::markFinished);
+                Execution::cancel, DefaultExecution::markFinished);
     }
 
     @Test
     public void testPartitionReleaseOnCancelWhileFinished() throws Exception {
         testPartitionReleaseOnStateTransitionsAfterRunning(
-                Execution::markFinished, Execution::cancel);
+                DefaultExecution::markFinished, Execution::cancel);
     }
 
     @Test
     public void testPartitionReleaseOnSuspendWhileFinished() throws Exception {
         testPartitionReleaseOnStateTransitionsAfterRunning(
-                Execution::markFinished, Execution::suspend);
+                DefaultExecution::markFinished, Execution::suspend);
     }
 
     private void testPartitionReleaseOnStateTransitionsAfterRunning(
-            Consumer<Execution> stateTransition1, Consumer<Execution> stateTransition2)
+            Consumer<DefaultExecution> stateTransition1,
+            Consumer<DefaultExecution> stateTransition2)
             throws Exception {
         final SimpleAckingTaskManagerGateway taskManagerGateway =
                 new SimpleAckingTaskManagerGateway();
@@ -146,7 +147,7 @@ public class ExecutionPartitionLifecycleTest extends TestLogger {
     @Test
     public void testPartitionTrackedAndNotReleasedWhenFinished() throws Exception {
         testPartitionTrackingForStateTransition(
-                Execution::markFinished, PartitionReleaseResult.NONE);
+                DefaultExecution::markFinished, PartitionReleaseResult.NONE);
     }
 
     @Test
@@ -192,7 +193,7 @@ public class ExecutionPartitionLifecycleTest extends TestLogger {
     }
 
     private void testPartitionTrackingForStateTransition(
-            final Consumer<Execution> stateTransition,
+            final Consumer<DefaultExecution> stateTransition,
             final PartitionReleaseResult partitionReleaseResult)
             throws Exception {
         CompletableFuture<Tuple2<ResourceID, ResultPartitionDeploymentDescriptor>>
@@ -285,11 +286,12 @@ public class ExecutionPartitionLifecycleTest extends TestLogger {
                         .setPartitionTracker(partitionTracker)
                         .build();
 
-        final ExecutionGraph executionGraph = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph executionGraph =
+                (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
-        final ExecutionJobVertex executionJobVertex =
+        final DefaultExecutionJobVertex executionJobVertex =
                 executionGraph.getJobVertex(producerVertex.getID());
-        final ExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
+        final DefaultExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
         execution = executionVertex.getCurrentExecutionAttempt();
 
         scheduler.startScheduling();

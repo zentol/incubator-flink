@@ -245,7 +245,7 @@ public class ExecutionVertexLocalityTest extends TestLogger {
     }
 
     private void setState(Execution execution, ExecutionState state) throws Exception {
-        final Field stateField = Execution.class.getDeclaredField("state");
+        final Field stateField = DefaultExecution.class.getDeclaredField("state");
         stateField.setAccessible(true);
 
         stateField.set(execution, state);

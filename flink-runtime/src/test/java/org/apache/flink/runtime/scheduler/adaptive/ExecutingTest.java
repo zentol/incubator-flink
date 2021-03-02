@@ -28,12 +28,14 @@ import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
+import org.apache.flink.runtime.executiongraph.DefaultExecution;
+import org.apache.flink.runtime.executiongraph.DefaultExecutionJobVertex;
+import org.apache.flink.runtime.executiongraph.DefaultExecutionVertex;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.ExecutionDeploymentListener;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
-import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.executiongraph.IntermediateResult;
 import org.apache.flink.runtime.executiongraph.InternalExecutionGraphAccessor;
 import org.apache.flink.runtime.executiongraph.JobInformation;
@@ -586,7 +588,7 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    static class MockExecutionJobVertex extends ExecutionJobVertex {
+    static class MockExecutionJobVertex extends DefaultExecutionJobVertex {
         private final MockExecutionVertex mockExecutionVertex;
 
         MockExecutionJobVertex() throws JobException {
@@ -601,8 +603,8 @@ public class ExecutingTest extends TestLogger {
         }
 
         @Override
-        public ExecutionVertex[] getTaskVertices() {
-            return new ExecutionVertex[] {mockExecutionVertex};
+        public DefaultExecutionVertex[] getTaskVertices() {
+            return new DefaultExecutionVertex[] {mockExecutionVertex};
         }
 
         public MockExecutionVertex getMockExecutionVertex() {
@@ -614,7 +616,7 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    static class MockExecutionVertex extends ExecutionVertex {
+    static class MockExecutionVertex extends DefaultExecutionVertex {
         private boolean deployed = false;
 
         MockExecutionVertex(ExecutionJobVertex jobVertex) {
@@ -684,10 +686,10 @@ public class ExecutingTest extends TestLogger {
         }
 
         @Override
-        public void registerExecution(Execution exec) {}
+        public void registerExecution(DefaultExecution exec) {}
 
         @Override
-        public void deregisterExecution(Execution exec) {}
+        public void deregisterExecution(DefaultExecution exec) {}
 
         @Override
         public PartitionReleaseStrategy getPartitionReleaseStrategy() {

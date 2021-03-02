@@ -55,8 +55,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-/** Tests for the {@link Execution}. */
-public class ExecutionTest extends TestLogger {
+/** Tests for the {@link DefaultExecution}. */
+public class DefaultExecutionTest extends TestLogger {
 
     @ClassRule
     public static final TestingComponentMainThreadExecutor.Resource EXECUTOR_RESOURCE =
@@ -66,8 +66,8 @@ public class ExecutionTest extends TestLogger {
             EXECUTOR_RESOURCE.getComponentMainThreadTestExecutor();
 
     /**
-     * Checks that the {@link Execution} termination future is only completed after the assigned
-     * slot has been released.
+     * Checks that the {@link DefaultExecution} termination future is only completed after the
+     * assigned slot has been released.
      *
      * <p>NOTE: This test only fails spuriously without the fix of this commit. Thus, one has to
      * execute this test multiple times to see the failure.
@@ -88,13 +88,14 @@ public class ExecutionTest extends TestLogger {
                                         physicalSlotProvider))
                         .build();
 
-        ExecutionJobVertex executionJobVertex = scheduler.getExecutionJobVertex(jobVertexId);
+        DefaultExecutionJobVertex executionJobVertex =
+                (DefaultExecutionJobVertex) scheduler.getExecutionJobVertex(jobVertexId);
 
-        ExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
+        DefaultExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
 
         scheduler.startScheduling();
 
-        Execution currentExecutionAttempt = executionVertex.getCurrentExecutionAttempt();
+        DefaultExecution currentExecutionAttempt = executionVertex.getCurrentExecutionAttempt();
 
         CompletableFuture<? extends PhysicalSlot> returnedSlotFuture =
                 physicalSlotProvider.getFirstResponseOrFail();
@@ -114,8 +115,8 @@ public class ExecutionTest extends TestLogger {
     }
 
     /**
-     * Tests that the task restore state is nulled after the {@link Execution} has been deployed.
-     * See FLINK-9693.
+     * Tests that the task restore state is nulled after the {@link DefaultExecution} has been
+     * deployed. See FLINK-9693.
      */
     @Test
     public void testTaskRestoreStateIsNulledAfterDeployment() throws Exception {
@@ -174,11 +175,12 @@ public class ExecutionTest extends TestLogger {
                                         physicalSlotProvider))
                         .build();
 
-        ExecutionJobVertex executionJobVertex = scheduler.getExecutionJobVertex(jobVertexId);
+        DefaultExecutionJobVertex executionJobVertex =
+                (DefaultExecutionJobVertex) scheduler.getExecutionJobVertex(jobVertexId);
 
-        ExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
+        DefaultExecutionVertex executionVertex = executionJobVertex.getTaskVertices()[0];
 
-        final Execution execution = executionVertex.getCurrentExecutionAttempt();
+        final DefaultExecution execution = executionVertex.getCurrentExecutionAttempt();
 
         taskManagerGateway.setCancelConsumer(
                 executionAttemptID -> {
@@ -197,7 +199,7 @@ public class ExecutionTest extends TestLogger {
                 is(physicalSlotProvider.getCancellations().keySet()));
     }
 
-    /** Tests that a slot release will atomically release the assigned {@link Execution}. */
+    /** Tests that a slot release will atomically release the assigned {@link DefaultExecution}. */
     @Test
     public void testSlotReleaseAtomicallyReleasesExecution() throws Exception {
         final JobVertex jobVertex = createNoOpJobVertex();
@@ -263,7 +265,7 @@ public class ExecutionTest extends TestLogger {
 
         boolean incompletePartitionRegistrationRejected = false;
         try {
-            Execution.registerProducedPartitions(
+            DefaultExecution.registerProducedPartitions(
                     sourceVertex, new LocalTaskManagerLocation(), new ExecutionAttemptID(), false);
         } catch (IllegalStateException e) {
             incompletePartitionRegistrationRejected = true;

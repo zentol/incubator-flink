@@ -317,7 +317,7 @@ public class ExecutionVertexDeploymentTest extends TestLogger {
                     tddFactory.createDeploymentDescriptor(
                             new AllocationID(),
                             null,
-                            Execution.registerProducedPartitions(
+                            DefaultExecution.registerProducedPartitions(
                                             vertex,
                                             location,
                                             attemptID,
@@ -335,7 +335,7 @@ public class ExecutionVertexDeploymentTest extends TestLogger {
     }
 
     private ExecutionEdge createMockExecutionEdge(int maxParallelism) {
-        ExecutionVertex targetVertex = mock(ExecutionVertex.class);
+        DefaultExecutionVertex targetVertex = mock(DefaultExecutionVertex.class);
         ExecutionJobVertex targetJobVertex = mock(ExecutionJobVertex.class);
 
         when(targetVertex.getJobVertex()).thenReturn(targetJobVertex);

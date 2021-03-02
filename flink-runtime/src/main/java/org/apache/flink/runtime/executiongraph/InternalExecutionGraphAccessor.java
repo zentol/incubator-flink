@@ -64,9 +64,9 @@ public interface InternalExecutionGraphAccessor {
 
     JobMasterPartitionTracker getPartitionTracker();
 
-    void registerExecution(Execution exec);
+    void registerExecution(DefaultExecution exec);
 
-    void deregisterExecution(Execution exec);
+    void deregisterExecution(DefaultExecution exec);
 
     PartitionReleaseStrategy getPartitionReleaseStrategy();
 

@@ -66,7 +66,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 /** Tests the restart behaviour of the {@link ExecutionGraph}. */
-public class ExecutionGraphRestartTest extends TestLogger {
+public class DefaultExecutionGraphRestartTest extends TestLogger {
 
     private static final int NUM_TASKS = 31;
 
@@ -84,13 +84,13 @@ public class ExecutionGraphRestartTest extends TestLogger {
 
     // ------------------------------------------------------------------------
 
-    private void completeCanceling(ExecutionGraph eg) {
-        executeOperationForAllExecutions(eg, Execution::completeCancelling);
+    private void completeCanceling(DefaultExecutionGraph eg) {
+        executeOperationForAllExecutions(eg, DefaultExecution::completeCancelling);
     }
 
     private void executeOperationForAllExecutions(
-            ExecutionGraph eg, Consumer<Execution> operation) {
-        for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+            DefaultExecutionGraph eg, Consumer<DefaultExecution> operation) {
+        for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
             operation.accept(vertex.getCurrentExecutionAttempt());
         }
     }
@@ -146,7 +146,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
                             .setRestartBackoffTimeStrategy(
                                     new TestRestartBackoffTimeStrategy(false, Long.MAX_VALUE))
                             .build();
-            ExecutionGraph graph = scheduler.getExecutionGraph();
+            DefaultExecutionGraph graph = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
             startScheduling(scheduler);
 
@@ -179,7 +179,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
                             .setRestartBackoffTimeStrategy(
                                     new TestRestartBackoffTimeStrategy(false, Long.MAX_VALUE))
                             .build();
-            ExecutionGraph graph = scheduler.getExecutionGraph();
+            DefaultExecutionGraph graph = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
             startScheduling(scheduler);
 
@@ -201,8 +201,8 @@ public class ExecutionGraphRestartTest extends TestLogger {
         }
     }
 
-    private void switchAllTasksToRunning(ExecutionGraph graph) {
-        executeOperationForAllExecutions(graph, Execution::switchToRunning);
+    private void switchAllTasksToRunning(DefaultExecutionGraph graph) {
+        executeOperationForAllExecutions(graph, DefaultExecution::switchToRunning);
     }
 
     /**
@@ -227,14 +227,17 @@ public class ExecutionGraphRestartTest extends TestLogger {
                                     new TestRestartBackoffTimeStrategy(true, Long.MAX_VALUE))
                             .setDelayExecutor(taskRestartExecutor)
                             .build();
-            ExecutionGraph eg = scheduler.getExecutionGraph();
+            DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
             startScheduling(scheduler);
 
-            Iterator<ExecutionVertex> executionVertices = eg.getAllExecutionVertices().iterator();
+            Iterator<DefaultExecutionVertex> executionVertices =
+                    eg.getAllExecutionVertices().iterator();
 
-            Execution finishedExecution = executionVertices.next().getCurrentExecutionAttempt();
-            Execution failedExecution = executionVertices.next().getCurrentExecutionAttempt();
+            DefaultExecution finishedExecution =
+                    executionVertices.next().getCurrentExecutionAttempt();
+            DefaultExecution failedExecution =
+                    executionVertices.next().getCurrentExecutionAttempt();
 
             finishedExecution.markFinished();
 
@@ -246,7 +249,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
             assertEquals(JobStatus.RUNNING, eg.getState());
 
             // At this point all resources have been assigned
-            for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+            for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
                 assertNotNull(
                         "No assigned resource (test instability).",
                         vertex.getCurrentAssignedResource());
@@ -256,7 +259,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
             // fail old finished execution, this should not affect the execution
             finishedExecution.fail(new Exception("This should have no effect"));
 
-            for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+            for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
                 vertex.getCurrentExecutionAttempt().markFinished();
             }
 
@@ -269,8 +272,8 @@ public class ExecutionGraphRestartTest extends TestLogger {
 
     /**
      * Tests that a graph is not restarted after cancellation via a call to {@link
-     * ExecutionGraph#failGlobal(Throwable)}. This can happen when a slot is released concurrently
-     * with cancellation.
+     * DefaultExecutionGraph#failGlobal(Throwable)}. This can happen when a slot is released
+     * concurrently with cancellation.
      */
     @Test
     public void testFailExecutionAfterCancel() throws Exception {
@@ -285,7 +288,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
                                     new TestRestartBackoffTimeStrategy(false, Long.MAX_VALUE))
                             .setDelayExecutor(taskRestartExecutor)
                             .build();
-            ExecutionGraph eg = scheduler.getExecutionGraph();
+            DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
             startScheduling(scheduler);
 
@@ -298,7 +301,7 @@ public class ExecutionGraphRestartTest extends TestLogger {
 
             assertEquals(JobStatus.CANCELED, eg.getTerminationFuture().get());
 
-            Execution execution =
+            DefaultExecution execution =
                     eg.getAllExecutionVertices().iterator().next().getCurrentExecutionAttempt();
 
             execution.completeCancelling();

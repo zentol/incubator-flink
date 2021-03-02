@@ -43,7 +43,7 @@ public class ArchivedExecutionVertex implements AccessExecutionVertex, Serializa
 
     // ------------------------------------------------------------------------
 
-    public ArchivedExecutionVertex(ExecutionVertex vertex) {
+    public ArchivedExecutionVertex(DefaultExecutionVertex vertex) {
         this.subTaskIndex = vertex.getParallelSubtaskIndex();
         this.priorExecutions = vertex.getCopyOfPriorExecutionsList();
         this.taskNameWithSubtask = vertex.getTaskNameWithSubtaskIndex();

@@ -129,7 +129,7 @@ public class ExecutionGraphTestUtils {
      * <p>This method is based on polling and might miss very fast state transitions!
      */
     public static void waitUntilExecutionVertexState(
-            ExecutionVertex executionVertex, ExecutionState state, long maxWaitMillis)
+            DefaultExecutionVertex executionVertex, ExecutionState state, long maxWaitMillis)
             throws TimeoutException {
         checkNotNull(executionVertex);
         checkNotNull(state);
@@ -231,8 +231,8 @@ public class ExecutionGraphTestUtils {
      * Takes all vertices in the given ExecutionGraph and switches their current execution to
      * RUNNING.
      */
-    public static void switchAllVerticesToRunning(ExecutionGraph eg) {
-        for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+    public static void switchAllVerticesToRunning(DefaultExecutionGraph eg) {
+        for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
             vertex.getCurrentExecutionAttempt().switchToRunning();
         }
     }
@@ -241,8 +241,8 @@ public class ExecutionGraphTestUtils {
      * Takes all vertices in the given ExecutionGraph and attempts to move them from CANCELING to
      * CANCELED.
      */
-    public static void completeCancellingForAllVertices(ExecutionGraph eg) {
-        for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+    public static void completeCancellingForAllVertices(DefaultExecutionGraph eg) {
+        for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
             vertex.getCurrentExecutionAttempt().completeCancelling();
         }
     }
@@ -251,16 +251,16 @@ public class ExecutionGraphTestUtils {
      * Takes all vertices in the given ExecutionGraph and switches their current execution to
      * FINISHED.
      */
-    public static void finishAllVertices(ExecutionGraph eg) {
-        for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+    public static void finishAllVertices(DefaultExecutionGraph eg) {
+        for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
             vertex.getCurrentExecutionAttempt().markFinished();
         }
     }
 
     /** Checks that all execution are in state DEPLOYING and then switches them to state RUNNING. */
-    public static void switchToRunning(ExecutionGraph eg) {
+    public static void switchToRunning(DefaultExecutionGraph eg) {
         // check that all execution are in state DEPLOYING
-        for (ExecutionVertex ev : eg.getAllExecutionVertices()) {
+        for (DefaultExecutionVertex ev : eg.getAllExecutionVertices()) {
             final Execution exec = ev.getCurrentExecutionAttempt();
             final ExecutionState executionState = exec.getState();
             assert executionState == ExecutionState.DEPLOYING
@@ -268,8 +268,8 @@ public class ExecutionGraphTestUtils {
         }
 
         // switch executions to RUNNING
-        for (ExecutionVertex ev : eg.getAllExecutionVertices()) {
-            final Execution exec = ev.getCurrentExecutionAttempt();
+        for (DefaultExecutionVertex ev : eg.getAllExecutionVertices()) {
+            final DefaultExecution exec = ev.getCurrentExecutionAttempt();
             exec.switchToRunning();
         }
     }
@@ -278,11 +278,11 @@ public class ExecutionGraphTestUtils {
     //  state modifications
     // ------------------------------------------------------------------------
 
-    public static void setVertexState(ExecutionVertex vertex, ExecutionState state) {
+    public static void setVertexState(DefaultExecutionVertex vertex, ExecutionState state) {
         try {
             Execution exec = vertex.getCurrentExecutionAttempt();
 
-            Field f = Execution.class.getDeclaredField("state");
+            Field f = DefaultExecution.class.getDeclaredField("state");
             f.setAccessible(true);
             f.set(exec, state);
         } catch (Exception e) {
@@ -290,7 +290,7 @@ public class ExecutionGraphTestUtils {
         }
     }
 
-    public static void setVertexResource(ExecutionVertex vertex, LogicalSlot slot) {
+    public static void setVertexResource(DefaultExecutionVertex vertex, LogicalSlot slot) {
         Execution exec = vertex.getCurrentExecutionAttempt();
 
         if (!exec.tryAssignResource(slot)) {
@@ -303,24 +303,25 @@ public class ExecutionGraphTestUtils {
     // ------------------------------------------------------------------------
 
     /** Creates an execution graph with on job vertex of parallelism 10. */
-    public static ExecutionGraph createSimpleTestGraph() throws Exception {
+    public static DefaultExecutionGraph createSimpleTestGraph() throws Exception {
         JobVertex vertex = createNoOpVertex(10);
 
         return createSimpleTestGraph(vertex);
     }
 
     /** Creates an execution graph containing the given vertices. */
-    public static ExecutionGraph createSimpleTestGraph(JobVertex... vertices) throws Exception {
+    public static DefaultExecutionGraph createSimpleTestGraph(JobVertex... vertices)
+            throws Exception {
         return createExecutionGraph(TestingUtils.defaultExecutor(), vertices);
     }
 
-    public static ExecutionGraph createExecutionGraph(
+    public static DefaultExecutionGraph createExecutionGraph(
             ScheduledExecutorService executor, JobVertex... vertices) throws Exception {
 
         return createExecutionGraph(executor, Time.seconds(10L), vertices);
     }
 
-    public static ExecutionGraph createExecutionGraph(
+    public static DefaultExecutionGraph createExecutionGraph(
             ScheduledExecutorService executor, Time timeout, JobVertex... vertices)
             throws Exception {
 
@@ -363,19 +364,19 @@ public class ExecutionGraphTestUtils {
         return groupVertex;
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(
+    public static DefaultExecutionJobVertex getExecutionJobVertex(
             JobVertexID id, ScheduledExecutorService executor) throws Exception {
         return getExecutionJobVertex(id, executor, ScheduleMode.LAZY_FROM_SOURCES);
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(
+    public static DefaultExecutionJobVertex getExecutionJobVertex(
             JobVertexID id, ScheduledExecutorService executor, ScheduleMode scheduleMode)
             throws Exception {
 
         return getExecutionJobVertex(id, 1, null, executor, scheduleMode);
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(
+    public static DefaultExecutionJobVertex getExecutionJobVertex(
             JobVertexID id,
             int parallelism,
             @Nullable SlotSharingGroup slotSharingGroup,
@@ -393,12 +394,13 @@ public class ExecutionGraphTestUtils {
         return getExecutionJobVertex(ajv, executor, scheduleMode);
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(JobVertex jobVertex) throws Exception {
+    public static DefaultExecutionJobVertex getExecutionJobVertex(JobVertex jobVertex)
+            throws Exception {
         return getExecutionJobVertex(
                 jobVertex, new DirectScheduledExecutorService(), ScheduleMode.LAZY_FROM_SOURCES);
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(
+    public static DefaultExecutionJobVertex getExecutionJobVertex(
             JobVertex jobVertex, ScheduledExecutorService executor, ScheduleMode scheduleMode)
             throws Exception {
 
@@ -412,20 +414,20 @@ public class ExecutionGraphTestUtils {
                         .setFutureExecutor(executor)
                         .build();
 
-        return scheduler.getExecutionJobVertex(jobVertex.getID());
+        return (DefaultExecutionJobVertex) scheduler.getExecutionJobVertex(jobVertex.getID());
     }
 
-    public static ExecutionJobVertex getExecutionJobVertex(JobVertexID id) throws Exception {
+    public static DefaultExecutionJobVertex getExecutionJobVertex(JobVertexID id) throws Exception {
         return getExecutionJobVertex(id, new DirectScheduledExecutorService());
     }
 
-    public static ExecutionVertex getExecutionVertex() throws Exception {
+    public static DefaultExecutionVertex getExecutionVertex() throws Exception {
         return getExecutionJobVertex(new JobVertexID(), new DirectScheduledExecutorService())
                 .getTaskVertices()[0];
     }
 
     public static Execution getExecution() throws Exception {
-        final ExecutionJobVertex ejv = getExecutionJobVertex(new JobVertexID());
+        final DefaultExecutionJobVertex ejv = getExecutionJobVertex(new JobVertexID());
         return ejv.getTaskVertices()[0].getCurrentExecutionAttempt();
     }
 
@@ -436,7 +438,7 @@ public class ExecutionGraphTestUtils {
             final SlotSharingGroup slotSharingGroup)
             throws Exception {
 
-        final ExecutionJobVertex ejv =
+        final DefaultExecutionJobVertex ejv =
                 getExecutionJobVertex(
                         jid,
                         numTasks,

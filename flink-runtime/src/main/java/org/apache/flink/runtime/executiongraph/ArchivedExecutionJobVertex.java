@@ -24,7 +24,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 
 import java.io.Serializable;
 
-import static org.apache.flink.runtime.executiongraph.ExecutionJobVertex.getAggregateJobVertexState;
+import static org.apache.flink.runtime.executiongraph.DefaultExecutionJobVertex.getAggregateJobVertexState;
 
 public class ArchivedExecutionJobVertex implements AccessExecutionJobVertex, Serializable {
 

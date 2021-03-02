@@ -100,7 +100,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
         final InteractionsCountingTaskManagerGateway gateway =
                 new InteractionsCountingTaskManagerGateway(parallelism);
         final SchedulerBase scheduler = createScheduler(gateway, parallelism);
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);
@@ -124,7 +124,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
         final InteractionsCountingTaskManagerGateway gateway =
                 new InteractionsCountingTaskManagerGateway(parallelism);
         final SchedulerBase scheduler = createScheduler(gateway, parallelism);
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);
@@ -148,7 +148,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
                 new InteractionsCountingTaskManagerGateway();
         final int parallelism = 10;
         final SchedulerBase scheduler = createScheduler(gateway, parallelism);
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);
@@ -176,7 +176,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
         final InteractionsCountingTaskManagerGateway gateway =
                 new InteractionsCountingTaskManagerGateway(parallelism);
         final SchedulerBase scheduler = createScheduler(gateway, parallelism);
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);
@@ -201,7 +201,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
                 new InteractionsCountingTaskManagerGateway();
         final int parallelism = 10;
         final SchedulerBase scheduler = createScheduler(gateway, parallelism);
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);
@@ -238,7 +238,7 @@ public class ExecutionGraphSuspendTest extends TestLogger {
 
         scheduler.startScheduling();
 
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         assertEquals(JobStatus.RUNNING, eg.getState());
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);

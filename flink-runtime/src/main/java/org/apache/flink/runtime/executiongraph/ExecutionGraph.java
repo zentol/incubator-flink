@@ -102,10 +102,10 @@ public interface ExecutionGraph extends AccessExecutionGraph {
     Throwable getFailureCause();
 
     @Override
-    Iterable<ExecutionJobVertex> getVerticesTopologically();
+    Iterable<? extends ExecutionJobVertex> getVerticesTopologically();
 
     @Override
-    Iterable<ExecutionVertex> getAllExecutionVertices();
+    Iterable<? extends ExecutionVertex> getAllExecutionVertices();
 
     @Override
     ExecutionJobVertex getJobVertex(JobVertexID id);
@@ -202,7 +202,7 @@ public interface ExecutionGraph extends AccessExecutionGraph {
      */
     void notifyPartitionDataAvailable(ResultPartitionID partitionId);
 
-    Map<ExecutionAttemptID, Execution> getRegisteredExecutions();
+    Map<ExecutionAttemptID, ? extends Execution> getRegisteredExecutions();
 
     void registerJobStatusListener(JobStatusListener listener);
 

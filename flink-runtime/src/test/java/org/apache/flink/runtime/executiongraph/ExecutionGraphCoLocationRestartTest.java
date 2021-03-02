@@ -89,7 +89,7 @@ public class ExecutionGraphCoLocationRestartTest {
                                         .create())
                         .build();
 
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         // enable the queued scheduling for the slot pool
         assertEquals(JobStatus.CREATED, eg.getState());
@@ -113,7 +113,7 @@ public class ExecutionGraphCoLocationRestartTest {
         // cancellation. This ensures the restarting actions to be performed in main thread.
         delayExecutor.triggerNonPeriodicScheduledTask();
 
-        for (ExecutionVertex vertex : eg.getAllExecutionVertices()) {
+        for (DefaultExecutionVertex vertex : eg.getAllExecutionVertices()) {
             if (vertex.getExecutionState() == ExecutionState.CANCELING) {
                 vertex.getCurrentExecutionAttempt().completeCancelling();
             }

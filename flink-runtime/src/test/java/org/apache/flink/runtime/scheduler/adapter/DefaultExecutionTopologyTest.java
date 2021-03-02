@@ -18,6 +18,8 @@
 
 package org.apache.flink.runtime.scheduler.adapter;
 
+import org.apache.flink.runtime.executiongraph.DefaultExecutionGraph;
+import org.apache.flink.runtime.executiongraph.DefaultExecutionVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionEdge;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
@@ -58,7 +60,7 @@ import static org.junit.Assert.fail;
 /** Unit tests for {@link DefaultExecutionTopology}. */
 public class DefaultExecutionTopologyTest extends TestLogger {
 
-    private ExecutionGraph executionGraph;
+    private DefaultExecutionGraph executionGraph;
 
     private DefaultExecutionTopology adapter;
 
@@ -168,9 +170,9 @@ public class DefaultExecutionTopologyTest extends TestLogger {
     }
 
     private static void assertGraphEquals(
-            ExecutionGraph originalGraph, DefaultExecutionTopology adaptedTopology) {
+            DefaultExecutionGraph originalGraph, DefaultExecutionTopology adaptedTopology) {
 
-        Iterator<ExecutionVertex> originalVertices =
+        Iterator<DefaultExecutionVertex> originalVertices =
                 originalGraph.getAllExecutionVertices().iterator();
         Iterator<DefaultSchedulingExecutionVertex> adaptedVertices =
                 adaptedTopology.getVertices().iterator();

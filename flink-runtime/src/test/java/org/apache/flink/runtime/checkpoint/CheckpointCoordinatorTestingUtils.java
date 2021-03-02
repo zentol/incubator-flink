@@ -29,6 +29,8 @@ import org.apache.flink.runtime.concurrent.Executors;
 import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
+import org.apache.flink.runtime.executiongraph.DefaultExecution;
+import org.apache.flink.runtime.executiongraph.DefaultExecutionVertex;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.ExecutionGraphTestUtils;
@@ -471,12 +473,14 @@ public class CheckpointCoordinatorTestingUtils {
             ExecutionState state,
             ExecutionState... successiveStates) {
 
-        ExecutionVertex vertex = mock(ExecutionVertex.class);
+        DefaultExecutionVertex vertex = mock(DefaultExecutionVertex.class);
         when(vertex.getID()).thenReturn(ExecutionGraphTestUtils.createRandomExecutionVertexId());
         when(vertex.getJobId()).thenReturn(new JobID());
 
-        final Execution exec =
-                spy(new Execution(mock(Executor.class), vertex, 1, 1L, Time.milliseconds(500L)));
+        final DefaultExecution exec =
+                spy(
+                        new DefaultExecution(
+                                mock(Executor.class), vertex, 1, 1L, Time.milliseconds(500L)));
         if (slot != null) {
             // is there a better way to do this?
             Whitebox.setInternalState(exec, "assignedResource", slot);

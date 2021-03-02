@@ -39,8 +39,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertFalse;
 
-/** Tests for the {@link ExecutionVertex}. */
-public class ExecutionVertexTest extends TestLogger {
+/** Tests for the {@link DefaultExecutionVertex}. */
+public class DefaultSchedulingExecutionVertexTest extends TestLogger {
 
     @Test
     public void testResetForNewExecutionReleasesPartitions() throws Exception {
@@ -66,10 +66,11 @@ public class ExecutionVertexTest extends TestLogger {
 
         scheduler.startScheduling();
 
-        final ExecutionJobVertex producerExecutionJobVertex =
-                scheduler.getExecutionJobVertex(producerJobVertex.getID());
+        final DefaultExecutionJobVertex producerExecutionJobVertex =
+                (DefaultExecutionJobVertex)
+                        scheduler.getExecutionJobVertex(producerJobVertex.getID());
 
-        Execution execution =
+        DefaultExecution execution =
                 producerExecutionJobVertex.getTaskVertices()[0].getCurrentExecutionAttempt();
 
         assertFalse(releasePartitionsFuture.isDone());

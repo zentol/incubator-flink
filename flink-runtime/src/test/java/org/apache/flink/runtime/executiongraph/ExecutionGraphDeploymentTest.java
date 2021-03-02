@@ -246,11 +246,13 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
             JobVertex v2 = new JobVertex("v2", jid2);
 
             SchedulerBase scheduler = setupScheduler(v1, 7650, v2, 2350);
-            Collection<Execution> executions =
+            Collection<DefaultExecution> executions =
                     new ArrayList<>(
-                            scheduler.getExecutionGraph().getRegisteredExecutions().values());
+                            ((DefaultExecutionGraph) scheduler.getExecutionGraph())
+                                    .getRegisteredExecutions()
+                                    .values());
 
-            for (Execution e : executions) {
+            for (DefaultExecution e : executions) {
                 e.markFinished();
             }
 
@@ -272,11 +274,13 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
             JobVertex v2 = new JobVertex("v2", jid2);
 
             SchedulerBase scheduler = setupScheduler(v1, 7, v2, 6);
-            Collection<Execution> executions =
+            Collection<DefaultExecution> executions =
                     new ArrayList<>(
-                            scheduler.getExecutionGraph().getRegisteredExecutions().values());
+                            ((DefaultExecutionGraph) scheduler.getExecutionGraph())
+                                    .getRegisteredExecutions()
+                                    .values());
 
-            for (Execution e : executions) {
+            for (DefaultExecution e : executions) {
                 e.markFailed(null);
             }
 
@@ -326,8 +330,8 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
         JobVertex v2 = new JobVertex("v2", jid2);
 
         SchedulerBase scheduler = setupScheduler(v1, 1, v2, 1);
-        ExecutionGraph graph = scheduler.getExecutionGraph();
-        Map<ExecutionAttemptID, Execution> executions = graph.getRegisteredExecutions();
+        DefaultExecutionGraph graph = (DefaultExecutionGraph) scheduler.getExecutionGraph();
+        Map<ExecutionAttemptID, DefaultExecution> executions = graph.getRegisteredExecutions();
 
         // verify behavior for canceled executions
         Execution execution1 = executions.values().iterator().next();
@@ -379,9 +383,9 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
     }
 
     /**
-     * Verifies that {@link Execution#completeCancelling(Map, IOMetrics, boolean)} and {@link
-     * Execution#markFailed(Throwable, boolean, Map, IOMetrics, boolean, boolean)} store the given
-     * accumulators and metrics correctly.
+     * Verifies that {@link DefaultExecution#completeCancelling(Map, IOMetrics, boolean)} and {@link
+     * DefaultExecution#markFailed(Throwable, boolean, Map, IOMetrics, boolean, boolean)} store the
+     * given accumulators and metrics correctly.
      */
     @Test
     public void testAccumulatorsAndMetricsStorage() throws Exception {
@@ -392,20 +396,20 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
         JobVertex v2 = new JobVertex("v2", jid2);
 
         SchedulerBase scheduler = setupScheduler(v1, 1, v2, 1);
-        Map<ExecutionAttemptID, Execution> executions =
-                scheduler.getExecutionGraph().getRegisteredExecutions();
+        Map<ExecutionAttemptID, DefaultExecution> executions =
+                ((DefaultExecutionGraph) scheduler.getExecutionGraph()).getRegisteredExecutions();
 
         IOMetrics ioMetrics = new IOMetrics(0, 0, 0, 0);
         Map<String, Accumulator<?, ?>> accumulators = Collections.emptyMap();
 
-        Execution execution1 = executions.values().iterator().next();
+        DefaultExecution execution1 = executions.values().iterator().next();
         execution1.cancel();
         execution1.completeCancelling(accumulators, ioMetrics, false);
 
         assertEquals(ioMetrics, execution1.getIOMetrics());
         assertEquals(accumulators, execution1.getUserAccumulators());
 
-        Execution execution2 = executions.values().iterator().next();
+        DefaultExecution execution2 = executions.values().iterator().next();
         execution2.markFailed(new Throwable(), false, accumulators, ioMetrics, false, true);
 
         assertEquals(ioMetrics, execution2.getIOMetrics());
@@ -423,11 +427,13 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
             JobVertex v2 = new JobVertex("v2", jid2);
 
             SchedulerBase scheduler = setupScheduler(v1, 19, v2, 37);
-            Collection<Execution> executions =
+            Collection<DefaultExecution> executions =
                     new ArrayList<>(
-                            scheduler.getExecutionGraph().getRegisteredExecutions().values());
+                            ((DefaultExecutionGraph) scheduler.getExecutionGraph())
+                                    .getRegisteredExecutions()
+                                    .values());
 
-            for (Execution e : executions) {
+            for (DefaultExecution e : executions) {
                 e.cancel();
                 e.completeCancelling();
             }
@@ -535,14 +541,14 @@ public class ExecutionGraphDeploymentTest extends TestLogger {
                         .setFutureExecutor(executorService)
                         .setBlobWriter(blobWriter)
                         .build();
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
-        checkJobOffloaded((DefaultExecutionGraph) eg);
+        checkJobOffloaded(eg);
 
         // schedule, this triggers mock deployment
         scheduler.startScheduling();
 
-        Map<ExecutionAttemptID, Execution> executions = eg.getRegisteredExecutions();
+        Map<ExecutionAttemptID, DefaultExecution> executions = eg.getRegisteredExecutions();
         assertEquals(dop1 + dop2, executions.size());
 
         return scheduler;

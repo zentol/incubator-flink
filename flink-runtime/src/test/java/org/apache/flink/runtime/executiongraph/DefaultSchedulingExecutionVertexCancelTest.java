@@ -46,8 +46,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/** Tests for cancelling {@link ExecutionVertex ExecutionVertices}. */
-public class ExecutionVertexCancelTest extends TestLogger {
+/** Tests for cancelling {@link DefaultExecutionVertex ExecutionVertices}. */
+public class DefaultSchedulingExecutionVertexCancelTest extends TestLogger {
 
     // --------------------------------------------------------------------------------------------
     //  Canceling in different states
@@ -78,7 +78,7 @@ public class ExecutionVertexCancelTest extends TestLogger {
     @Test
     public void testCancelFromScheduled() {
         try {
-            final ExecutionVertex vertex = getExecutionVertex();
+            final DefaultExecutionVertex vertex = getExecutionVertex();
 
             setVertexState(vertex, ExecutionState.SCHEDULED);
             assertEquals(ExecutionState.SCHEDULED, vertex.getExecutionState());
@@ -101,7 +101,7 @@ public class ExecutionVertexCancelTest extends TestLogger {
     @Test
     public void testCancelFromRunning() {
         try {
-            final ExecutionVertex vertex = getExecutionVertex();
+            final DefaultExecutionVertex vertex = getExecutionVertex();
 
             LogicalSlot slot =
                     new TestingLogicalSlotBuilder()
@@ -136,7 +136,7 @@ public class ExecutionVertexCancelTest extends TestLogger {
     @Test
     public void testRepeatedCancelFromRunning() {
         try {
-            final ExecutionVertex vertex = getExecutionVertex();
+            final DefaultExecutionVertex vertex = getExecutionVertex();
 
             LogicalSlot slot =
                     new TestingLogicalSlotBuilder()
@@ -179,7 +179,7 @@ public class ExecutionVertexCancelTest extends TestLogger {
     public void testCancelFromRunningDidNotFindTask() {
         // this may happen when the task finished or failed while the call was in progress
         try {
-            final ExecutionVertex vertex = getExecutionVertex();
+            final DefaultExecutionVertex vertex = getExecutionVertex();
 
             LogicalSlot slot =
                     new TestingLogicalSlotBuilder()
@@ -209,7 +209,7 @@ public class ExecutionVertexCancelTest extends TestLogger {
     @Test
     public void testCancelCallFails() {
         try {
-            final ExecutionVertex vertex = getExecutionVertex();
+            final DefaultExecutionVertex vertex = getExecutionVertex();
 
             LogicalSlot slot =
                     new TestingLogicalSlotBuilder()
@@ -243,18 +243,18 @@ public class ExecutionVertexCancelTest extends TestLogger {
                 SchedulerTestingUtils.createScheduler(
                         new JobGraph(createNoOpVertex(10)),
                         ComponentMainThreadExecutorServiceAdapter.forMainThread());
-        final ExecutionGraph graph = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph graph = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         scheduler.startScheduling();
 
         ExecutionGraphTestUtils.switchAllVerticesToRunning(graph);
         assertEquals(JobStatus.RUNNING, graph.getState());
 
-        final ExecutionVertex[] vertices =
+        final DefaultExecutionVertex[] vertices =
                 graph.getVerticesTopologically().iterator().next().getTaskVertices();
         assertEquals(vertices.length, graph.getRegisteredExecutions().size());
 
-        final Execution exec = vertices[3].getCurrentExecutionAttempt();
+        final DefaultExecution exec = vertices[3].getCurrentExecutionAttempt();
         exec.cancel();
         assertEquals(ExecutionState.CANCELING, exec.getState());
 

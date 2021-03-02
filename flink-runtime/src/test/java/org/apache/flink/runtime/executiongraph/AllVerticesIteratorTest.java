@@ -47,11 +47,12 @@ public class AllVerticesIteratorTest {
             v3.setParallelism(3);
             v4.setParallelism(2);
 
-            ExecutionGraph eg = ExecutionGraphTestUtils.createSimpleTestGraph(v1, v2, v3, v4);
-            ExecutionJobVertex ejv1 = eg.getJobVertex(v1.getID());
-            ExecutionJobVertex ejv2 = eg.getJobVertex(v2.getID());
-            ExecutionJobVertex ejv3 = eg.getJobVertex(v3.getID());
-            ExecutionJobVertex ejv4 = eg.getJobVertex(v4.getID());
+            DefaultExecutionGraph eg =
+                    ExecutionGraphTestUtils.createSimpleTestGraph(v1, v2, v3, v4);
+            DefaultExecutionJobVertex ejv1 = eg.getJobVertex(v1.getID());
+            DefaultExecutionJobVertex ejv2 = eg.getJobVertex(v2.getID());
+            DefaultExecutionJobVertex ejv3 = eg.getJobVertex(v3.getID());
+            DefaultExecutionJobVertex ejv4 = eg.getJobVertex(v4.getID());
 
             AllVerticesIterator iter =
                     new AllVerticesIterator(Arrays.asList(ejv1, ejv2, ejv3, ejv4).iterator());

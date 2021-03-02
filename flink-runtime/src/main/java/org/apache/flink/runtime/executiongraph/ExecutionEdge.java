@@ -22,11 +22,12 @@ public class ExecutionEdge {
 
     private final IntermediateResultPartition source;
 
-    private final ExecutionVertex target;
+    private final DefaultExecutionVertex target;
 
     private final int inputNum;
 
-    public ExecutionEdge(IntermediateResultPartition source, ExecutionVertex target, int inputNum) {
+    public ExecutionEdge(
+            IntermediateResultPartition source, DefaultExecutionVertex target, int inputNum) {
         this.source = source;
         this.target = target;
         this.inputNum = inputNum;
@@ -36,7 +37,7 @@ public class ExecutionEdge {
         return source;
     }
 
-    public ExecutionVertex getTarget() {
+    public DefaultExecutionVertex getTarget() {
         return target;
     }
 

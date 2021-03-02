@@ -57,7 +57,7 @@ public class FinalizeOnMasterTest extends TestLogger {
                         ComponentMainThreadExecutorServiceAdapter.forMainThread());
         scheduler.startScheduling();
 
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         assertEquals(JobStatus.RUNNING, eg.getState());
 
@@ -85,7 +85,7 @@ public class FinalizeOnMasterTest extends TestLogger {
                         ComponentMainThreadExecutorServiceAdapter.forMainThread());
         scheduler.startScheduling();
 
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         assertEquals(JobStatus.RUNNING, eg.getState());
 

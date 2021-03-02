@@ -49,7 +49,7 @@ public class ExecutionGraphVariousFailuesTest extends TestLogger {
                         .build();
         scheduler.startScheduling();
 
-        final ExecutionGraph eg = scheduler.getExecutionGraph();
+        final DefaultExecutionGraph eg = (DefaultExecutionGraph) scheduler.getExecutionGraph();
 
         assertEquals(JobStatus.RUNNING, eg.getState());
         ExecutionGraphTestUtils.switchAllVerticesToRunning(eg);

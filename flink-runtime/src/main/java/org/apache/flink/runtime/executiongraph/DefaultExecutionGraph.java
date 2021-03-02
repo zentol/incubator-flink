@@ -134,16 +134,16 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     private boolean isStoppable = true;
 
     /** All job vertices that are part of this graph. */
-    private final Map<JobVertexID, ExecutionJobVertex> tasks;
+    private final Map<JobVertexID, DefaultExecutionJobVertex> tasks;
 
     /** All vertices, in the order in which they were created. * */
-    private final List<ExecutionJobVertex> verticesInCreationOrder;
+    private final List<DefaultExecutionJobVertex> verticesInCreationOrder;
 
     /** All intermediate results that are part of this graph. */
     private final Map<IntermediateDataSetID, IntermediateResult> intermediateResults;
 
     /** The currently executed tasks, for callbacks. */
-    private final Map<ExecutionAttemptID, Execution> currentExecutions;
+    private final Map<ExecutionAttemptID, DefaultExecution> currentExecutions;
 
     /**
      * Listeners that receive messages when the entire job switches it status (such as from RUNNING
@@ -576,7 +576,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     @Override
-    public ExecutionJobVertex getJobVertex(JobVertexID id) {
+    public DefaultExecutionJobVertex getJobVertex(JobVertexID id) {
         return this.tasks.get(id);
     }
 
@@ -586,15 +586,15 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     @Override
-    public Iterable<ExecutionJobVertex> getVerticesTopologically() {
+    public Iterable<DefaultExecutionJobVertex> getVerticesTopologically() {
         // we return a specific iterator that does not fail with concurrent modifications
         // the list is append only, so it is safe for that
         final int numElements = this.verticesInCreationOrder.size();
 
-        return new Iterable<ExecutionJobVertex>() {
+        return new Iterable<DefaultExecutionJobVertex>() {
             @Override
-            public Iterator<ExecutionJobVertex> iterator() {
-                return new Iterator<ExecutionJobVertex>() {
+            public Iterator<DefaultExecutionJobVertex> iterator() {
+                return new Iterator<DefaultExecutionJobVertex>() {
                     private int pos = 0;
 
                     @Override
@@ -603,7 +603,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                     }
 
                     @Override
-                    public ExecutionJobVertex next() {
+                    public DefaultExecutionJobVertex next() {
                         if (hasNext()) {
                             return verticesInCreationOrder.get(pos++);
                         } else {
@@ -631,10 +631,10 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     @Override
-    public Iterable<ExecutionVertex> getAllExecutionVertices() {
-        return new Iterable<ExecutionVertex>() {
+    public Iterable<DefaultExecutionVertex> getAllExecutionVertices() {
+        return new Iterable<DefaultExecutionVertex>() {
             @Override
-            public Iterator<ExecutionVertex> iterator() {
+            public Iterator<DefaultExecutionVertex> iterator() {
                 return new AllVerticesIterator(getVerticesTopologically().iterator());
             }
         };
@@ -755,8 +755,8 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
             }
 
             // create the execution job vertex and attach it to the graph
-            ExecutionJobVertex ejv =
-                    new ExecutionJobVertex(
+            DefaultExecutionJobVertex ejv =
+                    new DefaultExecutionJobVertex(
                             this,
                             jobVertex,
                             1,
@@ -1171,7 +1171,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     @Override
     public boolean updateState(TaskExecutionStateTransition state) {
         assertRunningInJobMasterMainThread();
-        final Execution attempt = currentExecutions.get(state.getID());
+        final DefaultExecution attempt = currentExecutions.get(state.getID());
 
         if (attempt != null) {
             try {
@@ -1191,7 +1191,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     private boolean updateStateInternal(
-            final TaskExecutionStateTransition state, final Execution attempt) {
+            final TaskExecutionStateTransition state, final DefaultExecution attempt) {
         Map<String, Accumulator<?, ?>> accumulators;
 
         switch (state.getExecutionState()) {
@@ -1263,10 +1263,10 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         final SchedulingExecutionVertex producer = schedulingResultPartition.getProducer();
         final ExecutionVertexID producerId = producer.getId();
         final JobVertexID jobVertexId = producerId.getJobVertexId();
-        final ExecutionJobVertex jobVertex = getJobVertex(jobVertexId);
+        final DefaultExecutionJobVertex jobVertex = getJobVertex(jobVertexId);
         checkNotNull(jobVertex, "Unknown job vertex %s", jobVertexId);
 
-        final ExecutionVertex[] taskVertices = jobVertex.getTaskVertices();
+        final DefaultExecutionVertex[] taskVertices = jobVertex.getTaskVertices();
         final int subtaskIndex = producerId.getSubtaskIndex();
         checkState(
                 subtaskIndex < taskVertices.length,
@@ -1274,7 +1274,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
                 subtaskIndex,
                 jobVertexId);
 
-        final ExecutionVertex taskVertex = taskVertices[subtaskIndex];
+        final DefaultExecutionVertex taskVertex = taskVertices[subtaskIndex];
         final Execution execution = taskVertex.getCurrentExecutionAttempt();
         return new ResultPartitionID(resultPartitionId, execution.getAttemptId());
     }
@@ -1308,7 +1308,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     public void notifyPartitionDataAvailable(ResultPartitionID partitionId) {
         assertRunningInJobMasterMainThread();
 
-        final Execution execution = currentExecutions.get(partitionId.getProducerId());
+        final DefaultExecution execution = currentExecutions.get(partitionId.getProducerId());
 
         checkState(
                 execution != null,
@@ -1318,12 +1318,12 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     @Override
-    public Map<ExecutionAttemptID, Execution> getRegisteredExecutions() {
+    public Map<ExecutionAttemptID, DefaultExecution> getRegisteredExecutions() {
         return Collections.unmodifiableMap(currentExecutions);
     }
 
     @Override
-    public void registerExecution(Execution exec) {
+    public void registerExecution(DefaultExecution exec) {
         assertRunningInJobMasterMainThread();
         Execution previous = currentExecutions.putIfAbsent(exec.getAttemptId(), exec);
         if (previous != null) {
@@ -1337,7 +1337,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
     }
 
     @Override
-    public void deregisterExecution(Execution exec) {
+    public void deregisterExecution(DefaultExecution exec) {
         assertRunningInJobMasterMainThread();
         Execution contained = currentExecutions.remove(exec.getAttemptId());
 
