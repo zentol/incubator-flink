@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.scheduler;
 
-import org.apache.flink.runtime.executiongraph.ExecutionVertex;
+import org.apache.flink.runtime.executiongraph.DefaultExecutionVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.scheduler.strategy.ExecutionVertexID;
 import org.apache.flink.runtime.taskmanager.LocalTaskManagerLocation;
@@ -75,7 +75,8 @@ public class DefaultPreferredLocationsRetrieverTest extends TestLogger {
 
         final ExecutionVertexID consumerId = new ExecutionVertexID(new JobVertexID(), 0);
 
-        final int producerParallelism = ExecutionVertex.MAX_DISTINCT_LOCATIONS_TO_CONSIDER + 1;
+        final int producerParallelism =
+                DefaultExecutionVertex.MAX_DISTINCT_LOCATIONS_TO_CONSIDER + 1;
         final List<ExecutionVertexID> producerIds = new ArrayList<>(producerParallelism);
         final JobVertexID producerJobVertexId = new JobVertexID();
         for (int i = 0; i < producerParallelism; i++) {
