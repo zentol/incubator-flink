@@ -41,9 +41,9 @@ class DefaultResultPartition implements SchedulingResultPartition {
 
     private final Supplier<ResultPartitionState> resultPartitionStateSupplier;
 
-    private DefaultExecutionVertex producer;
+    private DefaultSchedulingExecutionVertex producer;
 
-    private final List<DefaultExecutionVertex> consumers;
+    private final List<DefaultSchedulingExecutionVertex> consumers;
 
     DefaultResultPartition(
             IntermediateResultPartitionID partitionId,
@@ -78,20 +78,20 @@ class DefaultResultPartition implements SchedulingResultPartition {
     }
 
     @Override
-    public DefaultExecutionVertex getProducer() {
+    public DefaultSchedulingExecutionVertex getProducer() {
         return producer;
     }
 
     @Override
-    public Iterable<DefaultExecutionVertex> getConsumers() {
+    public Iterable<DefaultSchedulingExecutionVertex> getConsumers() {
         return consumers;
     }
 
-    void addConsumer(DefaultExecutionVertex vertex) {
+    void addConsumer(DefaultSchedulingExecutionVertex vertex) {
         consumers.add(checkNotNull(vertex));
     }
 
-    void setProducer(DefaultExecutionVertex vertex) {
+    void setProducer(DefaultSchedulingExecutionVertex vertex) {
         producer = checkNotNull(vertex);
     }
 }

@@ -37,14 +37,14 @@ import java.util.function.Supplier;
 import static org.apache.flink.runtime.io.network.partition.ResultPartitionType.BLOCKING;
 import static org.junit.Assert.assertEquals;
 
-/** Unit tests for {@link DefaultExecutionVertex}. */
-public class DefaultExecutionVertexTest extends TestLogger {
+/** Unit tests for {@link DefaultSchedulingExecutionVertex}. */
+public class DefaultSchedulingExecutionVertexTest extends TestLogger {
 
     private final TestExecutionStateSupplier stateSupplier = new TestExecutionStateSupplier();
 
-    private DefaultExecutionVertex producerVertex;
+    private DefaultSchedulingExecutionVertex producerVertex;
 
-    private DefaultExecutionVertex consumerVertex;
+    private DefaultSchedulingExecutionVertex consumerVertex;
 
     private IntermediateResultPartitionID intermediateResultPartitionId;
 
@@ -60,13 +60,13 @@ public class DefaultExecutionVertexTest extends TestLogger {
                         BLOCKING,
                         () -> ResultPartitionState.CREATED);
         producerVertex =
-                new DefaultExecutionVertex(
+                new DefaultSchedulingExecutionVertex(
                         new ExecutionVertexID(new JobVertexID(), 0),
                         Collections.singletonList(schedulingResultPartition),
                         stateSupplier);
         schedulingResultPartition.setProducer(producerVertex);
         consumerVertex =
-                new DefaultExecutionVertex(
+                new DefaultSchedulingExecutionVertex(
                         new ExecutionVertexID(new JobVertexID(), 0),
                         Collections.emptyList(),
                         stateSupplier);

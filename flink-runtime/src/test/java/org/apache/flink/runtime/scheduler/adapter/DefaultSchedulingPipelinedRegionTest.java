@@ -65,16 +65,16 @@ public class DefaultSchedulingPipelinedRegionTest extends TestLogger {
 
     @Test
     public void returnsVertices() {
-        final DefaultExecutionVertex vertex =
-                new DefaultExecutionVertex(
+        final DefaultSchedulingExecutionVertex vertex =
+                new DefaultSchedulingExecutionVertex(
                         new ExecutionVertexID(new JobVertexID(), 0),
                         Collections.emptyList(),
                         () -> ExecutionState.CREATED);
 
-        final Set<DefaultExecutionVertex> vertices = Collections.singleton(vertex);
+        final Set<DefaultSchedulingExecutionVertex> vertices = Collections.singleton(vertex);
         final DefaultSchedulingPipelinedRegion pipelinedRegion =
                 new DefaultSchedulingPipelinedRegion(vertices);
-        final Iterator<DefaultExecutionVertex> vertexIterator =
+        final Iterator<DefaultSchedulingExecutionVertex> vertexIterator =
                 pipelinedRegion.getVertices().iterator();
 
         assertThat(vertexIterator.hasNext(), is(true));
@@ -120,7 +120,7 @@ public class DefaultSchedulingPipelinedRegionTest extends TestLogger {
         final DefaultSchedulingPipelinedRegion secondPipelinedRegion =
                 topology.getPipelinedRegionOfVertex(new ExecutionVertexID(e.getID(), 0));
 
-        final DefaultExecutionVertex vertexB0 =
+        final DefaultSchedulingExecutionVertex vertexB0 =
                 topology.getVertex(new ExecutionVertexID(b.getID(), 0));
         final IntermediateResultPartitionID b0ConsumedResultPartition =
                 Iterables.getOnlyElement(vertexB0.getConsumedResults()).getId();

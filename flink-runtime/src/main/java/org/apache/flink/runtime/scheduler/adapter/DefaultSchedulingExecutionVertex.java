@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Default implementation of {@link SchedulingExecutionVertex}. */
-class DefaultExecutionVertex implements SchedulingExecutionVertex {
+class DefaultSchedulingExecutionVertex implements SchedulingExecutionVertex {
 
     private final ExecutionVertexID executionVertexId;
 
@@ -39,7 +39,7 @@ class DefaultExecutionVertex implements SchedulingExecutionVertex {
 
     private final Supplier<ExecutionState> stateSupplier;
 
-    DefaultExecutionVertex(
+    DefaultSchedulingExecutionVertex(
             ExecutionVertexID executionVertexId,
             List<DefaultResultPartition> producedPartitions,
             Supplier<ExecutionState> stateSupplier) {

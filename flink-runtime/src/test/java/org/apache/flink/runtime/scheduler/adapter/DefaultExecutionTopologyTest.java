@@ -138,7 +138,7 @@ public class DefaultExecutionTopologyTest extends TestLogger {
 
     @Test
     public void testGetPipelinedRegionOfVertex() {
-        for (DefaultExecutionVertex vertex : adapter.getVertices()) {
+        for (DefaultSchedulingExecutionVertex vertex : adapter.getVertices()) {
             final DefaultSchedulingPipelinedRegion pipelinedRegion =
                     adapter.getPipelinedRegionOfVertex(vertex.getId());
             assertRegionContainsAllVertices(pipelinedRegion);
@@ -162,7 +162,7 @@ public class DefaultExecutionTopologyTest extends TestLogger {
 
     private void assertRegionContainsAllVertices(
             final DefaultSchedulingPipelinedRegion pipelinedRegionOfVertex) {
-        final Set<DefaultExecutionVertex> allVertices =
+        final Set<DefaultSchedulingExecutionVertex> allVertices =
                 Sets.newHashSet(pipelinedRegionOfVertex.getVertices());
         assertEquals(Sets.newHashSet(adapter.getVertices()), allVertices);
     }
@@ -172,11 +172,12 @@ public class DefaultExecutionTopologyTest extends TestLogger {
 
         Iterator<ExecutionVertex> originalVertices =
                 originalGraph.getAllExecutionVertices().iterator();
-        Iterator<DefaultExecutionVertex> adaptedVertices = adaptedTopology.getVertices().iterator();
+        Iterator<DefaultSchedulingExecutionVertex> adaptedVertices =
+                adaptedTopology.getVertices().iterator();
 
         while (originalVertices.hasNext()) {
             ExecutionVertex originalVertex = originalVertices.next();
-            DefaultExecutionVertex adaptedVertex = adaptedVertices.next();
+            DefaultSchedulingExecutionVertex adaptedVertex = adaptedVertices.next();
 
             assertEquals(originalVertex.getID(), adaptedVertex.getId());
 
@@ -232,7 +233,8 @@ public class DefaultExecutionTopologyTest extends TestLogger {
                             .flatMap(Collection::stream)
                             .map(ExecutionEdge::getTarget)
                             .collect(Collectors.toList());
-            Iterable<DefaultExecutionVertex> adaptedConsumers = adaptedPartition.getConsumers();
+            Iterable<DefaultSchedulingExecutionVertex> adaptedConsumers =
+                    adaptedPartition.getConsumers();
 
             for (ExecutionVertex originalConsumer : originalConsumers) {
                 // it is sufficient to verify that some vertex exists with the correct ID here,

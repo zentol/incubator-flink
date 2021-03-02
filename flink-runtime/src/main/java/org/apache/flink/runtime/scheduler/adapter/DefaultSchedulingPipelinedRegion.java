@@ -32,27 +32,28 @@ import java.util.Set;
 /** Default implementation of {@link SchedulingPipelinedRegion}. */
 public class DefaultSchedulingPipelinedRegion implements SchedulingPipelinedRegion {
 
-    private final Map<ExecutionVertexID, DefaultExecutionVertex> executionVertices;
+    private final Map<ExecutionVertexID, DefaultSchedulingExecutionVertex> executionVertices;
 
     private Set<DefaultResultPartition> consumedResults;
 
-    public DefaultSchedulingPipelinedRegion(Set<DefaultExecutionVertex> defaultExecutionVertices) {
+    public DefaultSchedulingPipelinedRegion(
+            Set<DefaultSchedulingExecutionVertex> defaultExecutionVertices) {
         Preconditions.checkNotNull(defaultExecutionVertices);
 
         this.executionVertices = new HashMap<>();
-        for (DefaultExecutionVertex executionVertex : defaultExecutionVertices) {
+        for (DefaultSchedulingExecutionVertex executionVertex : defaultExecutionVertices) {
             this.executionVertices.put(executionVertex.getId(), executionVertex);
         }
     }
 
     @Override
-    public Iterable<DefaultExecutionVertex> getVertices() {
+    public Iterable<DefaultSchedulingExecutionVertex> getVertices() {
         return Collections.unmodifiableCollection(executionVertices.values());
     }
 
     @Override
-    public DefaultExecutionVertex getVertex(final ExecutionVertexID vertexId) {
-        final DefaultExecutionVertex executionVertex = executionVertices.get(vertexId);
+    public DefaultSchedulingExecutionVertex getVertex(final ExecutionVertexID vertexId) {
+        final DefaultSchedulingExecutionVertex executionVertex = executionVertices.get(vertexId);
         if (executionVertex == null) {
             throw new IllegalArgumentException(
                     String.format("Execution vertex %s not found in pipelined region", vertexId));
@@ -70,7 +71,7 @@ public class DefaultSchedulingPipelinedRegion implements SchedulingPipelinedRegi
 
     private void initializeConsumedResults() {
         final Set<DefaultResultPartition> consumedResults = new HashSet<>();
-        for (DefaultExecutionVertex executionVertex : executionVertices.values()) {
+        for (DefaultSchedulingExecutionVertex executionVertex : executionVertices.values()) {
             for (DefaultResultPartition resultPartition : executionVertex.getConsumedResults()) {
                 if (!executionVertices.containsKey(resultPartition.getProducer().getId())) {
                     consumedResults.add(resultPartition);
