@@ -18,9 +18,9 @@
 
 package org.apache.flink.runtime.metrics.scope;
 
-import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.metrics.groups.TaskManagerJobMetricGroup;
-import org.apache.flink.util.AbstractID;
+import org.apache.flink.runtime.metrics.groups.JobMetaInfo;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
+import org.apache.flink.runtime.metrics.groups.TaskMetaInfo;
 
 /** The scope format for the {@link org.apache.flink.runtime.metrics.groups.TaskMetricGroup}. */
 public class TaskScopeFormat extends ScopeFormat {
@@ -43,24 +43,21 @@ public class TaskScopeFormat extends ScopeFormat {
     }
 
     public String[] formatScope(
-            TaskManagerJobMetricGroup parent,
-            AbstractID vertexId,
-            ExecutionAttemptID attemptId,
-            String taskName,
-            int subtask,
-            int attemptNumber) {
+            TaskManagerMetaInfo taskManagerMetaInfo,
+            JobMetaInfo jobMetaInfo,
+            TaskMetaInfo taskMetaInfo) {
 
         final String[] template = copyTemplate();
         final String[] values = {
-            parent.parent().hostname(),
-            parent.parent().taskManagerId(),
-            valueOrNull(parent.jobId()),
-            valueOrNull(parent.jobName()),
-            valueOrNull(vertexId),
-            valueOrNull(attemptId),
-            valueOrNull(taskName),
-            String.valueOf(subtask),
-            String.valueOf(attemptNumber)
+            taskManagerMetaInfo.getHostname(),
+            taskManagerMetaInfo.getTaskManagerId(),
+            valueOrNull(jobMetaInfo.getJobId()),
+            valueOrNull(jobMetaInfo.getJobName()),
+            valueOrNull(taskMetaInfo.getVertexId()),
+            valueOrNull(taskMetaInfo.getAttemptNumber()),
+            valueOrNull(taskMetaInfo.getTaskName()),
+            String.valueOf(taskMetaInfo.getSubtaskIndex()),
+            String.valueOf(taskMetaInfo.getAttemptNumber())
         };
         return bindVariables(template, values);
     }

@@ -20,20 +20,13 @@ package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.metrics.CharacterFilter;
-import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
-import org.apache.flink.util.AbstractID;
-
-import javax.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Special {@link org.apache.flink.metrics.MetricGroup} representing a Flink runtime Task.
@@ -49,47 +42,27 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
 
     private final TaskIOMetricGroup ioMetrics;
 
-    /**
-     * The execution Id uniquely identifying the executed task represented by this metrics group.
-     */
-    private final ExecutionAttemptID executionId;
-
-    protected final JobVertexID vertexId;
-
-    private final String taskName;
-
-    protected final int subtaskIndex;
-
-    private final int attemptNumber;
+    private final TaskManagerMetaInfo taskManagerMetaInfo;
+    private final JobMetaInfo jobMetaInfo;
+    private final TaskMetaInfo taskMetaInfo;
 
     // ------------------------------------------------------------------------
 
     public TaskMetricGroup(
             MetricRegistry registry,
             TaskManagerJobMetricGroup parent,
-            JobVertexID vertexId,
-            ExecutionAttemptID executionId,
-            String taskName,
-            int subtaskIndex,
-            int attemptNumber) {
+            TaskManagerMetaInfo taskManagerMetaInfo,
+            JobMetaInfo jobMetaInfo,
+            TaskMetaInfo taskMetaInfo) {
         super(
                 registry,
                 registry.getScopeFormats()
                         .getTaskFormat()
-                        .formatScope(
-                                checkNotNull(parent),
-                                vertexId,
-                                checkNotNull(executionId),
-                                taskName,
-                                subtaskIndex,
-                                attemptNumber),
+                        .formatScope(taskManagerMetaInfo, jobMetaInfo, taskMetaInfo),
                 parent);
-
-        this.executionId = checkNotNull(executionId);
-        this.vertexId = checkNotNull(vertexId);
-        this.taskName = checkNotNull(taskName);
-        this.subtaskIndex = subtaskIndex;
-        this.attemptNumber = attemptNumber;
+        this.taskManagerMetaInfo = taskManagerMetaInfo;
+        this.jobMetaInfo = jobMetaInfo;
+        this.taskMetaInfo = taskMetaInfo;
 
         this.ioMetrics = new TaskIOMetricGroup(this);
     }
@@ -100,28 +73,6 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
 
     public final TaskManagerJobMetricGroup parent() {
         return parent;
-    }
-
-    public ExecutionAttemptID executionId() {
-        return executionId;
-    }
-
-    @Nullable
-    public AbstractID vertexId() {
-        return vertexId;
-    }
-
-    @Nullable
-    public String taskName() {
-        return taskName;
-    }
-
-    public int subtaskIndex() {
-        return subtaskIndex;
-    }
-
-    public int attemptNumber() {
-        return attemptNumber;
     }
 
     /**
@@ -137,7 +88,9 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
     protected QueryScopeInfo.TaskQueryScopeInfo createQueryServiceMetricInfo(
             CharacterFilter filter) {
         return new QueryScopeInfo.TaskQueryScopeInfo(
-                this.parent.jobId.toString(), String.valueOf(this.vertexId), this.subtaskIndex);
+                jobMetaInfo.getJobId().toString(),
+                String.valueOf(taskMetaInfo.getVertexId()),
+                taskMetaInfo.getSubtaskIndex());
     }
 
     // ------------------------------------------------------------------------
@@ -145,7 +98,8 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
     // ------------------------------------------------------------------------
 
     public OperatorMetricGroup getOrAddOperator(String operatorName) {
-        return getOrAddOperator(OperatorID.fromJobVertexID(vertexId), operatorName);
+        return getOrAddOperator(
+                OperatorID.fromJobVertexID(taskMetaInfo.getVertexId()), operatorName);
     }
 
     public OperatorMetricGroup getOrAddOperator(OperatorID operatorID, String operatorName) {
@@ -169,7 +123,12 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
                     key,
                     operator ->
                             new OperatorMetricGroup(
-                                    this.registry, this, operatorID, truncatedOperatorName));
+                                    this.registry,
+                                    this,
+                                    taskManagerMetaInfo,
+                                    jobMetaInfo,
+                                    taskMetaInfo,
+                                    new OperatorMetaInfo(operatorID, truncatedOperatorName)));
         }
     }
 
@@ -177,7 +136,7 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
     public void close() {
         super.close();
 
-        parent.removeTaskMetricGroup(executionId);
+        parent.removeTaskMetricGroup(taskMetaInfo.getExecutionId());
     }
 
     // ------------------------------------------------------------------------
@@ -186,11 +145,15 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.SCOPE_TASK_VERTEX_ID, vertexId.toString());
-        variables.put(ScopeFormat.SCOPE_TASK_NAME, taskName);
-        variables.put(ScopeFormat.SCOPE_TASK_ATTEMPT_ID, executionId.toString());
-        variables.put(ScopeFormat.SCOPE_TASK_ATTEMPT_NUM, String.valueOf(attemptNumber));
-        variables.put(ScopeFormat.SCOPE_TASK_SUBTASK_INDEX, String.valueOf(subtaskIndex));
+        variables.put(ScopeFormat.SCOPE_TASK_VERTEX_ID, taskMetaInfo.getVertexId().toString());
+        variables.put(ScopeFormat.SCOPE_TASK_NAME, taskMetaInfo.getTaskName());
+        variables.put(ScopeFormat.SCOPE_TASK_ATTEMPT_ID, taskMetaInfo.getExecutionId().toString());
+        variables.put(
+                ScopeFormat.SCOPE_TASK_ATTEMPT_NUM,
+                String.valueOf(taskMetaInfo.getAttemptNumber()));
+        variables.put(
+                ScopeFormat.SCOPE_TASK_SUBTASK_INDEX,
+                String.valueOf(taskMetaInfo.getSubtaskIndex()));
     }
 
     @Override

@@ -32,8 +32,10 @@ import org.apache.flink.runtime.memory.MemoryManager;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
+import org.apache.flink.runtime.metrics.groups.JobManagerMetaInfo;
 import org.apache.flink.runtime.metrics.groups.JobManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.ProcessMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.akka.AkkaRpcServiceUtils;
@@ -104,14 +106,15 @@ public class MetricUtils {
     public static JobManagerMetricGroup instantiateJobManagerMetricGroup(
             final MetricRegistry metricRegistry, final String hostname) {
         final JobManagerMetricGroup jobManagerMetricGroup =
-                new JobManagerMetricGroup(metricRegistry, hostname);
+                new JobManagerMetricGroup(metricRegistry, new JobManagerMetaInfo(hostname));
 
         return jobManagerMetricGroup;
     }
 
     public static TaskManagerMetricGroup createTaskManagerMetricGroup(
             MetricRegistry metricRegistry, String hostName, ResourceID resourceID) {
-        return new TaskManagerMetricGroup(metricRegistry, hostName, resourceID.toString());
+        return new TaskManagerMetricGroup(
+                metricRegistry, new TaskManagerMetaInfo(hostName, resourceID.toString()));
     }
 
     public static Tuple2<TaskManagerMetricGroup, MetricGroup> instantiateTaskManagerMetricGroup(

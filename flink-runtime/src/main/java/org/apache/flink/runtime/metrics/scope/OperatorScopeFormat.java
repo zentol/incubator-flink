@@ -18,8 +18,10 @@
 
 package org.apache.flink.runtime.metrics.scope;
 
-import org.apache.flink.runtime.jobgraph.OperatorID;
-import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
+import org.apache.flink.runtime.metrics.groups.JobMetaInfo;
+import org.apache.flink.runtime.metrics.groups.OperatorMetaInfo;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
+import org.apache.flink.runtime.metrics.groups.TaskMetaInfo;
 
 /** The scope format for the {@link org.apache.flink.runtime.metrics.groups.OperatorMetricGroup}. */
 public class OperatorScopeFormat extends ScopeFormat {
@@ -44,21 +46,24 @@ public class OperatorScopeFormat extends ScopeFormat {
     }
 
     public String[] formatScope(
-            TaskMetricGroup parent, OperatorID operatorID, String operatorName) {
+            TaskManagerMetaInfo taskManagerMetaInfo,
+            JobMetaInfo jobMetaInfo,
+            TaskMetaInfo taskMetaInfo,
+            OperatorMetaInfo operatorMetaInfo) {
 
         final String[] template = copyTemplate();
         final String[] values = {
-            parent.parent().parent().hostname(),
-            parent.parent().parent().taskManagerId(),
-            valueOrNull(parent.parent().jobId()),
-            valueOrNull(parent.parent().jobName()),
-            valueOrNull(parent.vertexId()),
-            valueOrNull(parent.executionId()),
-            valueOrNull(parent.taskName()),
-            String.valueOf(parent.subtaskIndex()),
-            String.valueOf(parent.attemptNumber()),
-            valueOrNull(operatorID),
-            valueOrNull(operatorName)
+            taskManagerMetaInfo.getHostname(),
+            taskManagerMetaInfo.getTaskManagerId(),
+            valueOrNull(jobMetaInfo.getJobId()),
+            valueOrNull(jobMetaInfo.getJobName()),
+            valueOrNull(taskMetaInfo.getVertexId()),
+            valueOrNull(taskMetaInfo.getAttemptNumber()),
+            valueOrNull(taskMetaInfo.getTaskName()),
+            String.valueOf(taskMetaInfo.getSubtaskIndex()),
+            String.valueOf(taskMetaInfo.getAttemptNumber()),
+            valueOrNull(operatorMetaInfo.getOperatorId()),
+            valueOrNull(operatorMetaInfo.getOperatorName())
         };
         return bindVariables(template, values);
     }

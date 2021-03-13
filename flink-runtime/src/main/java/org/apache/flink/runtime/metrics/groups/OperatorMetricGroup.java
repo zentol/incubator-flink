@@ -20,7 +20,6 @@ package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.metrics.CharacterFilter;
-import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
@@ -28,29 +27,33 @@ import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.apache.flink.util.Preconditions.checkNotNull;
-
 /** Special {@link org.apache.flink.metrics.MetricGroup} representing an Operator. */
 @Internal
 public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
-    private final String operatorName;
-    private final OperatorID operatorID;
+
+    private final JobMetaInfo jobMetaInfo;
+    private final TaskMetaInfo taskMetaInfo;
+    private final OperatorMetaInfo operatorMetaInfo;
 
     private final OperatorIOMetricGroup ioMetrics;
 
     public OperatorMetricGroup(
             MetricRegistry registry,
             TaskMetricGroup parent,
-            OperatorID operatorID,
-            String operatorName) {
+            TaskManagerMetaInfo taskManagerMetaInfo,
+            JobMetaInfo jobMetaInfo,
+            TaskMetaInfo taskMetaInfo,
+            OperatorMetaInfo operatorMetaInfo) {
         super(
                 registry,
                 registry.getScopeFormats()
                         .getOperatorFormat()
-                        .formatScope(checkNotNull(parent), operatorID, operatorName),
+                        .formatScope(
+                                taskManagerMetaInfo, jobMetaInfo, taskMetaInfo, operatorMetaInfo),
                 parent);
-        this.operatorID = operatorID;
-        this.operatorName = operatorName;
+        this.jobMetaInfo = jobMetaInfo;
+        this.taskMetaInfo = taskMetaInfo;
+        this.operatorMetaInfo = operatorMetaInfo;
 
         ioMetrics = new OperatorIOMetricGroup(this);
     }
@@ -65,10 +68,10 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
     protected QueryScopeInfo.OperatorQueryScopeInfo createQueryServiceMetricInfo(
             CharacterFilter filter) {
         return new QueryScopeInfo.OperatorQueryScopeInfo(
-                this.parent.parent.jobId.toString(),
-                this.parent.vertexId.toString(),
-                this.parent.subtaskIndex,
-                filter.filterCharacters(this.operatorName));
+                jobMetaInfo.getJobId().toString(),
+                taskMetaInfo.getVertexId().toString(),
+                taskMetaInfo.getSubtaskIndex(),
+                filter.filterCharacters(operatorMetaInfo.getOperatorName()));
     }
 
     /**
@@ -86,8 +89,9 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.SCOPE_OPERATOR_ID, String.valueOf(operatorID));
-        variables.put(ScopeFormat.SCOPE_OPERATOR_NAME, operatorName);
+        variables.put(
+                ScopeFormat.SCOPE_OPERATOR_ID, String.valueOf(operatorMetaInfo.getOperatorId()));
+        variables.put(ScopeFormat.SCOPE_OPERATOR_NAME, operatorMetaInfo.getOperatorName());
         // we don't enter the subtask_index as the task group does that already
     }
 

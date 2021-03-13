@@ -18,8 +18,8 @@
 
 package org.apache.flink.runtime.metrics.scope;
 
-import org.apache.flink.api.common.JobID;
-import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
+import org.apache.flink.runtime.metrics.groups.JobMetaInfo;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
 
 /** The scope format for the {@link org.apache.flink.runtime.metrics.groups.JobMetricGroup}. */
 public class TaskManagerJobScopeFormat extends ScopeFormat {
@@ -31,10 +31,13 @@ public class TaskManagerJobScopeFormat extends ScopeFormat {
                 new String[] {SCOPE_HOST, SCOPE_TASKMANAGER_ID, SCOPE_JOB_ID, SCOPE_JOB_NAME});
     }
 
-    public String[] formatScope(TaskManagerMetricGroup parent, JobID jid, String jobName) {
+    public String[] formatScope(TaskManagerMetaInfo taskManagerMetaInfo, JobMetaInfo jobMetaInfo) {
         final String[] template = copyTemplate();
         final String[] values = {
-            parent.hostname(), parent.taskManagerId(), valueOrNull(jid), valueOrNull(jobName)
+            taskManagerMetaInfo.getHostname(),
+            taskManagerMetaInfo.getHostname(),
+            valueOrNull(jobMetaInfo.getJobId()),
+            valueOrNull(jobMetaInfo.getJobName())
         };
         return bindVariables(template, values);
     }

@@ -19,13 +19,10 @@
 package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.JobID;
 import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
-
-import javax.annotation.Nullable;
 
 import java.util.Map;
 
@@ -39,39 +36,21 @@ import java.util.Map;
 public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
         extends ComponentMetricGroup<C> {
 
-    /** The ID of the job represented by this metrics group. */
-    protected final JobID jobId;
-
-    /** The name of the job represented by this metrics group. */
-    @Nullable protected final String jobName;
+    protected final JobMetaInfo jobMetaInfo;
 
     // ------------------------------------------------------------------------
 
     protected JobMetricGroup(
-            MetricRegistry registry,
-            C parent,
-            JobID jobId,
-            @Nullable String jobName,
-            String[] scope) {
+            MetricRegistry registry, C parent, JobMetaInfo jobMetaInfo, String[] scope) {
         super(registry, scope, parent);
 
-        this.jobId = jobId;
-        this.jobName = jobName;
-    }
-
-    public JobID jobId() {
-        return jobId;
-    }
-
-    @Nullable
-    public String jobName() {
-        return jobName;
+        this.jobMetaInfo = jobMetaInfo;
     }
 
     @Override
     protected QueryScopeInfo.JobQueryScopeInfo createQueryServiceMetricInfo(
             CharacterFilter filter) {
-        return new QueryScopeInfo.JobQueryScopeInfo(this.jobId.toString());
+        return new QueryScopeInfo.JobQueryScopeInfo(this.jobMetaInfo.getJobId().toString());
     }
 
     // ------------------------------------------------------------------------
@@ -80,8 +59,8 @@ public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.SCOPE_JOB_ID, jobId.toString());
-        variables.put(ScopeFormat.SCOPE_JOB_NAME, jobName);
+        variables.put(ScopeFormat.SCOPE_JOB_ID, this.jobMetaInfo.getJobId().toString());
+        variables.put(ScopeFormat.SCOPE_JOB_NAME, this.jobMetaInfo.getJobName());
     }
 
     @Override

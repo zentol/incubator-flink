@@ -27,6 +27,7 @@ import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.reporter.MetricReporter;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
@@ -34,6 +35,7 @@ import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
 import org.apache.flink.runtime.metrics.ReporterSetup;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
+import org.apache.flink.runtime.metrics.util.MetricUtils;
 import org.apache.flink.runtime.metrics.util.TestReporter;
 import org.apache.flink.runtime.metrics.util.TestingMetricRegistry;
 import org.apache.flink.util.TestLogger;
@@ -186,7 +188,9 @@ public class AbstractMetricGroupTest extends TestLogger {
                                 ReporterSetup.forReporter(
                                         "test2", metricConfig2, new TestReporter2())));
         try {
-            MetricGroup tmGroup = new TaskManagerMetricGroup(testRegistry, "host", "id");
+            MetricGroup tmGroup =
+                    MetricUtils.createTaskManagerMetricGroup(
+                            testRegistry, "host", ResourceID.generate());
             tmGroup.counter("1");
             assertEquals(
                     "Reporters were not properly instantiated",
@@ -213,7 +217,8 @@ public class AbstractMetricGroupTest extends TestLogger {
                                 ReporterSetup.forReporter("test2", new LogicalScopeReporter2())));
         try {
             MetricGroup tmGroup =
-                    new TaskManagerMetricGroup(testRegistry, "host", "id")
+                    MetricUtils.createTaskManagerMetricGroup(
+                                    testRegistry, "host", ResourceID.generate())
                             .addGroup("B")
                             .addGroup("C");
             tmGroup.counter("1");
@@ -344,7 +349,9 @@ public class AbstractMetricGroupTest extends TestLogger {
                 new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(config));
 
         try {
-            TaskManagerMetricGroup group = new TaskManagerMetricGroup(testRegistry, "host", "id");
+            TaskManagerMetricGroup group =
+                    MetricUtils.createTaskManagerMetricGroup(
+                            testRegistry, "host", ResourceID.generate());
             assertEquals(
                     "MetricReporters list should be empty", 0, testRegistry.getReporters().size());
 

@@ -18,6 +18,8 @@
 
 package org.apache.flink.runtime.metrics.scope;
 
+import org.apache.flink.runtime.metrics.groups.JobManagerMetaInfo;
+
 /**
  * The scope format for the {@link org.apache.flink.runtime.metrics.groups.JobManagerMetricGroup}.
  */
@@ -27,9 +29,9 @@ public class JobManagerScopeFormat extends ScopeFormat {
         super(format, null, new String[] {SCOPE_HOST});
     }
 
-    public String[] formatScope(String hostname) {
+    public String[] formatScope(JobManagerMetaInfo jobManagerMetaInfo) {
         final String[] template = copyTemplate();
-        final String[] values = {hostname};
+        final String[] values = {jobManagerMetaInfo.getHostname()};
         return bindVariables(template, values);
     }
 }

@@ -18,6 +18,8 @@
 
 package org.apache.flink.runtime.metrics.scope;
 
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
+
 /**
  * The scope format for the {@link org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup}.
  */
@@ -27,9 +29,11 @@ public class TaskManagerScopeFormat extends ScopeFormat {
         super(format, null, new String[] {SCOPE_HOST, SCOPE_TASKMANAGER_ID});
     }
 
-    public String[] formatScope(String hostname, String taskManagerId) {
+    public String[] formatScope(TaskManagerMetaInfo taskManagerMetaInfo) {
         final String[] template = copyTemplate();
-        final String[] values = {hostname, taskManagerId};
+        final String[] values = {
+            taskManagerMetaInfo.getHostname(), taskManagerMetaInfo.getTaskManagerId()
+        };
         return bindVariables(template, values);
     }
 }
