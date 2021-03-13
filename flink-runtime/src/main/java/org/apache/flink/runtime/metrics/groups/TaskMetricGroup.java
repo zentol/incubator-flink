@@ -134,8 +134,7 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
     }
 
     @Override
-    protected QueryScopeInfo.TaskQueryScopeInfo createQueryServiceMetricInfo(
-            CharacterFilter filter) {
+    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
         return new QueryScopeInfo.TaskQueryScopeInfo(
                 this.parent.jobId.toString(), String.valueOf(this.vertexId), this.subtaskIndex);
     }

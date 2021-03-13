@@ -71,8 +71,7 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
     }
 
     @Override
-    protected QueryScopeInfo.OperatorQueryScopeInfo createQueryServiceMetricInfo(
-            CharacterFilter filter) {
+    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
         return new QueryScopeInfo.OperatorQueryScopeInfo(
                 this.parent.parent.jobId.toString(),
                 this.parent.vertexId.toString(),

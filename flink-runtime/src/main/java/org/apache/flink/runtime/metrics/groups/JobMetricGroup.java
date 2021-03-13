@@ -69,8 +69,7 @@ public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
     }
 
     @Override
-    protected QueryScopeInfo.JobQueryScopeInfo createQueryServiceMetricInfo(
-            CharacterFilter filter) {
+    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
         return new QueryScopeInfo.JobQueryScopeInfo(this.jobId.toString());
     }
 

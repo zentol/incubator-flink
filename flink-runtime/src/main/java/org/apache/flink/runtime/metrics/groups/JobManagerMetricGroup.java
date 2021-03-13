@@ -53,8 +53,7 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
     }
 
     @Override
-    protected QueryScopeInfo.JobManagerQueryScopeInfo createQueryServiceMetricInfo(
-            CharacterFilter filter) {
+    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
         return new QueryScopeInfo.JobManagerQueryScopeInfo();
     }
 

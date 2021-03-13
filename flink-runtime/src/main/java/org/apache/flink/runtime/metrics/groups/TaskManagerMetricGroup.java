@@ -66,8 +66,7 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
     }
 
     @Override
-    protected QueryScopeInfo.TaskManagerQueryScopeInfo createQueryServiceMetricInfo(
-            CharacterFilter filter) {
+    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
         return new QueryScopeInfo.TaskManagerQueryScopeInfo(this.taskManagerId);
     }
 
