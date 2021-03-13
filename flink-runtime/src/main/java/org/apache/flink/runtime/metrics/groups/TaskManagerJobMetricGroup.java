@@ -23,6 +23,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 
 import javax.annotation.Nullable;
 
@@ -49,7 +50,8 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
             MetricRegistry registry,
             TaskManagerMetricGroup parent,
             JobID jobId,
-            @Nullable String jobName) {
+            @Nullable String jobName,
+            QueryScopeInfo queryScopeInfo) {
         super(
                 registry,
                 parent,
@@ -57,7 +59,8 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
                 jobName,
                 registry.getScopeFormats()
                         .getTaskManagerJobFormat()
-                        .formatScope(checkNotNull(parent), jobId, jobName));
+                        .formatScope(checkNotNull(parent), jobId, jobName),
+                queryScopeInfo);
     }
 
     public final TaskManagerMetricGroup parent() {
@@ -84,6 +87,12 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
                 if (prior != null) {
                     return prior;
                 } else {
+                    final QueryScopeInfo queryScopeInfo =
+                            new QueryScopeInfo.TaskQueryScopeInfo(
+                                    this.jobId.toString(),
+                                    String.valueOf(jobVertexId),
+                                    subtaskIndex);
+
                     TaskMetricGroup task =
                             new TaskMetricGroup(
                                     registry,
@@ -92,7 +101,8 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
                                     executionAttemptID,
                                     taskName,
                                     subtaskIndex,
-                                    attemptNumber);
+                                    attemptNumber,
+                                    queryScopeInfo);
                     tasks.put(executionAttemptID, task);
                     return task;
                 }

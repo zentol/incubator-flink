@@ -56,7 +56,7 @@ public class MetricQueryService extends RpcEndpoint implements MetricQueryServic
     private static final String SIZE_EXCEEDED_LOG_TEMPLATE =
             "{} will not be reported as the metric dump would exceed the maximum size of {} bytes.";
 
-    private static final CharacterFilter FILTER =
+    public static final CharacterFilter FILTER =
             new CharacterFilter() {
                 @Override
                 public String filterCharacters(String input) {

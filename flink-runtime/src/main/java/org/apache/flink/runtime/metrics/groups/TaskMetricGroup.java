@@ -24,6 +24,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.MetricQueryService;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 import org.apache.flink.util.AbstractID;
@@ -71,7 +72,8 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
             ExecutionAttemptID executionId,
             @Nullable String taskName,
             int subtaskIndex,
-            int attemptNumber) {
+            int attemptNumber,
+            QueryScopeInfo queryScopeInfo) {
         super(
                 registry,
                 registry.getScopeFormats()
@@ -83,7 +85,8 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
                                 taskName,
                                 subtaskIndex,
                                 attemptNumber),
-                parent);
+                parent,
+                queryScopeInfo);
 
         this.executionId = checkNotNull(executionId);
         this.vertexId = vertexId;
@@ -133,12 +136,6 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
         return ioMetrics;
     }
 
-    @Override
-    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
-        return new QueryScopeInfo.TaskQueryScopeInfo(
-                this.parent.jobId.toString(), String.valueOf(this.vertexId), this.subtaskIndex);
-    }
-
     // ------------------------------------------------------------------------
     //  operators and cleanup
     // ------------------------------------------------------------------------
@@ -166,9 +163,22 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
         synchronized (this) {
             return operators.computeIfAbsent(
                     key,
-                    operator ->
-                            new OperatorMetricGroup(
-                                    this.registry, this.parent, this, operatorID, metricName));
+                    operator -> {
+                        final QueryScopeInfo queryScopeInfo =
+                                new QueryScopeInfo.OperatorQueryScopeInfo(
+                                        this.parent.jobId.toString(),
+                                        this.vertexId.toString(),
+                                        this.subtaskIndex,
+                                        MetricQueryService.FILTER.filterCharacters(metricName));
+
+                        return new OperatorMetricGroup(
+                                this.registry,
+                                this.parent,
+                                this,
+                                operatorID,
+                                metricName,
+                                queryScopeInfo);
+                    });
         }
     }
 

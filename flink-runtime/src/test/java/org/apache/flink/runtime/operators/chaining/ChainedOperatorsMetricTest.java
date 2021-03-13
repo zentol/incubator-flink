@@ -27,6 +27,7 @@ import org.apache.flink.metrics.Counter;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.OperatorIOMetricGroup;
 import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
@@ -83,7 +84,8 @@ public class ChainedOperatorsMetricTest extends TaskTestBase {
                                         new ExecutionAttemptID(),
                                         "task",
                                         0,
-                                        0))
+                                        0,
+                                        new QueryScopeInfo.JobManagerQueryScopeInfo()))
                         .build();
 
         final int keyCnt = 100;

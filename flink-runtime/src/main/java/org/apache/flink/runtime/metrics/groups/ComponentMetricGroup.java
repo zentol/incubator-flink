@@ -19,7 +19,9 @@
 package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 
 /**
  * Abstract {@link org.apache.flink.metrics.MetricGroup} for system components (e.g., TaskManager,
@@ -40,14 +42,23 @@ import org.apache.flink.runtime.metrics.MetricRegistry;
 public abstract class ComponentMetricGroup<P extends AbstractMetricGroup<?>>
         extends AbstractMetricGroup<P> {
 
+    private final QueryScopeInfo queryScopeInfo;
+
     /**
      * Creates a new ComponentMetricGroup.
      *
      * @param registry registry to register new metrics with
      * @param scope the scope of the group
      */
-    public ComponentMetricGroup(MetricRegistry registry, String[] scope, P parent) {
+    public ComponentMetricGroup(
+            MetricRegistry registry, String[] scope, P parent, QueryScopeInfo queryScopeInfo) {
         super(registry, scope, parent);
+        this.queryScopeInfo = queryScopeInfo;
+    }
+
+    @Override
+    protected final QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
+        return queryScopeInfo;
     }
 
     /**

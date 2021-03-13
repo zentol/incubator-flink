@@ -31,6 +31,7 @@ import org.apache.flink.metrics.util.TestMeter;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.ReporterSetup;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
 import org.apache.flink.runtime.metrics.groups.ReporterScopedSettings;
 import org.apache.flink.runtime.metrics.groups.TaskManagerJobMetricGroup;
@@ -89,7 +90,11 @@ public class PrometheusReporterTest extends TestLogger {
         metricGroup =
                 new FrontMetricGroup<>(
                         createReporterScopedSettings(),
-                        new TaskManagerMetricGroup(registry, HOST_NAME, TASK_MANAGER));
+                        new TaskManagerMetricGroup(
+                                registry,
+                                HOST_NAME,
+                                TASK_MANAGER,
+                                new QueryScopeInfo.JobManagerQueryScopeInfo()));
         reporter = (PrometheusReporter) registry.getReporters().get(0);
     }
 
@@ -212,7 +217,11 @@ public class PrometheusReporterTest extends TestLogger {
     @Test
     public void metricIsRemovedWhenCollectorIsNotUnregisteredYet() throws UnirestException {
         TaskManagerMetricGroup tmMetricGroup =
-                new TaskManagerMetricGroup(registry, HOST_NAME, TASK_MANAGER);
+                new TaskManagerMetricGroup(
+                        registry,
+                        HOST_NAME,
+                        TASK_MANAGER,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         String metricName = "metric";
 
@@ -221,7 +230,11 @@ public class PrometheusReporterTest extends TestLogger {
                 new FrontMetricGroup<>(
                         createReporterScopedSettings(),
                         new TaskManagerJobMetricGroup(
-                                registry, tmMetricGroup, JobID.generate(), "job_1"));
+                                registry,
+                                tmMetricGroup,
+                                JobID.generate(),
+                                "job_1",
+                                new QueryScopeInfo.JobManagerQueryScopeInfo()));
         reporter.notifyOfAddedMetric(metric1, metricName, metricGroup1);
 
         Counter metric2 = new SimpleCounter();
@@ -229,7 +242,11 @@ public class PrometheusReporterTest extends TestLogger {
                 new FrontMetricGroup<>(
                         createReporterScopedSettings(),
                         new TaskManagerJobMetricGroup(
-                                registry, tmMetricGroup, JobID.generate(), "job_2"));
+                                registry,
+                                tmMetricGroup,
+                                JobID.generate(),
+                                "job_2",
+                                new QueryScopeInfo.JobManagerQueryScopeInfo()));
         reporter.notifyOfAddedMetric(metric2, metricName, metricGroup2);
 
         reporter.notifyOfRemovedMetric(metric1, metricName, metricGroup1);

@@ -33,6 +33,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.metrics.dump.MetricDumpSerialization;
 import org.apache.flink.runtime.metrics.dump.MetricQueryService;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.MetricGroupTest;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
@@ -235,7 +236,9 @@ public class MetricRegistryImplTest extends TestLogger {
                                 ReporterSetup.forReporter("test1", new TestReporter6()),
                                 ReporterSetup.forReporter("test2", new TestReporter7())));
 
-        TaskManagerMetricGroup root = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup root =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
         root.counter("rootCounter");
 
         assertTrue(TestReporter6.addedMetric instanceof Counter);
@@ -332,7 +335,9 @@ public class MetricRegistryImplTest extends TestLogger {
                         MetricRegistryConfiguration.fromConfiguration(config),
                         ReporterSetup.fromConfiguration(config, null));
 
-        TaskManagerMetricGroup tmGroup = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup tmGroup =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
         assertEquals("A_B_C_D_E_name", tmGroup.getMetricIdentifier("name"));
 
         registry.shutdown().get();
@@ -434,7 +439,9 @@ public class MetricRegistryImplTest extends TestLogger {
         ((TestReporter8) reporters.get(3)).expectedDelimiter =
                 GLOBAL_DEFAULT_DELIMITER; // for test4 reporter use global delimiter
 
-        TaskManagerMetricGroup group = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup group =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
         group.counter("C");
         group.close();
         registry.shutdown().get();

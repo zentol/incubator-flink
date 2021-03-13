@@ -26,6 +26,7 @@ import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.ReporterSetup;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 
 import com.codahale.metrics.Counter;
@@ -96,7 +97,11 @@ public class DropwizardFlinkHistogramWrapperTest extends AbstractHistogramTest {
                             new com.codahale.metrics.Histogram(new SlidingWindowReservoir(size)));
 
             TaskManagerMetricGroup metricGroup =
-                    new TaskManagerMetricGroup(registry, "localhost", "tmId");
+                    new TaskManagerMetricGroup(
+                            registry,
+                            "localhost",
+                            "tmId",
+                            new QueryScopeInfo.JobManagerQueryScopeInfo());
 
             metricGroup.histogram(histogramMetricName, histogramWrapper);
 

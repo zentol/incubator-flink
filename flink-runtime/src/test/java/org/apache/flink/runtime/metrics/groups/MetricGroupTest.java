@@ -336,9 +336,26 @@ public class MetricGroupTest extends TestLogger {
         JobVertexID vid = new JobVertexID();
         ExecutionAttemptID eid = new ExecutionAttemptID();
         MetricRegistryImpl registry = new MetricRegistryImpl(defaultMetricRegistryConfiguration);
-        TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
-        TaskManagerJobMetricGroup job = new TaskManagerJobMetricGroup(registry, tm, jid, "jobname");
-        TaskMetricGroup task = new TaskMetricGroup(registry, job, vid, eid, "taskName", 4, 5);
+        TaskManagerMetricGroup tm =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
+        TaskManagerJobMetricGroup job =
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tm,
+                        jid,
+                        "jobname",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
+        TaskMetricGroup task =
+                new TaskMetricGroup(
+                        registry,
+                        job,
+                        vid,
+                        eid,
+                        "taskName",
+                        4,
+                        5,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         GenericMetricGroup userGroup1 = new GenericMetricGroup(registry, task, "hello");
         GenericMetricGroup userGroup2 = new GenericMetricGroup(registry, userGroup1, "world");
 

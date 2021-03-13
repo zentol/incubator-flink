@@ -46,13 +46,18 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
 
     private final String taskManagerId;
 
-    public TaskManagerMetricGroup(MetricRegistry registry, String hostname, String taskManagerId) {
+    public TaskManagerMetricGroup(
+            MetricRegistry registry,
+            String hostname,
+            String taskManagerId,
+            QueryScopeInfo queryScopeInfo) {
         super(
                 registry,
                 registry.getScopeFormats()
                         .getTaskManagerFormat()
                         .formatScope(hostname, taskManagerId),
-                null);
+                null,
+                queryScopeInfo);
         this.hostname = hostname;
         this.taskManagerId = taskManagerId;
     }
@@ -63,11 +68,6 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
 
     public String taskManagerId() {
         return taskManagerId;
-    }
-
-    @Override
-    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
-        return new QueryScopeInfo.TaskManagerQueryScopeInfo(this.taskManagerId);
     }
 
     // ------------------------------------------------------------------------
@@ -95,8 +95,12 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
                 currentJobGroup = jobs.get(jobId);
 
                 if (currentJobGroup == null || currentJobGroup.isClosed()) {
+                    final QueryScopeInfo.JobQueryScopeInfo queryScopeInfo =
+                            new QueryScopeInfo.JobQueryScopeInfo(jobId.toString());
+
                     currentJobGroup =
-                            new TaskManagerJobMetricGroup(registry, this, jobId, resolvedJobName);
+                            new TaskManagerJobMetricGroup(
+                                    registry, this, jobId, resolvedJobName, queryScopeInfo);
                     jobs.put(jobId, currentJobGroup);
                 }
             }

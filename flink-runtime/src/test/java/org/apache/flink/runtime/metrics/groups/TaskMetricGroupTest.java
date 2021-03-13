@@ -69,11 +69,28 @@ public class TaskMetricGroupTest extends TestLogger {
         ExecutionAttemptID executionId = new ExecutionAttemptID();
 
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup jmGroup =
-                new TaskManagerJobMetricGroup(registry, tmGroup, new JobID(), "myJobName");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        new JobID(),
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskMetricGroup taskGroup =
-                new TaskMetricGroup(registry, jmGroup, vertexId, executionId, "aTaskName", 13, 2);
+                new TaskMetricGroup(
+                        registry,
+                        jmGroup,
+                        vertexId,
+                        executionId,
+                        "aTaskName",
+                        13,
+                        2,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {
@@ -101,11 +118,28 @@ public class TaskMetricGroupTest extends TestLogger {
         ExecutionAttemptID executionId = new ExecutionAttemptID();
 
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup jmGroup =
-                new TaskManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        jid,
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskMetricGroup taskGroup =
-                new TaskMetricGroup(registry, jmGroup, vertexId, executionId, "aTaskName", 13, 2);
+                new TaskMetricGroup(
+                        registry,
+                        jmGroup,
+                        vertexId,
+                        executionId,
+                        "aTaskName",
+                        13,
+                        2,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {
@@ -129,13 +163,29 @@ public class TaskMetricGroupTest extends TestLogger {
         ExecutionAttemptID executionId = new ExecutionAttemptID();
 
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup jmGroup =
-                new TaskManagerJobMetricGroup(registry, tmGroup, new JobID(), "myJobName");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        new JobID(),
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         TaskMetricGroup taskGroup =
                 new TaskMetricGroup(
-                        registry, jmGroup, new JobVertexID(), executionId, "aTaskName", 13, 1);
+                        registry,
+                        jmGroup,
+                        new JobVertexID(),
+                        executionId,
+                        "aTaskName",
+                        13,
+                        1,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {
@@ -159,12 +209,30 @@ public class TaskMetricGroupTest extends TestLogger {
         JobID jid = new JobID();
         JobVertexID vid = new JobVertexID();
         ExecutionAttemptID eid = new ExecutionAttemptID();
-        TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
-        TaskManagerJobMetricGroup job = new TaskManagerJobMetricGroup(registry, tm, jid, "jobname");
-        TaskMetricGroup task = new TaskMetricGroup(registry, job, vid, eid, "taskName", 4, 5);
+        TaskManagerMetricGroup tm =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
+        TaskManagerJobMetricGroup job =
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tm,
+                        jid,
+                        "jobname",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
+        TaskMetricGroup task =
+                new TaskMetricGroup(
+                        registry,
+                        job,
+                        vid,
+                        eid,
+                        "taskName",
+                        4,
+                        5,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         QueryScopeInfo.TaskQueryScopeInfo info =
-                task.createQueryServiceMetricInfo(new DummyCharacterFilter());
+                (QueryScopeInfo.TaskQueryScopeInfo)
+                        task.createQueryServiceMetricInfo(new DummyCharacterFilter());
         assertEquals("", info.scope);
         assertEquals(jid.toString(), info.jobID);
         assertEquals(vid.toString(), info.vertexID);
@@ -175,9 +243,15 @@ public class TaskMetricGroupTest extends TestLogger {
     public void testTaskMetricGroupCleanup() throws Exception {
         CountingMetricRegistry registry = new CountingMetricRegistry(new Configuration());
         TaskManagerMetricGroup taskManagerMetricGroup =
-                new TaskManagerMetricGroup(registry, "localhost", "0");
+                new TaskManagerMetricGroup(
+                        registry, "localhost", "0", new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup taskManagerJobMetricGroup =
-                new TaskManagerJobMetricGroup(registry, taskManagerMetricGroup, new JobID(), "job");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        taskManagerMetricGroup,
+                        new JobID(),
+                        "job",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskMetricGroup taskMetricGroup =
                 new TaskMetricGroup(
                         registry,
@@ -186,7 +260,8 @@ public class TaskMetricGroupTest extends TestLogger {
                         new ExecutionAttemptID(),
                         "task",
                         0,
-                        0);
+                        0,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         // the io metric should have registered predefined metrics
         assertTrue(registry.getNumberRegisteredMetrics() > 0);
@@ -205,12 +280,26 @@ public class TaskMetricGroupTest extends TestLogger {
         cfg.setString(MetricOptions.SCOPE_NAMING_OPERATOR, ScopeFormat.SCOPE_OPERATOR_NAME);
         MetricRegistryImpl registry =
                 new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(cfg));
-        TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup tm =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup job =
-                new TaskManagerJobMetricGroup(registry, tm, new JobID(), "jobname");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tm,
+                        new JobID(),
+                        "jobname",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskMetricGroup taskMetricGroup =
                 new TaskMetricGroup(
-                        registry, job, new JobVertexID(), new ExecutionAttemptID(), "task", 0, 0);
+                        registry,
+                        job,
+                        new JobVertexID(),
+                        new ExecutionAttemptID(),
+                        "task",
+                        0,
+                        0,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         String originalName = new String(new char[100]).replace("\0", "-");
         OperatorMetricGroup operatorMetricGroup = taskMetricGroup.getOrAddOperator(originalName);

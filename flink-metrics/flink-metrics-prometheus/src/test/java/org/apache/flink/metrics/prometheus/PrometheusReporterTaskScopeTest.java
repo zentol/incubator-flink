@@ -30,6 +30,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerJobMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
@@ -118,9 +119,18 @@ public class PrometheusReporterTaskScopeTest {
         reporter = (PrometheusReporter) registry.getReporters().get(0);
 
         TaskManagerMetricGroup tmMetricGroup =
-                new TaskManagerMetricGroup(registry, TASK_MANAGER_HOST, TASK_MANAGER_ID);
+                new TaskManagerMetricGroup(
+                        registry,
+                        TASK_MANAGER_HOST,
+                        TASK_MANAGER_ID,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup tmJobMetricGroup =
-                new TaskManagerJobMetricGroup(registry, tmMetricGroup, jobId, JOB_NAME);
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmMetricGroup,
+                        jobId,
+                        JOB_NAME,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         taskMetricGroup1 =
                 new TaskMetricGroup(
                         registry,
@@ -129,7 +139,8 @@ public class PrometheusReporterTaskScopeTest {
                         taskAttemptId1,
                         TASK_NAME,
                         SUBTASK_INDEX_1,
-                        ATTEMPT_NUMBER);
+                        ATTEMPT_NUMBER,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         taskMetricGroup2 =
                 new TaskMetricGroup(
                         registry,
@@ -138,7 +149,8 @@ public class PrometheusReporterTaskScopeTest {
                         taskAttemptId2,
                         TASK_NAME,
                         SUBTASK_INDEX_2,
-                        ATTEMPT_NUMBER);
+                        ATTEMPT_NUMBER,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
     }
 
     @After

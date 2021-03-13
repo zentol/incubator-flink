@@ -164,8 +164,7 @@ public class JobManagerGroupTest extends TestLogger {
                         MetricRegistryConfiguration.defaultMetricRegistryConfiguration());
         JobManagerMetricGroup jm = new JobManagerMetricGroup(registry, "host");
 
-        QueryScopeInfo.JobManagerQueryScopeInfo info =
-                jm.createQueryServiceMetricInfo(new DummyCharacterFilter());
+        QueryScopeInfo info = jm.createQueryServiceMetricInfo(new DummyCharacterFilter());
         assertEquals("", info.scope);
     }
 }

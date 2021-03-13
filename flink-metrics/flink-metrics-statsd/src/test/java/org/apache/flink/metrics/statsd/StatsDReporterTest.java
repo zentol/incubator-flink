@@ -38,6 +38,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.ReporterSetup;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerJobMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
@@ -96,9 +97,18 @@ public class StatsDReporterTest extends TestLogger {
         char delimiter = metricRegistry.getDelimiter();
 
         TaskManagerMetricGroup tmMetricGroup =
-                new TaskManagerMetricGroup(metricRegistry, hostname, taskManagerId);
+                new TaskManagerMetricGroup(
+                        metricRegistry,
+                        hostname,
+                        taskManagerId,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskManagerJobMetricGroup tmJobMetricGroup =
-                new TaskManagerJobMetricGroup(metricRegistry, tmMetricGroup, new JobID(), jobName);
+                new TaskManagerJobMetricGroup(
+                        metricRegistry,
+                        tmMetricGroup,
+                        new JobID(),
+                        jobName,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         TaskMetricGroup taskMetricGroup =
                 new TaskMetricGroup(
                         metricRegistry,
@@ -107,7 +117,8 @@ public class StatsDReporterTest extends TestLogger {
                         new ExecutionAttemptID(),
                         taskName,
                         0,
-                        0);
+                        0,
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         SimpleCounter myCounter = new SimpleCounter();
 

@@ -31,6 +31,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.memory.MemoryManager;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
 import org.apache.flink.runtime.metrics.groups.JobManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.ProcessMetricGroup;
@@ -114,8 +115,12 @@ public class MetricUtils {
             String hostName,
             ResourceID resourceID,
             Optional<Time> systemResourceProbeInterval) {
+        final QueryScopeInfo.TaskManagerQueryScopeInfo queryScopeInfo =
+                new QueryScopeInfo.TaskManagerQueryScopeInfo(resourceID.toString());
+
         final TaskManagerMetricGroup taskManagerMetricGroup =
-                new TaskManagerMetricGroup(metricRegistry, hostName, resourceID.toString());
+                new TaskManagerMetricGroup(
+                        metricRegistry, hostName, resourceID.toString(), queryScopeInfo);
 
         MetricGroup statusGroup = createAndInitializeStatusMetricGroup(taskManagerMetricGroup);
 

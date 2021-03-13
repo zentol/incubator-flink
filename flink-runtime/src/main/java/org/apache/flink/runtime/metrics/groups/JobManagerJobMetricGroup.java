@@ -21,6 +21,7 @@ package org.apache.flink.runtime.metrics.groups;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 
 import javax.annotation.Nullable;
 
@@ -38,7 +39,8 @@ public class JobManagerJobMetricGroup extends JobMetricGroup<JobManagerMetricGro
             MetricRegistry registry,
             JobManagerMetricGroup parent,
             JobID jobId,
-            @Nullable String jobName) {
+            @Nullable String jobName,
+            QueryScopeInfo queryScopeInfo) {
         super(
                 registry,
                 checkNotNull(parent),
@@ -46,7 +48,8 @@ public class JobManagerJobMetricGroup extends JobMetricGroup<JobManagerMetricGro
                 jobName,
                 registry.getScopeFormats()
                         .getJobManagerJobFormat()
-                        .formatScope(checkNotNull(parent), jobId, jobName));
+                        .formatScope(checkNotNull(parent), jobId, jobName),
+                queryScopeInfo);
     }
 
     public final JobManagerMetricGroup parent() {

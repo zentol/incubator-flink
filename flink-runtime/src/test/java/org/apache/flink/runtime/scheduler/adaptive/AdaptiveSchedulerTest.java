@@ -61,6 +61,7 @@ import org.apache.flink.runtime.jobmaster.slotpool.DefaultAllocatedSlotPool;
 import org.apache.flink.runtime.jobmaster.slotpool.DefaultDeclarativeSlotPool;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.MetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.JobManagerJobMetricGroup;
 import org.apache.flink.runtime.metrics.util.TestingMetricRegistry;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
@@ -383,7 +384,8 @@ public class AdaptiveSchedulerTest extends TestLogger {
                                         metricRegistry,
                                         createUnregisteredJobManagerMetricGroup(),
                                         new JobID(),
-                                        "jobName"))
+                                        "jobName",
+                                        new QueryScopeInfo.JobManagerQueryScopeInfo()))
                         .setDeclarativeSlotPool(declarativeSlotPool)
                         .build();
 

@@ -67,7 +67,11 @@ public class TaskManagerGroupTest extends TestLogger {
     @Test
     public void addAndRemoveJobs() throws IOException {
         final TaskManagerMetricGroup group =
-                new TaskManagerMetricGroup(registry, "localhost", new AbstractID().toString());
+                new TaskManagerMetricGroup(
+                        registry,
+                        "localhost",
+                        new AbstractID().toString(),
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         final JobID jid1 = new JobID();
         final JobID jid2 = new JobID();
@@ -125,7 +129,11 @@ public class TaskManagerGroupTest extends TestLogger {
     @Test
     public void testCloseClosesAll() throws IOException {
         final TaskManagerMetricGroup group =
-                new TaskManagerMetricGroup(registry, "localhost", new AbstractID().toString());
+                new TaskManagerMetricGroup(
+                        registry,
+                        "localhost",
+                        new AbstractID().toString(),
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         final JobID jid1 = new JobID();
         final JobID jid2 = new JobID();
@@ -161,7 +169,9 @@ public class TaskManagerGroupTest extends TestLogger {
 
     @Test
     public void testGenerateScopeDefault() {
-        TaskManagerMetricGroup group = new TaskManagerMetricGroup(registry, "localhost", "id");
+        TaskManagerMetricGroup group =
+                new TaskManagerMetricGroup(
+                        registry, "localhost", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"localhost", "taskmanager", "id"}, group.getScopeComponents());
@@ -174,7 +184,9 @@ public class TaskManagerGroupTest extends TestLogger {
         cfg.setString(MetricOptions.SCOPE_NAMING_TM, "constant.<host>.foo.<host>");
         MetricRegistryImpl registry =
                 new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(cfg));
-        TaskManagerMetricGroup group = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup group =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"constant", "host", "foo", "host"}, group.getScopeComponents());
@@ -184,10 +196,13 @@ public class TaskManagerGroupTest extends TestLogger {
 
     @Test
     public void testCreateQueryServiceMetricInfo() {
-        TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
+        TaskManagerMetricGroup tm =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         QueryScopeInfo.TaskManagerQueryScopeInfo info =
-                tm.createQueryServiceMetricInfo(new DummyCharacterFilter());
+                (QueryScopeInfo.TaskManagerQueryScopeInfo)
+                        tm.createQueryServiceMetricInfo(new DummyCharacterFilter());
         assertEquals("", info.scope);
         assertEquals("id", info.taskManagerID);
     }

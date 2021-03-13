@@ -28,6 +28,7 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.ReporterSetup;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.util.TestReporter;
 import org.apache.flink.util.TestLogger;
 
@@ -49,7 +50,9 @@ public class MetricGroupRegistrationTest extends TestLogger {
                         Collections.singletonList(
                                 ReporterSetup.forReporter("test", new TestReporter1())));
 
-        MetricGroup root = new TaskManagerMetricGroup(registry, "host", "id");
+        MetricGroup root =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         Counter counter = root.counter("counter");
         assertEquals(counter, TestReporter1.lastPassedMetric);
@@ -115,7 +118,9 @@ public class MetricGroupRegistrationTest extends TestLogger {
         MetricRegistryImpl registry =
                 new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(config));
 
-        MetricGroup root = new TaskManagerMetricGroup(registry, "host", "id");
+        MetricGroup root =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         MetricGroup group1 = root.addGroup("group");
         MetricGroup group2 = root.addGroup("group");

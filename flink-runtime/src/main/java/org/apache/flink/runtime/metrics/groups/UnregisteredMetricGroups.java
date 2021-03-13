@@ -25,6 +25,7 @@ import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 
 /** A collection of safe drop-in replacements for existing {@link ComponentMetricGroup}s. */
 public class UnregisteredMetricGroups {
@@ -121,7 +122,8 @@ public class UnregisteredMetricGroups {
                     NoOpMetricRegistry.INSTANCE,
                     new UnregisteredJobManagerMetricGroup(),
                     DEFAULT_JOB_ID,
-                    DEFAULT_JOB_NAME);
+                    DEFAULT_JOB_NAME,
+                    new QueryScopeInfo.JobManagerQueryScopeInfo());
         }
     }
 
@@ -131,7 +133,11 @@ public class UnregisteredMetricGroups {
         private static final String DEFAULT_TASKMANAGER_ID = "0";
 
         protected UnregisteredTaskManagerMetricGroup() {
-            super(NoOpMetricRegistry.INSTANCE, DEFAULT_HOST_NAME, DEFAULT_TASKMANAGER_ID);
+            super(
+                    NoOpMetricRegistry.INSTANCE,
+                    DEFAULT_HOST_NAME,
+                    DEFAULT_TASKMANAGER_ID,
+                    new QueryScopeInfo.JobManagerQueryScopeInfo());
         }
 
         @Override
@@ -157,7 +163,8 @@ public class UnregisteredMetricGroups {
                     NoOpMetricRegistry.INSTANCE,
                     new UnregisteredTaskManagerMetricGroup(),
                     DEFAULT_JOB_ID,
-                    DEFAULT_JOB_NAME);
+                    DEFAULT_JOB_NAME,
+                    new QueryScopeInfo.JobManagerQueryScopeInfo());
         }
 
         @Override
@@ -185,7 +192,8 @@ public class UnregisteredMetricGroups {
                     DEFAULT_ATTEMPT_ID,
                     DEFAULT_TASK_NAME,
                     0,
-                    0);
+                    0,
+                    new QueryScopeInfo.JobManagerQueryScopeInfo());
         }
 
         @Override
@@ -205,7 +213,8 @@ public class UnregisteredMetricGroups {
                     new UnregisteredMetricsGroup(),
                     new UnregisteredTaskMetricGroup(),
                     DEFAULT_OPERATOR_ID,
-                    DEFAULT_OPERATOR_NAME);
+                    DEFAULT_OPERATOR_NAME,
+                    new QueryScopeInfo.JobManagerQueryScopeInfo());
         }
     }
 }

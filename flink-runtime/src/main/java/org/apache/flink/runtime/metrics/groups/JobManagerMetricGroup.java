@@ -44,17 +44,13 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
         super(
                 registry,
                 registry.getScopeFormats().getJobManagerFormat().formatScope(hostname),
-                null);
+                null,
+                new QueryScopeInfo.JobManagerQueryScopeInfo());
         this.hostname = hostname;
     }
 
     public String hostname() {
         return hostname;
-    }
-
-    @Override
-    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
-        return new QueryScopeInfo.JobManagerQueryScopeInfo();
     }
 
     // ------------------------------------------------------------------------
@@ -71,7 +67,12 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
                 currentJobGroup = jobs.get(jobId);
 
                 if (currentJobGroup == null || currentJobGroup.isClosed()) {
-                    currentJobGroup = new JobManagerJobMetricGroup(registry, this, jobId, jobName);
+                    final QueryScopeInfo queryScopeInfo =
+                            new QueryScopeInfo.JobQueryScopeInfo(jobId.toString());
+
+                    currentJobGroup =
+                            new JobManagerJobMetricGroup(
+                                    registry, this, jobId, jobName, queryScopeInfo);
                     jobs.put(jobId, currentJobGroup);
                 }
                 return currentJobGroup;

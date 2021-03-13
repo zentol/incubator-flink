@@ -31,6 +31,7 @@ import org.apache.flink.runtime.io.network.api.CheckpointBarrier;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
@@ -481,7 +482,8 @@ public class TwoInputStreamTaskTest {
                                 new UnregisteredMetricsGroup(),
                                 this,
                                 operatorID,
-                                name);
+                                name,
+                                new QueryScopeInfo.JobManagerQueryScopeInfo());
                     }
                 };
 

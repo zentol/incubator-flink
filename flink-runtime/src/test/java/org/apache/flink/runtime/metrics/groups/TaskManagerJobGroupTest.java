@@ -56,9 +56,18 @@ public class TaskManagerJobGroupTest extends TestLogger {
     @Test
     public void testGenerateScopeDefault() {
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
         JobMetricGroup jmGroup =
-                new TaskManagerJobMetricGroup(registry, tmGroup, new JobID(), "myJobName");
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        new JobID(),
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"theHostName", "taskmanager", "test-tm-id", "myJobName"},
@@ -80,8 +89,18 @@ public class TaskManagerJobGroupTest extends TestLogger {
         JobID jid = new JobID();
 
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
-        JobMetricGroup jmGroup = new TaskManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
+        JobMetricGroup jmGroup =
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        jid,
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"some-constant", "myJobName"}, jmGroup.getScopeComponents());
@@ -101,8 +120,18 @@ public class TaskManagerJobGroupTest extends TestLogger {
         JobID jid = new JobID();
 
         TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
-        JobMetricGroup jmGroup = new TaskManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+                new TaskManagerMetricGroup(
+                        registry,
+                        "theHostName",
+                        "test-tm-id",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
+        JobMetricGroup jmGroup =
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        jid,
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"peter", "test-tm-id", "some-constant", jid.toString()},
@@ -117,11 +146,20 @@ public class TaskManagerJobGroupTest extends TestLogger {
     @Test
     public void testCreateQueryServiceMetricInfo() {
         JobID jid = new JobID();
-        TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
-        TaskManagerJobMetricGroup job = new TaskManagerJobMetricGroup(registry, tm, jid, "jobname");
+        TaskManagerMetricGroup tm =
+                new TaskManagerMetricGroup(
+                        registry, "host", "id", new QueryScopeInfo.JobManagerQueryScopeInfo());
+        TaskManagerJobMetricGroup job =
+                new TaskManagerJobMetricGroup(
+                        registry,
+                        tm,
+                        jid,
+                        "jobname",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         QueryScopeInfo.JobQueryScopeInfo info =
-                job.createQueryServiceMetricInfo(new DummyCharacterFilter());
+                (QueryScopeInfo.JobQueryScopeInfo)
+                        job.createQueryServiceMetricInfo(new DummyCharacterFilter());
         assertEquals("", info.scope);
         assertEquals(jid.toString(), info.jobID);
     }

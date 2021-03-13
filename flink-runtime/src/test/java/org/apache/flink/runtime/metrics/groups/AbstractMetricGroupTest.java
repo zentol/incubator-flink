@@ -23,6 +23,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.core.testutils.BlockerSync;
 import org.apache.flink.metrics.CharacterFilter;
+import org.apache.flink.metrics.LogicalScopeProvider;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.MetricConfig;
 import org.apache.flink.metrics.MetricGroup;
@@ -186,7 +187,12 @@ public class AbstractMetricGroupTest extends TestLogger {
                                 ReporterSetup.forReporter(
                                         "test2", metricConfig2, new TestReporter2())));
         try {
-            MetricGroup tmGroup = new TaskManagerMetricGroup(testRegistry, "host", "id");
+            MetricGroup tmGroup =
+                    new TaskManagerMetricGroup(
+                            testRegistry,
+                            "host",
+                            "id",
+                            new QueryScopeInfo.JobManagerQueryScopeInfo());
             tmGroup.counter("1");
             assertEquals(
                     "Reporters were not properly instantiated",
@@ -213,7 +219,11 @@ public class AbstractMetricGroupTest extends TestLogger {
                                 ReporterSetup.forReporter("test2", new LogicalScopeReporter2())));
         try {
             MetricGroup tmGroup =
-                    new TaskManagerMetricGroup(testRegistry, "host", "id")
+                    new TaskManagerMetricGroup(
+                                    testRegistry,
+                                    "host",
+                                    "id",
+                                    new QueryScopeInfo.JobManagerQueryScopeInfo())
                             .addGroup("B")
                             .addGroup("C");
             tmGroup.counter("1");
@@ -315,8 +325,7 @@ public class AbstractMetricGroupTest extends TestLogger {
 
         @Override
         public void checkScopes(Metric metric, String metricName, MetricGroup group) {
-            final String logicalScope =
-                    ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(this, '-');
+            final String logicalScope = ((LogicalScopeProvider) group).getLogicalScope(this, '-');
             assertEquals("taskmanager-X-C", logicalScope);
         }
     }
@@ -330,8 +339,7 @@ public class AbstractMetricGroupTest extends TestLogger {
 
         @Override
         public void checkScopes(Metric metric, String metricName, MetricGroup group) {
-            final String logicalScope =
-                    ((FrontMetricGroup<AbstractMetricGroup<?>>) group).getLogicalScope(this, ',');
+            final String logicalScope = ((LogicalScopeProvider) group).getLogicalScope(this, ',');
             assertEquals("taskmanager,B,X", logicalScope);
         }
     }
@@ -344,7 +352,12 @@ public class AbstractMetricGroupTest extends TestLogger {
                 new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(config));
 
         try {
-            TaskManagerMetricGroup group = new TaskManagerMetricGroup(testRegistry, "host", "id");
+            TaskManagerMetricGroup group =
+                    new TaskManagerMetricGroup(
+                            testRegistry,
+                            "host",
+                            "id",
+                            new QueryScopeInfo.JobManagerQueryScopeInfo());
             assertEquals(
                     "MetricReporters list should be empty", 0, testRegistry.getReporters().size());
 

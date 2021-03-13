@@ -32,6 +32,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
 import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.ReporterSetup;
+import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
 import org.apache.flink.testutils.logging.TestLoggerResource;
@@ -81,7 +82,11 @@ public class Slf4jReporterTest extends TestLogger {
         delimiter = registry.getDelimiter();
 
         taskMetricGroup =
-                new TaskManagerMetricGroup(registry, HOST_NAME, TASK_MANAGER_ID)
+                new TaskManagerMetricGroup(
+                                registry,
+                                HOST_NAME,
+                                TASK_MANAGER_ID,
+                                new QueryScopeInfo.JobManagerQueryScopeInfo())
                         .addTaskForJob(
                                 new JobID(),
                                 JOB_NAME,

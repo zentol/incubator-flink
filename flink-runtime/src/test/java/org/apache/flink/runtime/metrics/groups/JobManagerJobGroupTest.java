@@ -43,7 +43,12 @@ public class JobManagerJobGroupTest extends TestLogger {
 
         JobManagerMetricGroup tmGroup = new JobManagerMetricGroup(registry, "theHostName");
         JobMetricGroup jmGroup =
-                new JobManagerJobMetricGroup(registry, tmGroup, new JobID(), "myJobName");
+                new JobManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        new JobID(),
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"theHostName", "jobmanager", "myJobName"},
@@ -65,7 +70,13 @@ public class JobManagerJobGroupTest extends TestLogger {
         JobID jid = new JobID();
 
         JobManagerMetricGroup tmGroup = new JobManagerMetricGroup(registry, "theHostName");
-        JobMetricGroup jmGroup = new JobManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+        JobMetricGroup jmGroup =
+                new JobManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        jid,
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"some-constant", "myJobName"}, jmGroup.getScopeComponents());
@@ -86,7 +97,13 @@ public class JobManagerJobGroupTest extends TestLogger {
         JobID jid = new JobID();
 
         JobManagerMetricGroup tmGroup = new JobManagerMetricGroup(registry, "theHostName");
-        JobMetricGroup jmGroup = new JobManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
+        JobMetricGroup jmGroup =
+                new JobManagerJobMetricGroup(
+                        registry,
+                        tmGroup,
+                        jid,
+                        "myJobName",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         assertArrayEquals(
                 new String[] {"peter", "some-constant", jid.toString()},
@@ -104,10 +121,17 @@ public class JobManagerJobGroupTest extends TestLogger {
                 new MetricRegistryImpl(
                         MetricRegistryConfiguration.defaultMetricRegistryConfiguration());
         JobManagerMetricGroup jm = new JobManagerMetricGroup(registry, "host");
-        JobManagerJobMetricGroup jmj = new JobManagerJobMetricGroup(registry, jm, jid, "jobname");
+        JobManagerJobMetricGroup jmj =
+                new JobManagerJobMetricGroup(
+                        registry,
+                        jm,
+                        jid,
+                        "jobname",
+                        new QueryScopeInfo.JobManagerQueryScopeInfo());
 
         QueryScopeInfo.JobQueryScopeInfo info =
-                jmj.createQueryServiceMetricInfo(new DummyCharacterFilter());
+                (QueryScopeInfo.JobQueryScopeInfo)
+                        jmj.createQueryServiceMetricInfo(new DummyCharacterFilter());
         assertEquals("", info.scope);
         assertEquals(jid.toString(), info.jobID);
     }

@@ -46,13 +46,15 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
             MetricGroup jobMetricGroup,
             TaskMetricGroup parent,
             OperatorID operatorID,
-            String operatorName) {
+            String operatorName,
+            QueryScopeInfo queryScopeInfo) {
         super(
                 registry,
                 registry.getScopeFormats()
                         .getOperatorFormat()
                         .formatScope(checkNotNull(parent), operatorID, operatorName),
-                parent);
+                parent,
+                queryScopeInfo);
         this.jobMetricGroup = jobMetricGroup;
         this.operatorID = operatorID;
         this.operatorName = operatorName;
@@ -68,15 +70,6 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
 
     public final MetricGroup getJobMetricGroup() {
         return jobMetricGroup;
-    }
-
-    @Override
-    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
-        return new QueryScopeInfo.OperatorQueryScopeInfo(
-                this.parent.parent.jobId.toString(),
-                this.parent.vertexId.toString(),
-                this.parent.subtaskIndex,
-                filter.filterCharacters(this.operatorName));
     }
 
     /**

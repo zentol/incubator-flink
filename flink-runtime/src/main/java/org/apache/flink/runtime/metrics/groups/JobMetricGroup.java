@@ -52,8 +52,9 @@ public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
             C parent,
             JobID jobId,
             @Nullable String jobName,
-            String[] scope) {
-        super(registry, scope, parent);
+            String[] scope,
+            QueryScopeInfo queryScopeInfo) {
+        super(registry, scope, parent, queryScopeInfo);
 
         this.jobId = jobId;
         this.jobName = jobName;
@@ -66,11 +67,6 @@ public abstract class JobMetricGroup<C extends ComponentMetricGroup<C>>
     @Nullable
     public String jobName() {
         return jobName;
-    }
-
-    @Override
-    protected QueryScopeInfo createQueryServiceMetricInfo(CharacterFilter filter) {
-        return new QueryScopeInfo.JobQueryScopeInfo(this.jobId.toString());
     }
 
     // ------------------------------------------------------------------------
