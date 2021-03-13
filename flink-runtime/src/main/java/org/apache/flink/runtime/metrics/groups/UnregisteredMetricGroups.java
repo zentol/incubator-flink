@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -201,6 +202,7 @@ public class UnregisteredMetricGroups {
         protected UnregisteredOperatorMetricGroup() {
             super(
                     NoOpMetricRegistry.INSTANCE,
+                    new UnregisteredMetricsGroup(),
                     new UnregisteredTaskMetricGroup(),
                     DEFAULT_OPERATOR_ID,
                     DEFAULT_OPERATOR_NAME);

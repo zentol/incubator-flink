@@ -37,10 +37,13 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
     private final String operatorName;
     private final OperatorID operatorID;
 
+    private final MetricGroup jobMetricGroup;
+
     private final OperatorIOMetricGroup ioMetrics;
 
     public OperatorMetricGroup(
             MetricRegistry registry,
+            MetricGroup jobMetricGroup,
             TaskMetricGroup parent,
             OperatorID operatorID,
             String operatorName) {
@@ -50,6 +53,7 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
                         .getOperatorFormat()
                         .formatScope(checkNotNull(parent), operatorID, operatorName),
                 parent);
+        this.jobMetricGroup = jobMetricGroup;
         this.operatorID = operatorID;
         this.operatorName = operatorName;
 
@@ -62,8 +66,8 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
         return parent.getIOMetricGroup();
     }
 
-        return parent.parent;
     public final MetricGroup getJobMetricGroup() {
+        return jobMetricGroup;
     }
 
     @Override

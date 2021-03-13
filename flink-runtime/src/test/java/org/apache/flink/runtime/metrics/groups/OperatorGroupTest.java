@@ -76,7 +76,7 @@ public class OperatorGroupTest extends TestLogger {
                         11,
                         0);
         OperatorMetricGroup opGroup =
-                new OperatorMetricGroup(registry, taskGroup, new OperatorID(), "myOpName");
+                new OperatorMetricGroup(registry, jmGroup, taskGroup, new OperatorID(), "myOpName");
 
         assertArrayEquals(
                 new String[] {
@@ -151,7 +151,7 @@ public class OperatorGroupTest extends TestLogger {
                         11,
                         0);
         OperatorMetricGroup opGroup =
-                new OperatorMetricGroup(registry, taskGroup, new OperatorID(), "myOpName");
+                new OperatorMetricGroup(registry, jmGroup, taskGroup, new OperatorID(), "myOpName");
 
         assertNotNull(opGroup.getIOMetricGroup());
         assertNotNull(opGroup.getIOMetricGroup().getNumRecordsInCounter());
@@ -171,7 +171,8 @@ public class OperatorGroupTest extends TestLogger {
                 new TaskManagerJobMetricGroup(registry, tmGroup, jid, "myJobName");
         TaskMetricGroup taskGroup =
                 new TaskMetricGroup(registry, jmGroup, tid, eid, "aTaskName", 11, 0);
-        OperatorMetricGroup opGroup = new OperatorMetricGroup(registry, taskGroup, oid, "myOpName");
+        OperatorMetricGroup opGroup =
+                new OperatorMetricGroup(registry, jmGroup, taskGroup, oid, "myOpName");
 
         Map<String, String> variables = opGroup.getAllVariables();
 
@@ -204,7 +205,8 @@ public class OperatorGroupTest extends TestLogger {
         TaskManagerMetricGroup tm = new TaskManagerMetricGroup(registry, "host", "id");
         TaskManagerJobMetricGroup job = new TaskManagerJobMetricGroup(registry, tm, jid, "jobname");
         TaskMetricGroup task = new TaskMetricGroup(registry, job, vid, eid, "taskName", 4, 5);
-        OperatorMetricGroup operator = new OperatorMetricGroup(registry, task, oid, "operator");
+        OperatorMetricGroup operator =
+                new OperatorMetricGroup(registry, job, task, oid, "operator");
 
         QueryScopeInfo.OperatorQueryScopeInfo info =
                 operator.createQueryServiceMetricInfo(new DummyCharacterFilter());

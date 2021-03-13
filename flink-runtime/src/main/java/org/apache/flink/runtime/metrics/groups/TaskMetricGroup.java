@@ -168,7 +168,8 @@ public class TaskMetricGroup extends ComponentMetricGroup<TaskManagerJobMetricGr
             return operators.computeIfAbsent(
                     key,
                     operator ->
-                            new OperatorMetricGroup(this.registry, this, operatorID, metricName));
+                            new OperatorMetricGroup(
+                                    this.registry, this.parent, this, operatorID, metricName));
         }
     }
 

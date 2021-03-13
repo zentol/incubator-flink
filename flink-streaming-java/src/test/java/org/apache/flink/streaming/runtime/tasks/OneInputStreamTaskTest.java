@@ -32,6 +32,7 @@ import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Metric;
+import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
@@ -769,7 +770,11 @@ public class OneInputStreamTaskTest extends TestLogger {
                     public OperatorMetricGroup getOrAddOperator(
                             OperatorID operatorID, String name) {
                         return new OperatorMetricGroup(
-                                NoOpMetricRegistry.INSTANCE, this, operatorID, name);
+                                NoOpMetricRegistry.INSTANCE,
+                                new UnregisteredMetricsGroup(),
+                                this,
+                                operatorID,
+                                name);
                     }
                 };
 

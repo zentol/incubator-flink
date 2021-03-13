@@ -34,6 +34,7 @@ import org.apache.flink.api.connector.source.mocks.MockSourceSplitSerializer;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Metric;
+import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.io.network.api.CancelCheckpointMarker;
 import org.apache.flink.runtime.io.network.api.CheckpointBarrier;
@@ -327,7 +328,11 @@ public class MultipleInputStreamTaskTest {
                             OperatorID operatorID, String name) {
                         OperatorMetricGroup operatorMetricGroup =
                                 new OperatorMetricGroup(
-                                        NoOpMetricRegistry.INSTANCE, this, operatorID, name);
+                                        NoOpMetricRegistry.INSTANCE,
+                                        new UnregisteredMetricsGroup(),
+                                        this,
+                                        operatorID,
+                                        name);
                         operatorMetrics.put(name, operatorMetricGroup);
                         return operatorMetricGroup;
                     }
