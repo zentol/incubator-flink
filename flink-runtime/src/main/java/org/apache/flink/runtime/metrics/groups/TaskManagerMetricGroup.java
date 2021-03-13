@@ -41,34 +41,21 @@ import java.util.Map;
 public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetricGroup> {
 
     private final Map<JobID, TaskManagerJobMetricGroup> jobs = new HashMap<>();
+    private final TaskManagerMetaInfo taskManagerMetaInfo;
 
-    private final String hostname;
-
-    private final String taskManagerId;
-
-    public TaskManagerMetricGroup(MetricRegistry registry, String hostname, String taskManagerId) {
+    public TaskManagerMetricGroup(
+            MetricRegistry registry, TaskManagerMetaInfo taskManagerMetaInfo) {
         super(
                 registry,
-                registry.getScopeFormats()
-                        .getTaskManagerFormat()
-                        .formatScope(hostname, taskManagerId),
+                registry.getScopeFormats().getTaskManagerFormat().formatScope(taskManagerMetaInfo),
                 null);
-        this.hostname = hostname;
-        this.taskManagerId = taskManagerId;
-    }
-
-    public String hostname() {
-        return hostname;
-    }
-
-    public String taskManagerId() {
-        return taskManagerId;
+        this.taskManagerMetaInfo = taskManagerMetaInfo;
     }
 
     @Override
     protected QueryScopeInfo.TaskManagerQueryScopeInfo createQueryServiceMetricInfo(
             CharacterFilter filter) {
-        return new QueryScopeInfo.TaskManagerQueryScopeInfo(this.taskManagerId);
+        return new QueryScopeInfo.TaskManagerQueryScopeInfo(taskManagerMetaInfo.getTaskManagerId());
     }
 
     // ------------------------------------------------------------------------
@@ -97,7 +84,11 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
 
                 if (currentJobGroup == null || currentJobGroup.isClosed()) {
                     currentJobGroup =
-                            new TaskManagerJobMetricGroup(registry, this, jobId, resolvedJobName);
+                            new TaskManagerJobMetricGroup(
+                                    registry,
+                                    this,
+                                    taskManagerMetaInfo,
+                                    new JobMetaInfo(jobId, resolvedJobName));
                     jobs.put(jobId, currentJobGroup);
                 }
             }
@@ -144,8 +135,8 @@ public class TaskManagerMetricGroup extends ComponentMetricGroup<TaskManagerMetr
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.SCOPE_HOST, hostname);
-        variables.put(ScopeFormat.SCOPE_TASKMANAGER_ID, taskManagerId);
+        variables.put(ScopeFormat.SCOPE_HOST, taskManagerMetaInfo.getHostname());
+        variables.put(ScopeFormat.SCOPE_TASKMANAGER_ID, taskManagerMetaInfo.getTaskManagerId());
     }
 
     @Override

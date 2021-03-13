@@ -36,24 +36,23 @@ import java.util.Map;
 public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetricGroup> {
 
     private final Map<JobID, JobManagerJobMetricGroup> jobs = new HashMap<>();
+    private final JobManagerMetaInfo jobManagerMetaInfo;
 
-    private final String hostname;
-
-    JobManagerMetricGroup(MetricRegistry registry, String hostname) {
+    public JobManagerMetricGroup(MetricRegistry registry, JobManagerMetaInfo jobManagerMetaInfo) {
         super(
                 registry,
-                registry.getScopeFormats().getJobManagerFormat().formatScope(hostname),
+                registry.getScopeFormats().getJobManagerFormat().formatScope(jobManagerMetaInfo),
                 null);
-        this.hostname = hostname;
+        this.jobManagerMetaInfo = jobManagerMetaInfo;
     }
 
     public static JobManagerMetricGroup createJobManagerMetricGroup(
             final MetricRegistry metricRegistry, final String hostname) {
-        return new JobManagerMetricGroup(metricRegistry, hostname);
+        return new JobManagerMetricGroup(metricRegistry, new JobManagerMetaInfo(hostname));
     }
 
     public String hostname() {
-        return hostname;
+        return jobManagerMetaInfo.getHostname();
     }
 
     @Override
@@ -74,7 +73,12 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
                 currentJobGroup = jobs.get(jobId);
 
                 if (currentJobGroup == null || currentJobGroup.isClosed()) {
-                    currentJobGroup = new JobManagerJobMetricGroup(registry, this, jobId, jobName);
+                    currentJobGroup =
+                            new JobManagerJobMetricGroup(
+                                    registry,
+                                    this,
+                                    jobManagerMetaInfo,
+                                    new JobMetaInfo(jobId, jobName));
                     jobs.put(jobId, currentJobGroup);
                 }
                 return currentJobGroup;
@@ -107,7 +111,7 @@ public class JobManagerMetricGroup extends ComponentMetricGroup<JobManagerMetric
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.SCOPE_HOST, hostname);
+        variables.put(ScopeFormat.SCOPE_HOST, jobManagerMetaInfo.getHostname());
     }
 
     @Override

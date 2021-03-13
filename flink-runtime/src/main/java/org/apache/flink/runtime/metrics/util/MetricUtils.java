@@ -32,6 +32,7 @@ import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.groups.AbstractMetricGroup;
 import org.apache.flink.runtime.metrics.groups.ProcessMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetaInfo;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
@@ -101,7 +102,8 @@ public class MetricUtils {
 
     public static TaskManagerMetricGroup createTaskManagerMetricGroup(
             MetricRegistry metricRegistry, String hostName, ResourceID resourceID) {
-        return new TaskManagerMetricGroup(metricRegistry, hostName, resourceID.toString());
+        return new TaskManagerMetricGroup(
+                metricRegistry, new TaskManagerMetaInfo(hostName, resourceID.toString()));
     }
 
     public static Tuple2<TaskManagerMetricGroup, MetricGroup> instantiateTaskManagerMetricGroup(

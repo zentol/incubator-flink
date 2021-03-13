@@ -41,7 +41,9 @@ class AbstractImitatingJobManagerMetricGroup extends AbstractMetricGroup<Abstrac
     private static String[] getScope(MetricRegistry registry, String hostname) {
         // returning jobmanager scope in order to guarantee backwards compatibility
         // this can be changed once we introduce a proper scope for the process metric group
-        return registry.getScopeFormats().getJobManagerFormat().formatScope(hostname);
+        return registry.getScopeFormats()
+                .getJobManagerFormat()
+                .formatScope(new JobManagerMetaInfo(hostname));
     }
 
     @Override

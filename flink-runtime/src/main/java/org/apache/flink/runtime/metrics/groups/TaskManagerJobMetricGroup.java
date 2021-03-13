@@ -19,12 +19,9 @@
 package org.apache.flink.runtime.metrics.groups;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricRegistry;
-
-import javax.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,21 +40,25 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
     /** Map from execution attempt ID (task identifier) to task metrics. */
     private final Map<ExecutionAttemptID, TaskMetricGroup> tasks = new HashMap<>();
 
+    private final TaskManagerMetaInfo taskManagerMetaInfo;
+    private final JobMetaInfo jobMetaInfo;
+
     // ------------------------------------------------------------------------
 
     public TaskManagerJobMetricGroup(
             MetricRegistry registry,
             TaskManagerMetricGroup parent,
-            JobID jobId,
-            @Nullable String jobName) {
+            TaskManagerMetaInfo taskManagerMetaInfo,
+            JobMetaInfo jobMetaInfo) {
         super(
                 registry,
                 parent,
-                jobId,
-                jobName,
+                jobMetaInfo,
                 registry.getScopeFormats()
                         .getTaskManagerJobFormat()
-                        .formatScope(checkNotNull(parent), jobId, jobName));
+                        .formatScope(taskManagerMetaInfo, jobMetaInfo));
+        this.taskManagerMetaInfo = taskManagerMetaInfo;
+        this.jobMetaInfo = jobMetaInfo;
     }
 
     public final TaskManagerMetricGroup parent() {
@@ -88,11 +89,14 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
                             new TaskMetricGroup(
                                     registry,
                                     this,
-                                    jobVertexId,
-                                    executionAttemptID,
-                                    taskName,
-                                    subtaskIndex,
-                                    attemptNumber);
+                                    taskManagerMetaInfo,
+                                    jobMetaInfo,
+                                    new TaskMetaInfo(
+                                            jobVertexId,
+                                            executionAttemptID,
+                                            taskName,
+                                            subtaskIndex,
+                                            attemptNumber));
                     tasks.put(executionAttemptID, task);
                     return task;
                 }
@@ -117,7 +121,7 @@ public class TaskManagerJobMetricGroup extends JobMetricGroup<TaskManagerMetricG
         // IMPORTANT: removing from the parent must not happen while holding the this group's lock,
         //      because it would violate the "first parent then subgroup" lock acquisition order
         if (removeFromParent) {
-            parent.removeJobMetricsGroup(jobId, this);
+            parent.removeJobMetricsGroup(jobMetaInfo.getJobId(), this);
         }
     }
 
