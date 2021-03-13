@@ -155,7 +155,7 @@ public class SourceStreamTaskTest {
 
         final Map<String, Metric> metrics = new ConcurrentHashMap<>();
         final TaskMetricGroup taskMetricGroup =
-                new StreamTaskTestHarness.TestTaskMetricGroup(metrics);
+                StreamTaskTestHarness.createTaskMetricGroup(metrics);
 
         StreamTaskMailboxTestHarness<String> harness =
                 builder.setupOutputForSingletonOperatorChain(
