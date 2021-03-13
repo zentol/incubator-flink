@@ -18,6 +18,10 @@
 
 package org.apache.flink.runtime.metrics.dump;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 /** Container for scope related information as required by the MetricQueryService. */
 public abstract class QueryScopeInfo {
     /**
@@ -44,6 +48,34 @@ public abstract class QueryScopeInfo {
      * @return modified copy of this QueryScopeInfo
      */
     public abstract QueryScopeInfo copy(String userScope);
+
+    public void writeTo(DataOutput out) throws IOException {
+        out.writeUTF(scope);
+        out.writeByte(getCategory());
+        writeVariablesTo(out);
+    }
+
+    public static QueryScopeInfo readFrom(DataInput dis) throws IOException {
+        String scope = dis.readUTF();
+        byte cat = dis.readByte();
+
+        switch (cat) {
+            case INFO_CATEGORY_JM:
+                return QueryScopeInfo.JobManagerQueryScopeInfo.readFrom(dis, scope);
+            case INFO_CATEGORY_TM:
+                return QueryScopeInfo.TaskManagerQueryScopeInfo.readFrom(dis, scope);
+            case INFO_CATEGORY_JOB:
+                return QueryScopeInfo.JobQueryScopeInfo.readFrom(dis, scope);
+            case INFO_CATEGORY_TASK:
+                return QueryScopeInfo.TaskQueryScopeInfo.readFrom(dis, scope);
+            case INFO_CATEGORY_OPERATOR:
+                return QueryScopeInfo.OperatorQueryScopeInfo.readFrom(dis, scope);
+            default:
+                throw new IOException("Unknown scope category: " + cat);
+        }
+    }
+
+    protected abstract void writeVariablesTo(DataOutput out) throws IOException;
 
     /**
      * Returns the category for this QueryScopeInfo.
@@ -84,6 +116,13 @@ public abstract class QueryScopeInfo {
         }
 
         @Override
+        protected void writeVariablesTo(DataOutput out) throws IOException {}
+
+        static JobManagerQueryScopeInfo readFrom(DataInput dis, String scope) {
+            return new JobManagerQueryScopeInfo(scope);
+        }
+
+        @Override
         public byte getCategory() {
             return INFO_CATEGORY_JM;
         }
@@ -108,6 +147,16 @@ public abstract class QueryScopeInfo {
         }
 
         @Override
+        protected void writeVariablesTo(DataOutput out) throws IOException {
+            out.writeUTF(taskManagerID);
+        }
+
+        static TaskManagerQueryScopeInfo readFrom(DataInput dis, String scope) throws IOException {
+            String tmID = dis.readUTF();
+            return new QueryScopeInfo.TaskManagerQueryScopeInfo(tmID, scope);
+        }
+
+        @Override
         public byte getCategory() {
             return INFO_CATEGORY_TM;
         }
@@ -129,6 +178,16 @@ public abstract class QueryScopeInfo {
         @Override
         public JobQueryScopeInfo copy(String additionalScope) {
             return new JobQueryScopeInfo(this.jobID, concatScopes(additionalScope));
+        }
+
+        @Override
+        protected void writeVariablesTo(DataOutput out) throws IOException {
+            out.writeUTF(jobID);
+        }
+
+        static JobQueryScopeInfo readFrom(DataInput dis, String scope) throws IOException {
+            final String jobId = dis.readUTF();
+            return new QueryScopeInfo.JobQueryScopeInfo(jobId, scope);
         }
 
         @Override
@@ -158,6 +217,20 @@ public abstract class QueryScopeInfo {
         public TaskQueryScopeInfo copy(String additionalScope) {
             return new TaskQueryScopeInfo(
                     this.jobID, this.vertexID, this.subtaskIndex, concatScopes(additionalScope));
+        }
+
+        @Override
+        protected void writeVariablesTo(DataOutput out) throws IOException {
+            out.writeUTF(jobID);
+            out.writeUTF(vertexID);
+            out.writeInt(subtaskIndex);
+        }
+
+        static TaskQueryScopeInfo readFrom(DataInput dis, String scope) throws IOException {
+            final String jobID = dis.readUTF();
+            final String vertexID = dis.readUTF();
+            final int subtaskIndex = dis.readInt();
+            return new QueryScopeInfo.TaskQueryScopeInfo(jobID, vertexID, subtaskIndex, scope);
         }
 
         @Override
@@ -202,6 +275,23 @@ public abstract class QueryScopeInfo {
                     this.subtaskIndex,
                     this.operatorName,
                     concatScopes(additionalScope));
+        }
+
+        @Override
+        protected void writeVariablesTo(DataOutput out) throws IOException {
+            out.writeUTF(jobID);
+            out.writeUTF(vertexID);
+            out.writeInt(subtaskIndex);
+            out.writeUTF(operatorName);
+        }
+
+        static OperatorQueryScopeInfo readFrom(DataInput dis, String scope) throws IOException {
+            final String jobID = dis.readUTF();
+            final String vertexID = dis.readUTF();
+            final int subtaskIndex = dis.readInt();
+            String operatorName = dis.readUTF();
+            return new QueryScopeInfo.OperatorQueryScopeInfo(
+                    jobID, vertexID, subtaskIndex, operatorName, scope);
         }
 
         @Override

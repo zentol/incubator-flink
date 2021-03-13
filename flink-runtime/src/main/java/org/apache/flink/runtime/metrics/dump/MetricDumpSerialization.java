@@ -33,19 +33,12 @@ import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.flink.runtime.metrics.dump.QueryScopeInfo.INFO_CATEGORY_JM;
-import static org.apache.flink.runtime.metrics.dump.QueryScopeInfo.INFO_CATEGORY_JOB;
-import static org.apache.flink.runtime.metrics.dump.QueryScopeInfo.INFO_CATEGORY_OPERATOR;
-import static org.apache.flink.runtime.metrics.dump.QueryScopeInfo.INFO_CATEGORY_TASK;
-import static org.apache.flink.runtime.metrics.dump.QueryScopeInfo.INFO_CATEGORY_TM;
 
 /** Utility class for the serialization of metrics. */
 public class MetricDumpSerialization {
@@ -219,45 +212,10 @@ public class MetricDumpSerialization {
         }
     }
 
-    private static void serializeMetricInfo(DataOutput out, QueryScopeInfo info)
-            throws IOException {
-        out.writeUTF(info.scope);
-        out.writeByte(info.getCategory());
-        switch (info.getCategory()) {
-            case INFO_CATEGORY_JM:
-                break;
-            case INFO_CATEGORY_TM:
-                String tmID = ((QueryScopeInfo.TaskManagerQueryScopeInfo) info).taskManagerID;
-                out.writeUTF(tmID);
-                break;
-            case INFO_CATEGORY_JOB:
-                QueryScopeInfo.JobQueryScopeInfo jobInfo = (QueryScopeInfo.JobQueryScopeInfo) info;
-                out.writeUTF(jobInfo.jobID);
-                break;
-            case INFO_CATEGORY_TASK:
-                QueryScopeInfo.TaskQueryScopeInfo taskInfo =
-                        (QueryScopeInfo.TaskQueryScopeInfo) info;
-                out.writeUTF(taskInfo.jobID);
-                out.writeUTF(taskInfo.vertexID);
-                out.writeInt(taskInfo.subtaskIndex);
-                break;
-            case INFO_CATEGORY_OPERATOR:
-                QueryScopeInfo.OperatorQueryScopeInfo operatorInfo =
-                        (QueryScopeInfo.OperatorQueryScopeInfo) info;
-                out.writeUTF(operatorInfo.jobID);
-                out.writeUTF(operatorInfo.vertexID);
-                out.writeInt(operatorInfo.subtaskIndex);
-                out.writeUTF(operatorInfo.operatorName);
-                break;
-            default:
-                throw new IOException("Unknown scope category: " + info.getCategory());
-        }
-    }
-
     private static void serializeCounter(
             DataOutput out, QueryScopeInfo info, String name, Counter counter) throws IOException {
         long count = counter.getCount();
-        serializeMetricInfo(out, info);
+        info.writeTo(out);
         out.writeUTF(name);
         out.writeLong(count);
     }
@@ -274,7 +232,7 @@ public class MetricDumpSerialization {
                     "toString() of the value returned by gauge " + name + " returned null.");
         }
 
-        serializeMetricInfo(out, info);
+        info.writeTo(out);
         out.writeUTF(name);
         out.writeUTF(stringValue);
     }
@@ -295,7 +253,7 @@ public class MetricDumpSerialization {
         double p99 = stat.getQuantile(0.99);
         double p999 = stat.getQuantile(0.999);
 
-        serializeMetricInfo(out, info);
+        info.writeTo(out);
         out.writeUTF(name);
         out.writeLong(min);
         out.writeLong(max);
@@ -312,7 +270,7 @@ public class MetricDumpSerialization {
 
     private static void serializeMeter(
             DataOutput out, QueryScopeInfo info, String name, Meter meter) throws IOException {
-        serializeMetricInfo(out, info);
+        info.writeTo(out);
         out.writeUTF(name);
         out.writeDouble(meter.getRate());
     }
@@ -392,14 +350,14 @@ public class MetricDumpSerialization {
     }
 
     private static MetricDump.CounterDump deserializeCounter(DataInputView dis) throws IOException {
-        QueryScopeInfo scope = deserializeMetricInfo(dis);
+        QueryScopeInfo scope = QueryScopeInfo.readFrom(dis);
         String name = dis.readUTF();
         long count = dis.readLong();
         return new MetricDump.CounterDump(scope, name, count);
     }
 
     private static MetricDump.GaugeDump deserializeGauge(DataInputView dis) throws IOException {
-        QueryScopeInfo scope = deserializeMetricInfo(dis);
+        QueryScopeInfo scope = QueryScopeInfo.readFrom(dis);
         String name = dis.readUTF();
         String value = dis.readUTF();
         return new MetricDump.GaugeDump(scope, name, value);
@@ -407,7 +365,7 @@ public class MetricDumpSerialization {
 
     private static MetricDump.HistogramDump deserializeHistogram(DataInputView dis)
             throws IOException {
-        QueryScopeInfo info = deserializeMetricInfo(dis);
+        QueryScopeInfo info = QueryScopeInfo.readFrom(dis);
         String name = dis.readUTF();
         long min = dis.readLong();
         long max = dis.readLong();
@@ -426,42 +384,9 @@ public class MetricDumpSerialization {
     }
 
     private static MetricDump.MeterDump deserializeMeter(DataInputView dis) throws IOException {
-        QueryScopeInfo info = deserializeMetricInfo(dis);
+        QueryScopeInfo info = QueryScopeInfo.readFrom(dis);
         String name = dis.readUTF();
         double rate = dis.readDouble();
         return new MetricDump.MeterDump(info, name, rate);
-    }
-
-    private static QueryScopeInfo deserializeMetricInfo(DataInput dis) throws IOException {
-        String jobID;
-        String vertexID;
-        int subtaskIndex;
-
-        String scope = dis.readUTF();
-        byte cat = dis.readByte();
-        switch (cat) {
-            case INFO_CATEGORY_JM:
-                return new QueryScopeInfo.JobManagerQueryScopeInfo(scope);
-            case INFO_CATEGORY_TM:
-                String tmID = dis.readUTF();
-                return new QueryScopeInfo.TaskManagerQueryScopeInfo(tmID, scope);
-            case INFO_CATEGORY_JOB:
-                jobID = dis.readUTF();
-                return new QueryScopeInfo.JobQueryScopeInfo(jobID, scope);
-            case INFO_CATEGORY_TASK:
-                jobID = dis.readUTF();
-                vertexID = dis.readUTF();
-                subtaskIndex = dis.readInt();
-                return new QueryScopeInfo.TaskQueryScopeInfo(jobID, vertexID, subtaskIndex, scope);
-            case INFO_CATEGORY_OPERATOR:
-                jobID = dis.readUTF();
-                vertexID = dis.readUTF();
-                subtaskIndex = dis.readInt();
-                String operatorName = dis.readUTF();
-                return new QueryScopeInfo.OperatorQueryScopeInfo(
-                        jobID, vertexID, subtaskIndex, operatorName, scope);
-            default:
-                throw new IOException("Unknown scope category: " + cat);
-        }
     }
 }
