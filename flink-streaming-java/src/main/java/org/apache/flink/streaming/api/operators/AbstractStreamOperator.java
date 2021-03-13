@@ -209,7 +209,7 @@ public abstract class AbstractStreamOperator<OUT>
                         MetricOptions.LATENCY_SOURCE_GRANULARITY.key(),
                         granularity);
             }
-            TaskManagerJobMetricGroup jobMetricGroup = this.metrics.parent().parent();
+            TaskManagerJobMetricGroup jobMetricGroup = this.metrics.getJobMetricGroup();
             this.latencyStats =
                     new LatencyStats(
                             jobMetricGroup.addGroup("latency"),

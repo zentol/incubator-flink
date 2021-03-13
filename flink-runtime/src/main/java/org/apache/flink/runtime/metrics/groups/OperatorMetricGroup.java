@@ -57,8 +57,12 @@ public class OperatorMetricGroup extends ComponentMetricGroup<TaskMetricGroup> {
 
     // ------------------------------------------------------------------------
 
-    public final TaskMetricGroup parent() {
-        return parent;
+    public final TaskIOMetricGroup getTaskIOMetricGroup() {
+        return parent.getIOMetricGroup();
+    }
+
+    public final TaskManagerJobMetricGroup getJobMetricGroup() {
+        return parent.parent;
     }
 
     @Override
