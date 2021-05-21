@@ -20,6 +20,7 @@ package org.apache.flink.streaming.connectors.kafka.internals;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
@@ -86,7 +87,7 @@ public class KafkaFetcher<T> extends AbstractFetcher<T, TopicPartition> {
             KafkaDeserializationSchema<T> deserializer,
             Properties kafkaProperties,
             long pollTimeout,
-            MetricGroup subtaskMetricGroup,
+            OperatorMetricGroup subtaskMetricGroup,
             MetricGroup consumerMetricGroup,
             boolean useMetrics)
             throws Exception {

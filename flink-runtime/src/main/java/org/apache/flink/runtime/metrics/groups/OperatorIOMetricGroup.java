@@ -27,7 +27,8 @@ import org.apache.flink.runtime.metrics.MetricNames;
  * Metric group that contains shareable pre-defined IO-related metrics. The metrics registration is
  * forwarded to the parent operator metric group.
  */
-public class OperatorIOMetricGroup extends ProxyMetricGroup<OperatorMetricGroup> {
+public class OperatorIOMetricGroup extends ProxyMetricGroup<OperatorMetricGroup>
+        implements org.apache.flink.metrics.groups.OperatorIOMetricGroup {
 
     private final Counter numRecordsIn;
     private final Counter numRecordsOut;
@@ -47,10 +48,12 @@ public class OperatorIOMetricGroup extends ProxyMetricGroup<OperatorMetricGroup>
                         MetricNames.IO_NUM_RECORDS_OUT_RATE, new MeterView(numRecordsOut));
     }
 
+    @Override
     public Counter getNumRecordsInCounter() {
         return numRecordsIn;
     }
 
+    @Override
     public Counter getNumRecordsOutCounter() {
         return numRecordsOut;
     }

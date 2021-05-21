@@ -25,6 +25,7 @@ import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.connector.kafka.source.KafkaSourceTestEnv;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializer;
 import org.apache.flink.connector.kafka.source.split.KafkaPartitionSplit;
+import org.apache.flink.metrics.SimpleCounter;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.TopicPartition;
@@ -175,7 +176,11 @@ public class KafkaPartitionSplitReaderTest {
         props.putAll(KafkaSourceTestEnv.getConsumerProperties(ByteArrayDeserializer.class));
         props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "none");
         return new KafkaPartitionSplitReader<>(
-                props, KafkaRecordDeserializer.valueOnly(IntegerDeserializer.class), 0);
+                props,
+                KafkaRecordDeserializer.valueOnly(IntegerDeserializer.class),
+                0,
+                new SimpleCounter(),
+                new SimpleCounter());
     }
 
     private Map<String, KafkaPartitionSplit> assignSplits(

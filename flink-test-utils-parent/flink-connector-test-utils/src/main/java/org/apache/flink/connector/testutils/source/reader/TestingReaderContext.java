@@ -22,6 +22,7 @@ import org.apache.flink.api.connector.source.SourceEvent;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 
 import java.util.ArrayList;
@@ -30,7 +31,8 @@ import java.util.List;
 /** A testing implementation of the {@link SourceReaderContext}. */
 public class TestingReaderContext implements SourceReaderContext {
 
-    private final UnregisteredMetricsGroup metrics = new UnregisteredMetricsGroup();
+    private final OperatorMetricGroup metrics =
+            UnregisteredMetricsGroup.createUnregisteredOperatorMetricGroup();
 
     private final Configuration config;
 

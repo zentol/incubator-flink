@@ -22,6 +22,7 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.config.OffsetCommitMode;
@@ -84,7 +85,7 @@ public class FlinkKafkaShuffleConsumer<T> extends FlinkKafkaConsumer<T> {
                 deserializer,
                 properties,
                 pollTimeout,
-                runtimeContext.getMetricGroup(),
+                (OperatorMetricGroup) runtimeContext.getMetricGroup(),
                 consumerMetricGroup,
                 useMetrics,
                 typeSerializer,
