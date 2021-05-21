@@ -26,6 +26,7 @@ import org.apache.flink.connector.kafka.source.KafkaSourceTestEnv;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.connector.kafka.source.split.KafkaPartitionSplit;
 import org.apache.flink.connector.testutils.source.deserialization.TestingDeserializationContext;
+import org.apache.flink.metrics.SimpleCounter;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.TopicPartition;
@@ -178,7 +179,8 @@ public class KafkaPartitionSplitReaderTest {
         KafkaRecordDeserializationSchema<Integer> deserializationSchema =
                 KafkaRecordDeserializationSchema.valueOnly(IntegerDeserializer.class);
         deserializationSchema.open(new TestingDeserializationContext());
-        return new KafkaPartitionSplitReader<>(props, deserializationSchema, 0);
+        return new KafkaPartitionSplitReader<>(
+                props, deserializationSchema, 0, new SimpleCounter(), new SimpleCounter());
     }
 
     private Map<String, KafkaPartitionSplit> assignSplits(

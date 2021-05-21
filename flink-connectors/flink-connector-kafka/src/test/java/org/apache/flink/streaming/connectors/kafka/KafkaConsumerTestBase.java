@@ -23,6 +23,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -95,10 +96,16 @@ import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 
 import javax.annotation.Nullable;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -115,6 +122,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommunicationUtils.getRunningJobs;
@@ -122,6 +130,10 @@ import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommu
 import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommunicationUtils.waitUntilNoJobIsRunning;
 import static org.apache.flink.test.util.TestUtils.submitJobAndWaitForResult;
 import static org.apache.flink.test.util.TestUtils.tryExecute;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -1796,6 +1808,11 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         deleteTestTopic(topic);
     }
 
+    @Test
+    public void testMetrics() throws Throwable {
+        runMetricsTest();
+    }
+
     /**
      * Test metrics reporting for consumer.
      *
@@ -1816,44 +1833,15 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         env1.getConfig().setRestartStrategy(RestartStrategies.noRestart());
         env1.disableOperatorChaining(); // let the source read everything into the network buffers
 
-        TypeInformationSerializationSchema<Tuple2<Integer, Integer>> schema =
+        TypeInformationSerializationSchema<Long> schema =
                 new TypeInformationSerializationSchema<>(
-                        TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {}),
-                        env1.getConfig());
+                        BasicTypeInfo.LONG_TYPE_INFO, env1.getConfig());
 
-        DataStream<Tuple2<Integer, Integer>> fromKafka =
-                getStream(env1, topic, schema, standardProps);
-        fromKafka.flatMap(
-                new FlatMapFunction<Tuple2<Integer, Integer>, Void>() {
-                    @Override
-                    public void flatMap(Tuple2<Integer, Integer> value, Collector<Void> out)
-                            throws Exception { // no op
-                    }
-                });
+        DataStream<Long> fromKafka = getStream(env1, topic, schema, standardProps);
+        long n = 1000;
+        fromKafka.map(new SignalingMapper<>(n - 1));
 
-        DataStream<Tuple2<Integer, Integer>> fromGen =
-                env1.addSource(
-                        new RichSourceFunction<Tuple2<Integer, Integer>>() {
-                            boolean running = true;
-
-                            @Override
-                            public void run(SourceContext<Tuple2<Integer, Integer>> ctx)
-                                    throws Exception {
-                                int i = 0;
-                                while (running) {
-                                    ctx.collect(
-                                            Tuple2.of(
-                                                    i++,
-                                                    getRuntimeContext().getIndexOfThisSubtask()));
-                                    Thread.sleep(1);
-                                }
-                            }
-
-                            @Override
-                            public void cancel() {
-                                running = false;
-                            }
-                        });
+        DataStream<Long> fromGen = env1.fromSequence(0, n + 1).map(new WaitingMapper<>(n));
 
         kafkaServer.produceIntoKafka(fromGen, topic, schema, standardProps, null);
 
@@ -1877,46 +1865,52 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         jobThread.start();
 
         try {
+            SignalingMapper.processedAllRecords.await();
             // connect to JMX
             MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            // wait until we've found all 5 offset metrics
             Set<ObjectName> offsetMetrics =
                     mBeanServer.queryNames(new ObjectName("*current-offsets*:*"), null);
-            while (offsetMetrics.size()
-                    < 5) { // test will time out if metrics are not properly working
-                if (error.f0 != null) {
-                    // fail test early
-                    throw error.f0;
-                }
-                offsetMetrics = mBeanServer.queryNames(new ObjectName("*current-offsets*:*"), null);
-                Thread.sleep(50);
-            }
             Assert.assertEquals(5, offsetMetrics.size());
-            // we can't rely on the consumer to have touched all the partitions already
-            // that's why we'll wait until all five partitions have a positive offset.
-            // The test will fail if we never meet the condition
-            while (true) {
-                int numPosOffsets = 0;
-                // check that offsets are correctly reported
-                for (ObjectName object : offsetMetrics) {
-                    Object offset = mBeanServer.getAttribute(object, "Value");
-                    if ((long) offset >= 0) {
-                        numPosOffsets++;
-                    }
-                }
-                if (numPosOffsets == 5) {
-                    break;
-                }
-                // wait for the consumer to consume on all partitions
-                Thread.sleep(50);
+
+            long offset = 0;
+            for (ObjectName metric : offsetMetrics) {
+                offset += ((Number) mBeanServer.getAttribute(metric, "Value")).longValue();
             }
+            Assert.assertThat(offset, both(greaterThanOrEqualTo(n - 5)).and(lessThanOrEqualTo(n)));
 
             // check if producer metrics are also available.
             Set<ObjectName> producerMetrics =
                     mBeanServer.queryNames(new ObjectName("*KafkaProducer*:*"), null);
             Assert.assertTrue("No producer metrics found", producerMetrics.size() > 30);
 
+            long bytesRead =
+                    getLongMetric(
+                            mBeanServer,
+                            "*task.numBytesIn:task_name=Source-_Custom_Source,*",
+                            "Count");
+            Assert.assertThat("No bytes read", bytesRead, greaterThan(0L));
+            long kafkaBytesRead =
+                    getLongMetric(
+                            mBeanServer,
+                            "*operator.bytes-consumed-total:operator_name=Source-_Custom_Source,*",
+                            "Value");
+            assertEquals(kafkaBytesRead, bytesRead);
+
+            long recordsRead =
+                    getLongMetric(
+                            mBeanServer,
+                            "*operator.numRecordsIn:operator_name=Source-_Custom_Source,*",
+                            "Count");
+            Assert.assertThat("No records read", recordsRead, greaterThan(0L));
+            long kafkaRecordsRead =
+                    getLongMetric(
+                            mBeanServer,
+                            "*operator.records-consumed-total:operator_name=Source-_Custom_Source,*",
+                            "Value");
+            assertEquals(kafkaRecordsRead, recordsRead);
+
             LOG.info("Found all JMX metrics. Cancelling job.");
+            WaitingMapper.awaitEvaluation.countDown();
         } finally {
             // cancel
             client.cancel(jobId).get();
@@ -1929,6 +1923,16 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         }
 
         deleteTestTopic(topic);
+    }
+
+    private long getLongMetric(MBeanServer mBeanServer, String pattern, String attribute)
+            throws MalformedObjectNameException, MBeanException, AttributeNotFoundException,
+                    InstanceNotFoundException, ReflectionException {
+        long sum = 0;
+        for (ObjectName i : mBeanServer.queryNames(new ObjectName(pattern), null)) {
+            sum += ((Number) mBeanServer.getAttribute(i, attribute)).longValue();
+        }
+        return sum;
     }
 
     private static class CollectingDeserializationSchema
@@ -2755,6 +2759,42 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
             byte[] serializedValue = by.toByteArray();
 
             return new ProducerRecord<>(element.f2, serializedValue);
+        }
+    }
+
+    private static class SignalingMapper<T> implements MapFunction<T, T> {
+        static CountDownLatch processedAllRecords;
+        private final T signalElement;
+
+        private SignalingMapper(T signalElement) {
+            this.signalElement = signalElement;
+            processedAllRecords = new CountDownLatch(1);
+        }
+
+        @Override
+        public T map(T n) throws Exception {
+            if (n.equals(signalElement)) {
+                processedAllRecords.countDown();
+            }
+            return n;
+        }
+    }
+
+    private static class WaitingMapper<T> implements MapFunction<T, T> {
+        static CountDownLatch awaitEvaluation;
+        private final T waitElement;
+
+        private WaitingMapper(T waitElement) {
+            this.waitElement = waitElement;
+            awaitEvaluation = new CountDownLatch(1);
+        }
+
+        @Override
+        public T map(T n) throws Exception {
+            if (n.equals(waitElement)) {
+                awaitEvaluation.await();
+            }
+            return n;
         }
     }
 }

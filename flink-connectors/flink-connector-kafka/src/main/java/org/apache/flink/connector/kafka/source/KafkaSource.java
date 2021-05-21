@@ -45,6 +45,7 @@ import org.apache.flink.connector.kafka.source.split.KafkaPartitionSplitSerializ
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.util.UserCodeClassLoader;
+import org.apache.flink.metrics.groups.OperatorMetricGroup;
 
 import javax.annotation.Nullable;
 
@@ -137,7 +138,15 @@ public class KafkaSource<OUT>
         Supplier<KafkaPartitionSplitReader<OUT>> splitReaderSupplier =
                 () ->
                         new KafkaPartitionSplitReader<>(
-                                props, deserializationSchema, readerContext.getIndexOfSubtask());
+                                props,
+                                deserializationSchema,
+                                readerContext.getIndexOfSubtask(),
+                                ((OperatorMetricGroup) readerContext.metricGroup())
+                                        .getIOMetricGroup()
+                                        .getNumRecordsInCounter(),
+                                ((OperatorMetricGroup) readerContext.metricGroup())
+                                        .getTaskIOMetricGroup()
+                                        .getNumBytesInCounter());
         KafkaRecordEmitter<OUT> recordEmitter = new KafkaRecordEmitter<>();
 
         return new KafkaSourceReader<>(

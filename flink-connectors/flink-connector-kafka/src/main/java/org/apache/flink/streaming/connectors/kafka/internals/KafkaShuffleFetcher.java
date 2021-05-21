@@ -26,6 +26,7 @@ import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
@@ -68,7 +69,7 @@ public class KafkaShuffleFetcher<T> extends KafkaFetcher<T> {
             KafkaDeserializationSchema<T> deserializer,
             Properties kafkaProperties,
             long pollTimeout,
-            MetricGroup subtaskMetricGroup,
+            OperatorMetricGroup subtaskMetricGroup,
             MetricGroup consumerMetricGroup,
             boolean useMetrics,
             TypeSerializer<T> typeSerializer,

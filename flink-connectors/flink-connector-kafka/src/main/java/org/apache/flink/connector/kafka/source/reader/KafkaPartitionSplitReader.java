@@ -26,6 +26,8 @@ import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.connector.kafka.source.KafkaSourceOptions;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.connector.kafka.source.split.KafkaPartitionSplit;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.streaming.connectors.kafka.MetricUtil;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.Preconditions;
@@ -36,6 +38,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetCommitCallback;
+import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
@@ -74,12 +77,19 @@ public class KafkaPartitionSplitReader<T>
     private final SimpleCollector<T> collector;
     private final String groupId;
     private final int subtaskId;
+    private final Counter numRecordsInCounter;
+    private final Counter numBytesInCounter;
+    private final Metric kafkaByteInMetric;
 
     public KafkaPartitionSplitReader(
             Properties props,
             KafkaRecordDeserializationSchema<T> deserializationSchema,
-            int subtaskId) {
+            int subtaskId,
+            Counter numRecordsInCounter,
+            Counter numBytesInCounter) {
         this.subtaskId = subtaskId;
+        this.numRecordsInCounter = numRecordsInCounter;
+        this.numBytesInCounter = numBytesInCounter;
         Properties consumerProps = new Properties();
         consumerProps.putAll(props);
         consumerProps.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, createConsumerClientId(props));
@@ -88,6 +98,8 @@ public class KafkaPartitionSplitReader<T>
         this.deserializationSchema = deserializationSchema;
         this.collector = new SimpleCollector<>();
         this.groupId = consumerProps.getProperty(ConsumerConfig.GROUP_ID_CONFIG);
+
+        kafkaByteInMetric = MetricUtil.getKakfaByteInMetric(consumer.metrics());
     }
 
     @Override
@@ -101,6 +113,9 @@ public class KafkaPartitionSplitReader<T>
             recordsBySplits.prepareForRead();
             return recordsBySplits;
         }
+
+        numRecordsInCounter.inc(consumerRecords.count());
+        MetricUtil.sync(kafkaByteInMetric, numBytesInCounter);
 
         List<TopicPartition> finishedPartitions = new ArrayList<>();
         for (TopicPartition tp : consumerRecords.partitions()) {

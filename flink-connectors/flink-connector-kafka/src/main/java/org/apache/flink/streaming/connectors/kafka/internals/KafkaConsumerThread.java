@@ -21,7 +21,10 @@ package org.apache.flink.streaming.connectors.kafka.internals;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.runtime.metrics.groups.OperatorMetricGroup;
+import org.apache.flink.streaming.connectors.kafka.MetricUtil;
 import org.apache.flink.streaming.connectors.kafka.internals.metrics.KafkaMetricWrapper;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -90,7 +93,7 @@ public class KafkaConsumerThread<T> extends Thread {
      * @deprecated We should only be publishing to the {{@link #consumerMetricGroup}}. This is kept
      *     to retain compatibility for metrics.
      */
-    @Deprecated private final MetricGroup subtaskMetricGroup;
+    @Deprecated private final OperatorMetricGroup subtaskMetricGroup;
 
     /** We get this from the outside to publish metrics. */
     private final MetricGroup consumerMetricGroup;
@@ -127,7 +130,7 @@ public class KafkaConsumerThread<T> extends Thread {
             long pollTimeout,
             boolean useMetrics,
             MetricGroup consumerMetricGroup,
-            MetricGroup subtaskMetricGroup) {
+            OperatorMetricGroup subtaskMetricGroup) {
 
         super(threadName);
         setDaemon(true);
@@ -192,6 +195,12 @@ public class KafkaConsumerThread<T> extends Thread {
                     }
                 }
             }
+
+            Counter numRecordsInCounter =
+                    subtaskMetricGroup.getIOMetricGroup().getNumRecordsInCounter();
+            Counter numBytesInCounter =
+                    subtaskMetricGroup.parent().getIOMetricGroup().getNumBytesInCounter();
+            Metric kafkaByteInMetric = MetricUtil.getKakfaByteInMetric(consumer.metrics());
 
             // early exit check
             if (!running) {
@@ -262,6 +271,8 @@ public class KafkaConsumerThread<T> extends Thread {
                 }
 
                 try {
+                    numRecordsInCounter.inc(records.count());
+                    MetricUtil.sync(kafkaByteInMetric, numBytesInCounter);
                     handover.produce(records);
                     records = null;
                 } catch (Handover.WakeupException e) {
