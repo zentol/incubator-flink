@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.testutils;
 
 import org.apache.flink.api.common.time.Deadline;
+import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.JobManagerOptions;
@@ -26,6 +27,7 @@ import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.configuration.UnmodifiableConfiguration;
+import org.apache.flink.metrics.reporter.TestReporter;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.minicluster.MiniCluster;
@@ -62,6 +64,8 @@ public class MiniClusterResource extends ExternalResource {
 
     private UnmodifiableConfiguration restClusterClientConfig;
 
+    private final TestReporter metricReporter = TestReporter.getInstance();
+
     public MiniClusterResource(
             final MiniClusterResourceConfiguration miniClusterResourceConfiguration) {
         this.miniClusterResourceConfiguration =
@@ -82,6 +86,10 @@ public class MiniClusterResource extends ExternalResource {
 
     public URI getRestAddres() {
         return miniCluster.getRestAddress().join();
+    }
+
+    public TestReporter getMetricReporter() {
+        return metricReporter;
     }
 
     @Override
@@ -110,7 +118,8 @@ public class MiniClusterResource extends ExternalResource {
                                                 .toMilliseconds()));
 
                 final List<CompletableFuture<Acknowledge>> jobCancellationFutures =
-                        miniCluster.listJobs()
+                        miniCluster
+                                .listJobs()
                                 .get(
                                         jobCancellationDeadline.timeLeft().toMillis(),
                                         TimeUnit.MILLISECONDS)
@@ -125,7 +134,8 @@ public class MiniClusterResource extends ExternalResource {
                 CommonTestUtils.waitUntilCondition(
                         () -> {
                             final long unfinishedJobs =
-                                    miniCluster.listJobs()
+                                    miniCluster
+                                            .listJobs()
                                             .get(
                                                     jobCancellationDeadline.timeLeft().toMillis(),
                                                     TimeUnit.MILLISECONDS)
@@ -167,6 +177,11 @@ public class MiniClusterResource extends ExternalResource {
                 new Configuration(miniClusterResourceConfiguration.getConfiguration());
         configuration.setString(
                 CoreOptions.TMP_DIRS, temporaryFolder.newFolder().getAbsolutePath());
+        configuration.setString(
+                ConfigConstants.METRICS_REPORTER_PREFIX
+                        + "test_reporter."
+                        + ConfigConstants.METRICS_REPORTER_FACTORY_CLASS_SUFFIX,
+                TestReporter.Factory.class.getName());
 
         // we need to set this since a lot of test expect this because TestBaseUtils.startCluster()
         // enabled this by default
