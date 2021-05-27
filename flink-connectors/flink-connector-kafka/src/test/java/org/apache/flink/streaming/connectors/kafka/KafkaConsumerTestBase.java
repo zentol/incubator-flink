@@ -45,6 +45,9 @@ import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.Gauge;
+import org.apache.flink.metrics.Metric;
 import org.apache.flink.runtime.client.JobCancellationException;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -64,6 +67,8 @@ import org.apache.flink.streaming.api.graph.StreamingJobGraphGenerator;
 import org.apache.flink.streaming.connectors.kafka.config.StartupMode;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaDeserializationSchemaWrapper;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
+import org.apache.flink.streaming.connectors.kafka.internals.metrics.KafkaMetricWrapper;
+import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
 import org.apache.flink.streaming.connectors.kafka.testutils.DataGenerators;
 import org.apache.flink.streaming.connectors.kafka.testutils.FailingIdentityMapper;
 import org.apache.flink.streaming.connectors.kafka.testutils.PartitionValidatingMapper;
@@ -93,17 +98,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -114,20 +111,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommunicationUtils.getRunningJobs;
 import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommunicationUtils.waitUntilJobIsRunning;
 import static org.apache.flink.streaming.connectors.kafka.testutils.ClusterCommunicationUtils.waitUntilNoJobIsRunning;
 import static org.apache.flink.test.util.TestUtils.submitJobAndWaitForResult;
 import static org.apache.flink.test.util.TestUtils.tryExecute;
-import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -1829,7 +1823,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
 
         DataStream<Long> fromGen = env1.fromSequence(0, n + 1).map(new WaitingMapper<>(n));
 
-        kafkaServer.produceIntoKafka(fromGen, topic, schema, standardProps, null);
+        kafkaServer.produceIntoKafka(
+                fromGen, topic, schema, standardProps, new RoundRobinPartitioner());
 
         JobGraph jobGraph = StreamingJobGraphGenerator.createJobGraph(env1.getStreamGraph());
         final JobID jobId = jobGraph.getJobID();
@@ -1853,49 +1848,37 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         try {
             SignalingMapper.processedAllRecords.await();
             // connect to JMX
-            MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-            Set<ObjectName> offsetMetrics =
-                    mBeanServer.queryNames(new ObjectName("*current-offsets*:*"), null);
-            Assert.assertEquals(5, offsetMetrics.size());
+            Map<String, Metric> metrics = flink.getMetricReporter().getMetrics("current-offsets");
+            Assert.assertEquals(5, metrics.size());
 
-            long offset = 0;
-            for (ObjectName metric : offsetMetrics) {
-                offset += ((Number) mBeanServer.getAttribute(metric, "Value")).longValue();
+            long nonNullOffsets = 0;
+            for (Metric metric : metrics.values()) {
+                nonNullOffsets += ((Number) ((Gauge) metric).getValue()).longValue() > 0 ? 1 : 0;
             }
-            Assert.assertThat(offset, both(greaterThanOrEqualTo(n - 5)).and(lessThanOrEqualTo(n)));
+            Assert.assertEquals(nonNullOffsets, 5);
 
             // check if producer metrics are also available.
-            Set<ObjectName> producerMetrics =
-                    mBeanServer.queryNames(new ObjectName("*KafkaProducer*:*"), null);
+            Map<String, Metric> producerMetrics =
+                    flink.getMetricReporter().getMetrics("KafkaProducer");
             Assert.assertTrue("No producer metrics found", producerMetrics.size() > 30);
 
-            long bytesRead =
-                    getLongMetric(
-                            mBeanServer,
-                            "*task.numBytesIn:task_name=Source-_Custom_Source,*",
-                            "Count");
+            long bytesRead = getLongMetric("Custom Source.*\\.numBytesIn$", Counter::getCount);
             Assert.assertThat("No bytes read", bytesRead, greaterThan(0L));
             long kafkaBytesRead =
                     getLongMetric(
-                            mBeanServer,
-                            "*operator.bytes-consumed-total:operator_name=Source-_Custom_Source,*",
-                            "Value");
+                            "Custom Source.*\\.KafkaConsumer\\.bytes-consumed-total$",
+                            KafkaMetricWrapper::getValue);
             assertEquals(kafkaBytesRead, bytesRead);
 
-            long recordsRead =
-                    getLongMetric(
-                            mBeanServer,
-                            "*operator.numRecordsIn:operator_name=Source-_Custom_Source,*",
-                            "Count");
+            long recordsRead = getLongMetric("Custom Source.*\\.numRecordsIn$", Counter::getCount);
             Assert.assertThat("No records read", recordsRead, greaterThan(0L));
             long kafkaRecordsRead =
                     getLongMetric(
-                            mBeanServer,
-                            "*operator.records-consumed-total:operator_name=Source-_Custom_Source,*",
-                            "Value");
+                            "Custom Source.*\\.KafkaConsumer\\.records-consumed-total$",
+                            KafkaMetricWrapper::getValue);
             assertEquals(kafkaRecordsRead, recordsRead);
 
-            LOG.info("Found all JMX metrics. Cancelling job.");
+            LOG.info("Found all metrics. Cancelling job.");
             WaitingMapper.awaitEvaluation.countDown();
         } finally {
             // cancel
@@ -1911,12 +1894,10 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         deleteTestTopic(topic);
     }
 
-    private long getLongMetric(MBeanServer mBeanServer, String pattern, String attribute)
-            throws MalformedObjectNameException, MBeanException, AttributeNotFoundException,
-                    InstanceNotFoundException, ReflectionException {
+    private <T> long getLongMetric(String pattern, Function<T, ? extends Number> extractor) {
         long sum = 0;
-        for (ObjectName i : mBeanServer.queryNames(new ObjectName(pattern), null)) {
-            sum += ((Number) mBeanServer.getAttribute(i, attribute)).longValue();
+        for (Metric metric : flink.getMetricReporter().getMetrics(pattern).values()) {
+            sum += extractor.apply((T) metric).longValue();
         }
         return sum;
     }
@@ -2678,6 +2659,14 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
                 awaitEvaluation.await();
             }
             return n;
+        }
+    }
+
+    private static class RoundRobinPartitioner extends FlinkKafkaPartitioner<Long> {
+        @Override
+        public int partition(
+                Long record, byte[] key, byte[] value, String targetTopic, int[] partitions) {
+            return partitions[(int) (record % partitions.length)];
         }
     }
 }
