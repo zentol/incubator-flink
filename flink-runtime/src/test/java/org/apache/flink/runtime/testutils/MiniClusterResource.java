@@ -177,7 +177,7 @@ public class MiniClusterResource extends ExternalResource {
                 CoreOptions.TMP_DIRS, temporaryFolder.newFolder().getAbsolutePath());
         configuration.setString(
                 ConfigConstants.METRICS_REPORTER_PREFIX
-                        + "test_reporter."
+                        + "mini_cluster_builtin_reporter."
                         + ConfigConstants.METRICS_REPORTER_FACTORY_CLASS_SUFFIX,
                 TestReporter.Factory.class.getName());
 
