@@ -21,6 +21,7 @@ package org.apache.flink.runtime.metrics.groups;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
@@ -29,6 +30,7 @@ import org.apache.flink.runtime.metrics.MetricRegistryTestUtils;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
 import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 import org.apache.flink.runtime.metrics.util.DummyCharacterFilter;
+import org.apache.flink.runtime.metrics.util.MetricUtils;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.After;
@@ -62,21 +64,18 @@ public class OperatorGroupTest extends TestLogger {
 
     @Test
     public void testGenerateScopeDefault() throws Exception {
-        TaskManagerMetricGroup tmGroup =
-                new TaskManagerMetricGroup(registry, "theHostName", "test-tm-id");
-        TaskManagerJobMetricGroup jmGroup =
-                new TaskManagerJobMetricGroup(registry, tmGroup, new JobID(), "myJobName");
-        TaskMetricGroup taskGroup =
-                new TaskMetricGroup(
-                        registry,
-                        jmGroup,
-                        new JobVertexID(),
-                        new ExecutionAttemptID(),
-                        "aTaskName",
-                        11,
-                        0);
-        OperatorMetricGroup opGroup =
-                new OperatorMetricGroup(registry, taskGroup, new OperatorID(), "myOpName");
+        final OperatorMetricGroup opGroup =
+                MetricUtils.createTaskManagerMetricGroup(
+                                registry, "theHostName", new ResourceID("test-tm-id"))
+                        .addTaskForJob(
+                                new JobID(),
+                                "myJobName",
+                                new JobVertexID(),
+                                new ExecutionAttemptID(),
+                                "aTaskName",
+                                11,
+                                0)
+                        .getOrAddOperator(new OperatorID(), "myOpName");
 
         assertArrayEquals(
                 new String[] {
@@ -105,6 +104,8 @@ public class OperatorGroupTest extends TestLogger {
             String operatorName = "operatorName";
 
             OperatorMetricGroup operatorGroup =
+                MetricUtils.createTaskManagerMetricGroup(
+                    registry, "theHostName", new ResourceID("test-tm-id"))
                     new TaskManagerMetricGroup(registry, "theHostName", tmID)
                             .addTaskForJob(
                                     jid,
