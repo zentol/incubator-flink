@@ -18,11 +18,12 @@
 
 package org.apache.flink.runtime.types;
 
-import com.twitter.chill.IKryoRegistrar;
+import org.apache.flink.util.function.TriConsumer;
+
+import com.esotericsoftware.kryo.Serializer;
 import com.twitter.chill.java.ArraysAsListSerializer;
 import com.twitter.chill.java.BitSetSerializer;
 import com.twitter.chill.java.InetSocketAddressSerializer;
-import com.twitter.chill.java.IterableRegistrar;
 import com.twitter.chill.java.LocaleSerializer;
 import com.twitter.chill.java.RegexSerializer;
 import com.twitter.chill.java.SimpleDateFormatSerializer;
@@ -32,30 +33,40 @@ import com.twitter.chill.java.TimestampSerializer;
 import com.twitter.chill.java.URISerializer;
 import com.twitter.chill.java.UUIDSerializer;
 
-/*
-This code is copied as is from Twitter Chill 0.7.4 because we need to user a newer chill version
-but want to ensure that the serializers that are registered by default stay the same.
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Locale;
+import java.util.PriorityQueue;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
-The only changes to the code are those that are required to make it compile and pass checkstyle
-checks in our code base.
+/**
+ * Registers all chill serializers used for Java types.
+ *
+ * <p>All registrations use a hard-coded ID which were determined at commit
+ * 18f176ce86900fd4e932c73f3d138912355c6880.
  */
-
-/** Creates a registrar for all the serializers in the chill.java package. */
 public class FlinkChillPackageRegistrar {
 
-    public static IKryoRegistrar all() {
-        return new IterableRegistrar(
-                ArraysAsListSerializer.registrar(),
-                BitSetSerializer.registrar(),
-                PriorityQueueSerializer.registrar(),
-                RegexSerializer.registrar(),
-                SqlDateSerializer.registrar(),
-                SqlTimeSerializer.registrar(),
-                TimestampSerializer.registrar(),
-                URISerializer.registrar(),
-                InetSocketAddressSerializer.registrar(),
-                UUIDSerializer.registrar(),
-                LocaleSerializer.registrar(),
-                SimpleDateFormatSerializer.registrar());
+    public static void registerJavaTypes(TriConsumer<Class<?>, Serializer<?>, Integer> kryo) {
+        //noinspection ArraysAsListWithZeroOrOneArgument
+        kryo.accept(Arrays.asList("").getClass(), new ArraysAsListSerializer(), 73);
+        kryo.accept(BitSet.class, new BitSetSerializer(), 74);
+        kryo.accept(PriorityQueue.class, new PriorityQueueSerializer(), 75);
+        kryo.accept(Pattern.class, new RegexSerializer(), 76);
+        kryo.accept(Date.class, new SqlDateSerializer(), 77);
+        kryo.accept(Time.class, new SqlTimeSerializer(), 78);
+        kryo.accept(Timestamp.class, new TimestampSerializer(), 79);
+        kryo.accept(URI.class, new URISerializer(), 80);
+        kryo.accept(InetSocketAddress.class, new InetSocketAddressSerializer(), 81);
+        kryo.accept(UUID.class, new UUIDSerializer(), 82);
+        kryo.accept(Locale.class, new LocaleSerializer(), 83);
+        kryo.accept(SimpleDateFormat.class, new SimpleDateFormatSerializer(), 84);
     }
 }
