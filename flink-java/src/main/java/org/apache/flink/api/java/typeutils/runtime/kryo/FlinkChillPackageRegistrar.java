@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.types;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.util.function.TriConsumer;
 
