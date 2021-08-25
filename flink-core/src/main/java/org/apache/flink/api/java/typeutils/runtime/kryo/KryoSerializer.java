@@ -37,6 +37,7 @@ import org.apache.flink.util.InstantiationUtil;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -468,13 +469,28 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
     // --------------------------------------------------------------------------------------------
 
+    @VisibleForTesting
+    public static void printKryoRegistrations() {
+        final Kryo kryo = getKryoInstance();
+
+        for (int x = 0; x < 200; x++) {
+            final Registration registration = kryo.getRegistration(x);
+
+            if (registration != null) {
+                System.out.printf(
+                        "%d - %s%n",
+                        registration.getId(), registration.getType().getCanonicalName());
+            }
+        }
+    }
+
     /**
      * Returns the Chill Kryo Serializer which is implicitly added to the classpath via
      * flink-runtime. Falls back to the default Kryo serializer if it can't be found.
      *
      * @return The Kryo serializer instance.
      */
-    private Kryo getKryoInstance() {
+    private static Kryo getKryoInstance() {
 
         final Kryo kryo = getBaseKryoInstance();
         flinkChillPackageRegistrar.ifPresent(r -> r.registerSerializers(kryo::register));
