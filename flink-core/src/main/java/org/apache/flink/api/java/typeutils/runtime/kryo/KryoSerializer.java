@@ -57,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -66,6 +67,35 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>This serializer is intended as a fallback serializer for the cases that are not covered by the
  * basic types, tuples, and POJOs.
+ *
+ * <p>The set of serializers registered with Kryo via {@link Kryo#register}, with their respective
+ * IDs, depends on whether flink-java or flink-scala are on the classpath. This is for
+ * backwards-compatibility reasons.
+ *
+ * <p>If neither are available (which should only apply to tests in flink-core), then:
+ *
+ * <ul>
+ *   <li>0-9 are used for Java primitives
+ *   <li>10+ are used for user-defined registration
+ * </ul>
+ *
+ * <p>If flink-scala is available, then:
+ *
+ * <ul>
+ *   <li>0-9 are used for Java primitives
+ *   <li>10-72 are used for Scala classes
+ *   <li>73-84 are used for Java classes
+ *   <li>85+ are used for user-defined registration
+ * </ul>
+ *
+ * <p>If *only* flink-java is available, then:
+ *
+ * <ul>
+ *   <li>0-9 are used for Java primitives
+ *   <li>10-72 are unused (to maintain compatibility)
+ *   <li>73-84 are used for Java classes
+ *   <li>85+ are used for user-defined registration
+ * </ul>
  *
  * @param <T> The type to be serialized.
  */
@@ -84,6 +114,22 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
     static {
         configureKryoLogging();
+    }
+
+    private static final Optional<ChillSerializerRegistrar> flinkChillPackageRegistrar =
+            loadFlinkChillPackageRegistrar();
+
+    private static Optional<ChillSerializerRegistrar> loadFlinkChillPackageRegistrar() {
+        try {
+            return Optional.of(
+                    (ChillSerializerRegistrar)
+                            Class.forName(
+                                            "org.apache.flink.api.java.typeutils.runtime.kryo.FlinkChillPackageRegistrar")
+                                    .getDeclaredConstructor()
+                                    .newInstance());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -430,6 +476,13 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
      */
     private Kryo getKryoInstance() {
 
+        final Kryo kryo = getBaseKryoInstance();
+        flinkChillPackageRegistrar.ifPresent(r -> r.registerSerializers(kryo::register));
+
+        return kryo;
+    }
+
+    private static Kryo getBaseKryoInstance() {
         try {
             // check if ScalaKryoInstantiator is in class path (coming from Twitter's Chill
             // library).
@@ -487,7 +540,12 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
                 kryo.addDefaultSerializer(entry.getKey(), entry.getValue());
             }
 
-            KryoUtils.applyRegistrations(this.kryo, kryoRegistrations.values());
+            KryoUtils.applyRegistrations(
+                    this.kryo,
+                    kryoRegistrations.values(),
+                    flinkChillPackageRegistrar
+                            .map(registar -> registar.getMaxRegistrationId() + 1)
+                            .orElse(kryo.getNextRegistrationId()));
 
             kryo.setRegistrationRequired(false);
             kryo.setClassLoader(Thread.currentThread().getContextClassLoader());

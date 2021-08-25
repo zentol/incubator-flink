@@ -51,10 +51,20 @@ import java.util.regex.Pattern;
  *
  * <p>All registrations use a hard-coded ID which were determined at commit
  * 18f176ce86900fd4e932c73f3d138912355c6880.
+ *
+ * <p>DO NOT add more serializers, as this would break backwards-compatibility.
  */
-public class FlinkChillPackageRegistrar {
+public class FlinkChillPackageRegistrar implements ChillSerializerRegistrar {
 
-    public static void registerJavaTypes(TriConsumer<Class<?>, Serializer<?>, Integer> kryo) {
+    private static final int MAX_REGISTRATION_ID = 84;
+
+    @Override
+    public int getMaxRegistrationId() {
+        return MAX_REGISTRATION_ID;
+    }
+
+    @Override
+    public void registerSerializers(TriConsumer<Class<?>, Serializer<?>, Integer> kryo) {
         //noinspection ArraysAsListWithZeroOrOneArgument
         kryo.accept(Arrays.asList("").getClass(), new ArraysAsListSerializer(), 73);
         kryo.accept(BitSet.class, new BitSetSerializer(), 74);
@@ -67,6 +77,6 @@ public class FlinkChillPackageRegistrar {
         kryo.accept(InetSocketAddress.class, new InetSocketAddressSerializer(), 81);
         kryo.accept(UUID.class, new UUIDSerializer(), 82);
         kryo.accept(Locale.class, new LocaleSerializer(), 83);
-        kryo.accept(SimpleDateFormat.class, new SimpleDateFormatSerializer(), 84);
+        kryo.accept(SimpleDateFormat.class, new SimpleDateFormatSerializer(), MAX_REGISTRATION_ID);
     }
 }

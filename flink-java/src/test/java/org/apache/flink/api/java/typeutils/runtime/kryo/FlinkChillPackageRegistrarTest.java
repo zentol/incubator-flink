@@ -32,13 +32,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /** Tests for the {@link FlinkChillPackageRegistrar}. */
 public class FlinkChillPackageRegistrarTest extends TestLogger {
 
+    private static final FlinkChillPackageRegistrar registrar = new FlinkChillPackageRegistrar();
+
+    @Test
+    public void testGetNextRegistrationId() {
+        assertThat(registrar.getMaxRegistrationId(), equalTo(84));
+    }
+
     @Test
     public void testRegistrationIdsInExpectedRange() {
         final List<Integer> expectedRegistrationIds =
                 IntStream.range(73, 85).boxed().collect(Collectors.toList());
         final List<Integer> actualRegistrationIds = new ArrayList<>();
 
-        FlinkChillPackageRegistrar.registerJavaTypes(
+        registrar.registerSerializers(
                 (type, serializer, registrationId) -> actualRegistrationIds.add(registrationId));
 
         assertThat(actualRegistrationIds, equalTo(expectedRegistrationIds));

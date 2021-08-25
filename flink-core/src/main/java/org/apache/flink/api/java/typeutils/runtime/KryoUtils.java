@@ -24,6 +24,7 @@ import org.apache.flink.util.InstantiationUtil;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 
 import java.io.IOException;
@@ -100,18 +101,46 @@ public class KryoUtils {
      */
     public static void applyRegistrations(
             Kryo kryo, Collection<KryoRegistration> resolvedRegistrations) {
+        applyRegistrations(kryo, resolvedRegistrations, kryo.getNextRegistrationId());
+    }
 
+    /**
+     * Apply a list of {@link KryoRegistration} to a Kryo instance. The list of registrations is
+     * assumed to already be a final resolution of all possible registration overwrites.
+     *
+     * <p>The registrations are applied in the given order and always specify the registration id,
+     * using the given {@code firstRegistrationId} and incrementing it for each registration.
+     *
+     * @param kryo the Kryo instance to apply the registrations
+     * @param resolvedRegistrations the registrations, which should already be resolved of all
+     *     possible registration overwrites
+     * @param firstRegistrationId the first registration id to use
+     */
+    public static void applyRegistrations(
+            Kryo kryo,
+            Collection<KryoRegistration> resolvedRegistrations,
+            int firstRegistrationId) {
+
+        int currentRegistrationId = firstRegistrationId;
         Serializer<?> serializer;
         for (KryoRegistration registration : resolvedRegistrations) {
             serializer = registration.getSerializer(kryo);
 
+            final Registration finalRegistration;
             if (serializer != null) {
-                kryo.register(
-                        registration.getRegisteredClass(),
-                        serializer,
-                        kryo.getNextRegistrationId());
+                finalRegistration =
+                        kryo.register(
+                                registration.getRegisteredClass(),
+                                serializer,
+                                currentRegistrationId);
             } else {
-                kryo.register(registration.getRegisteredClass(), kryo.getNextRegistrationId());
+                finalRegistration =
+                        kryo.register(registration.getRegisteredClass(), currentRegistrationId);
+            }
+            // if Kryo already had a serializer for that type then it returns the old registration
+            // in that case we don't want to increment the registration id
+            if (finalRegistration.getId() == currentRegistrationId) {
+                currentRegistrationId++;
             }
         }
     }
