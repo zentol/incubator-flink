@@ -192,10 +192,11 @@ class AllScalaRegistrar extends IKryoRegistrar {
     // use the singleton serializer for boxed Unit
     val boxedUnit = scala.Unit.box(())
     k.register(boxedUnit.getClass, new SingletonSerializer(boxedUnit))
-    new FlinkChillPackageRegistrar().registerSerializers(new TriConsumer[Class[_], Serializer[_], Integer] {
-      override def accept(s: Class[_], t: KSerializer[_], u: Integer): Unit = {
-        k.register(s, t, u)
-      }
-    })
+    new FlinkChillPackageRegistrar()
+      .registerSerializers(new TriConsumer[Class[_], Serializer[_], Integer] {
+        override def accept(s: Class[_], t: KSerializer[_], u: Integer): Unit = {
+          k.register(s, t, u)
+        }
+      })
   }
 }
