@@ -24,15 +24,12 @@ import scala.util.matching.Regex
 import _root_.java.io.Serializable
 
 import com.esotericsoftware.kryo.Serializer
-
 import com.twitter.chill._
 
 import org.apache.flink.api.java.typeutils.runtime.kryo.FlinkChillPackageRegistrar
 import org.apache.flink.util.function.TriConsumer
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.CanBuildFrom
-import scala.reflect.ClassTag
 
 /*
 This code is copied as is from Twitter Chill 0.7.4 because we need to user a newer chill version
@@ -95,27 +92,17 @@ class FlinkScalaKryoInstantiator extends EmptyFlinkScalaKryoInstantiator {
 class ScalaCollectionsRegistrar extends IKryoRegistrar {
   def apply(newK: Kryo) {
     // for binary compat this is here, but could be moved to RichKryo
-    def useField[T](cls: Class[T], id: Int) {
+    def useField[T](cls: Class[T]) {
       val fs = new com.esotericsoftware.kryo.serializers.FieldSerializer(newK, cls)
       fs.setIgnoreSyntheticFields(false) // scala generates a lot of these attributes
       newK.register(cls, fs)
     }
     // The wrappers are private classes:
-    useField(List(1, 2, 3).asJava.getClass, 10)
-    useField(List(1, 2, 3).iterator.asJava.getClass, 11)
-    useField(Map(1 -> 2, 4 -> 3).asJava.getClass, 12)
-    useField(new _root_.java.util.ArrayList().asScala.getClass, 13)
-    useField(new _root_.java.util.HashMap().asScala.getClass, 14)
-
-    def forTraversableClass[T, C <: Traversable[T]](c: C with Traversable[T], id: Int, isImmutable: Boolean = true)(implicit mf: ClassTag[C], cbf: CanBuildFrom[C, T, C]): Unit = {
-      newK.register(mf.runtimeClass, new TraversableSerializer(isImmutable)(cbf), id)
-    }
-
-    def forConcreteTraversableClass[T, C <: Traversable[T]](c: C with Traversable[T], id: Int, isImmutable: Boolean = true)(implicit cbf: CanBuildFrom[C, T, C]): Unit = {
-      // a ClassTag is not used here since its runtimeClass method does not return the concrete internal type
-      // that Scala uses for small immutable maps (i.e., scala.collection.immutable.Map$Map1)
-      newK.register(c.getClass, new TraversableSerializer(isImmutable)(cbf))
-    }
+    useField(List(1, 2, 3).asJava.getClass)
+    useField(List(1, 2, 3).iterator.asJava.getClass)
+    useField(Map(1 -> 2, 4 -> 3).asJava.getClass)
+    useField(new _root_.java.util.ArrayList().asScala.getClass)
+    useField(new _root_.java.util.HashMap().asScala.getClass)
 
     /*
      * Note that subclass-based use: addDefaultSerializers, else: register
@@ -127,12 +114,9 @@ class ScalaCollectionsRegistrar extends IKryoRegistrar {
       .forSubclass[WrappedArray[Any]](new WrappedArraySerializer[Any])
       .forSubclass[BitSet](new BitSetSerializer)
       .forSubclass[SortedSet[Any]](new SortedSetSerializer)
-
-    newK.register(classOf[Some[Any]], new SomeSerializer[Any], 15)
-    newK.register(classOf[Left[Any, Any]], new LeftSerializer[Any, Any], 16)
-    newK.register(classOf[Right[Any, Any]], new RightSerializer[Any, Any], 17)
-
-    newK
+      .forClass[Some[Any]](new SomeSerializer[Any])
+      .forClass[Left[Any, Any]](new LeftSerializer[Any, Any])
+      .forClass[Right[Any, Any]](new RightSerializer[Any, Any])
       .forTraversableSubclass(Queue.empty[Any])
       // List is a sealed class, so there are only two subclasses:
       .forTraversableSubclass(List.empty[Any])
@@ -140,44 +124,38 @@ class ScalaCollectionsRegistrar extends IKryoRegistrar {
       .forTraversableSubclass(ListBuffer.empty[Any], isImmutable = false)
       // add mutable Buffer before Vector, otherwise Vector is used
       .forTraversableSubclass(Buffer.empty[Any], isImmutable = false)
-
-    // Vector is a final class
-    forTraversableClass(Vector.empty[Any], 18)
-    newK
+      // Vector is a final class
+      .forTraversableClass(Vector.empty[Any])
       .forTraversableSubclass(ListSet.empty[Any])
-    // specifically register small sets since Scala represents them differently
-    forConcreteTraversableClass(Set[Any]('a), 19)
-    forConcreteTraversableClass(Set[Any]('a, 'b), 20)
-    forConcreteTraversableClass(Set[Any]('a, 'b, 'c), 21)
-    forConcreteTraversableClass(Set[Any]('a, 'b, 'c, 'd), 22)
-    // default set implementation
-    forConcreteTraversableClass(HashSet[Any]('a, 'b, 'c, 'd, 'e), 23)
-    // specifically register small maps since Scala represents them differently
-    forConcreteTraversableClass(Map[Any, Any]('a -> 'a), 24)
-    forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b), 25)
-    forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c), 26)
-    forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c, 'd -> 'd), 27)
-    // default map implementation
-    forConcreteTraversableClass(
-      HashMap[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c, 'd -> 'd, 'e -> 'e), 28)
-    // The normal fields serializer works for ranges
-
-    newK.register(classOf[Range.Inclusive], 29)
-    newK.register(classOf[NumericRange.Inclusive[_]], 30)
-    newK.register(classOf[NumericRange.Exclusive[_]], 31)
-
-    newK
+      // specifically register small sets since Scala represents them differently
+      .forConcreteTraversableClass(Set[Any]('a))
+      .forConcreteTraversableClass(Set[Any]('a, 'b))
+      .forConcreteTraversableClass(Set[Any]('a, 'b, 'c))
+      .forConcreteTraversableClass(Set[Any]('a, 'b, 'c, 'd))
+      // default set implementation
+      .forConcreteTraversableClass(HashSet[Any]('a, 'b, 'c, 'd, 'e))
+      // specifically register small maps since Scala represents them differently
+      .forConcreteTraversableClass(Map[Any, Any]('a -> 'a))
+      .forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b))
+      .forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c))
+      .forConcreteTraversableClass(Map[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c, 'd -> 'd))
+      // default map implementation
+      .forConcreteTraversableClass(
+        HashMap[Any, Any]('a -> 'a, 'b -> 'b, 'c -> 'c, 'd -> 'd, 'e -> 'e))
+      // The normal fields serializer works for ranges
+      .registerClasses(Seq(classOf[Range.Inclusive],
+      classOf[NumericRange.Inclusive[_]],
+      classOf[NumericRange.Exclusive[_]]))
       // Add some maps
       .forSubclass[SortedMap[Any, Any]](new SortedMapSerializer)
       .forTraversableSubclass(ListMap.empty[Any, Any])
       .forTraversableSubclass(HashMap.empty[Any, Any])
       // The above ListMap/HashMap must appear before this:
       .forTraversableSubclass(Map.empty[Any, Any])
-    // here are the mutable ones:
-    forTraversableClass(MBitSet.empty, 32, isImmutable = false)
-    forTraversableClass(MHashMap.empty[Any, Any], 33, isImmutable = false)
-    forTraversableClass(MHashSet.empty[Any], 34, isImmutable = false)
-    newK
+      // here are the mutable ones:
+      .forTraversableClass(MBitSet.empty, isImmutable = false)
+      .forTraversableClass(MHashMap.empty[Any, Any], isImmutable = false)
+      .forTraversableClass(MHashSet.empty[Any], isImmutable = false)
       .forTraversableSubclass(MQueue.empty[Any], isImmutable = false)
       .forTraversableSubclass(MMap.empty[Any, Any], isImmutable = false)
       .forTraversableSubclass(MSet.empty[Any], isImmutable = false)
@@ -186,7 +164,7 @@ class ScalaCollectionsRegistrar extends IKryoRegistrar {
 
 class JavaWrapperCollectionRegistrar extends IKryoRegistrar {
   def apply(newK: Kryo) {
-    newK.register(JavaIterableWrapperSerializer.wrapperClass, new JavaIterableWrapperSerializer, 35)
+    newK.register(JavaIterableWrapperSerializer.wrapperClass, new JavaIterableWrapperSerializer)
   }
 }
 
@@ -201,24 +179,19 @@ class AllScalaRegistrar extends IKryoRegistrar {
 
     // Register all 22 tuple serializers and specialized serializers
     ScalaTupleSerialization.register(k)
-    k.register(classOf[Symbol], new KSerializer[Symbol] {
+    k.forClass[Symbol](new KSerializer[Symbol] {
       override def isImmutable = true
-
-      def write(k: Kryo, out: Output, obj: Symbol) {
-        out.writeString(obj.name)
-      }
-
+      def write(k: Kryo, out: Output, obj: Symbol) { out.writeString(obj.name) }
       def read(k: Kryo, in: Input, cls: Class[Symbol]) = Symbol(in.readString)
-    }, 70)
-    k.forSubclass[Regex](new RegexSerializer)
-    k.register(classOf[ClassManifest[Any]], new ClassManifestSerializer[Any], 71)
-    k
+    })
+      .forSubclass[Regex](new RegexSerializer)
+      .forClass[ClassManifest[Any]](new ClassManifestSerializer[Any])
       .forSubclass[Manifest[Any]](new ManifestSerializer[Any])
       .forSubclass[scala.Enumeration#Value](new EnumerationSerializer)
 
     // use the singleton serializer for boxed Unit
     val boxedUnit = scala.Unit.box(())
-    k.register(boxedUnit.getClass, new SingletonSerializer(boxedUnit), 72)
+    k.register(boxedUnit.getClass, new SingletonSerializer(boxedUnit))
     new FlinkChillPackageRegistrar().registerSerializers(new TriConsumer[Class[_], Serializer[_], Integer] {
       override def accept(s: Class[_], t: KSerializer[_], u: Integer): Unit = {
         k.register(s, t, u)
