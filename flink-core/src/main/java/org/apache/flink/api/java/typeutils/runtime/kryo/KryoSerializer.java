@@ -123,7 +123,9 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
         try {
             return Optional.of(
                     (ChillSerializerRegistrar)
-                            Class.forName(
+                            Thread.currentThread()
+                                    .getContextClassLoader()
+                                    .loadClass(
                                             "org.apache.flink.api.java.typeutils.runtime.kryo.FlinkChillPackageRegistrar")
                                     .getDeclaredConstructor()
                                     .newInstance());

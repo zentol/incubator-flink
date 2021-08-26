@@ -60,10 +60,13 @@ public final class ChildFirstClassLoader extends FlinkUserCodeClassLoader {
 
         if (c == null) {
             // check whether the class should go parent-first
-            for (String alwaysParentFirstPattern : alwaysParentFirstPatterns) {
-                if (name.startsWith(alwaysParentFirstPattern)) {
-                    return super.loadClassWithoutExceptionHandling(name, resolve);
+            try {
+                for (String alwaysParentFirstPattern : alwaysParentFirstPatterns) {
+                    if (name.startsWith(alwaysParentFirstPattern)) {
+                        return super.loadClassWithoutExceptionHandling(name, resolve);
+                    }
                 }
+            } catch (ClassNotFoundException | NoClassDefFoundError e) {
             }
 
             try {

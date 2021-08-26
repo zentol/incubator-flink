@@ -51,7 +51,9 @@ public class FieldAccessorFactory implements Serializable {
             loadScalaProductFieldAccessorFactory() {
         try {
             final Object factory =
-                    Class.forName(
+                    Thread.currentThread()
+                            .getContextClassLoader()
+                            .loadClass(
                                     "org.apache.flink.streaming.util.typeutils.DefaultScalaProductFieldAccessorFactory")
                             .getDeclaredConstructor()
                             .newInstance();
