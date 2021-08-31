@@ -22,7 +22,6 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.metrics.CharacterFilter;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.metrics.MetricRegistry;
-import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
 import java.util.Map;
 
@@ -47,7 +46,7 @@ public class GenericValueMetricGroup extends GenericMetricGroup {
 
     @Override
     protected void putVariables(Map<String, String> variables) {
-        variables.put(ScopeFormat.asVariable(this.key), value);
+        variables.put(this.key, value);
     }
 
     @Override

@@ -34,7 +34,6 @@ import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.MetricRegistryTestUtils;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
 import org.apache.flink.runtime.metrics.dump.QueryScopeInfo;
-import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 import org.apache.flink.runtime.metrics.util.DummyCharacterFilter;
 import org.apache.flink.runtime.metrics.util.TestReporter;
 import org.apache.flink.util.TestLogger;
@@ -100,7 +99,7 @@ public class MetricGroupTest extends TestLogger {
         String value = "value";
         MetricGroup group = root.addGroup(key, value);
 
-        String variableValue = group.getAllVariables().get(ScopeFormat.asVariable("key"));
+        String variableValue = group.getAllVariables().get("key");
         assertEquals(value, variableValue);
 
         String identifier = group.getMetricIdentifier("metric");
@@ -162,7 +161,7 @@ public class MetricGroupTest extends TestLogger {
         root.addGroup(key);
         MetricGroup group = root.addGroup(key, value);
 
-        String variableValue = group.getAllVariables().get(ScopeFormat.asVariable("key"));
+        String variableValue = group.getAllVariables().get("key");
         assertNull(variableValue);
 
         String identifier = group.getMetricIdentifier("metric");
@@ -191,7 +190,7 @@ public class MetricGroupTest extends TestLogger {
         root.addGroup(key).addGroup(value);
         MetricGroup group = root.addGroup(key, value);
 
-        String variableValue = group.getAllVariables().get(ScopeFormat.asVariable("key"));
+        String variableValue = group.getAllVariables().get("key");
         assertNull(variableValue);
 
         String identifier = group.getMetricIdentifier("metric");
@@ -220,7 +219,7 @@ public class MetricGroupTest extends TestLogger {
         root.addGroup(key, value);
         MetricGroup group = root.addGroup(key).addGroup(value);
 
-        String variableValue = group.getAllVariables().get(ScopeFormat.asVariable("key"));
+        String variableValue = group.getAllVariables().get("key");
         assertEquals(value, variableValue);
 
         String identifier = group.getMetricIdentifier("metric");

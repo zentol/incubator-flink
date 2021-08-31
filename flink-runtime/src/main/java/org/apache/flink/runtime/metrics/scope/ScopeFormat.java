@@ -61,29 +61,29 @@ public abstract class ScopeFormat {
     //  Scope Variables
     // ------------------------------------------------------------------------
 
-    public static final String SCOPE_HOST = asVariable("host");
+    public static final String SCOPE_HOST = "host";
 
     // ----- Task Manager ----
 
-    public static final String SCOPE_TASKMANAGER_ID = asVariable("tm_id");
+    public static final String SCOPE_TASKMANAGER_ID = "tm_id";
 
     // ----- Job -----
 
-    public static final String SCOPE_JOB_ID = asVariable("job_id");
-    public static final String SCOPE_JOB_NAME = asVariable("job_name");
+    public static final String SCOPE_JOB_ID = "job_id";
+    public static final String SCOPE_JOB_NAME = "job_name";
 
     // ----- Task ----
 
-    public static final String SCOPE_TASK_VERTEX_ID = asVariable("task_id");
-    public static final String SCOPE_TASK_NAME = asVariable("task_name");
-    public static final String SCOPE_TASK_ATTEMPT_ID = asVariable("task_attempt_id");
-    public static final String SCOPE_TASK_ATTEMPT_NUM = asVariable("task_attempt_num");
-    public static final String SCOPE_TASK_SUBTASK_INDEX = asVariable("subtask_index");
+    public static final String SCOPE_TASK_VERTEX_ID = "task_id";
+    public static final String SCOPE_TASK_NAME = "task_name";
+    public static final String SCOPE_TASK_ATTEMPT_ID = "task_attempt_id";
+    public static final String SCOPE_TASK_ATTEMPT_NUM = "task_attempt_num";
+    public static final String SCOPE_TASK_SUBTASK_INDEX = "subtask_index";
 
     // ----- Operator ----
 
-    public static final String SCOPE_OPERATOR_ID = asVariable("operator_id");
-    public static final String SCOPE_OPERATOR_NAME = asVariable("operator_name");
+    public static final String SCOPE_OPERATOR_ID = "operator_id";
+    public static final String SCOPE_OPERATOR_NAME = "operator_name";
 
     // ------------------------------------------------------------------------
     //  Scope Format Base
@@ -147,7 +147,8 @@ public abstract class ScopeFormat {
                     && component.charAt(component.length() - 1) == '>') {
 
                 // this is a variable
-                Integer replacementPos = varToValuePos.get(component);
+                Integer replacementPos =
+                        varToValuePos.get(component.substring(1, component.length() - 1));
                 if (replacementPos != null) {
                     templatePos.add(i);
                     valuePos.add(replacementPos);

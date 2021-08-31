@@ -48,7 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
         factoryClassName = "org.apache.flink.metrics.datadog.DatadogHttpReporterFactory")
 public class DatadogHttpReporter implements MetricReporter, Scheduled {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatadogHttpReporter.class);
-    private static final String HOST_VARIABLE = "<host>";
+    private static final String HOST_VARIABLE = "host";
 
     // Both Flink's Gauge and Meter values are taken as gauge in Datadog
     private final Map<Gauge, DGauge> gauges = new ConcurrentHashMap<>();

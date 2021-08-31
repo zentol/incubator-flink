@@ -27,7 +27,6 @@ import org.apache.flink.metrics.reporter.InstantiateViaFactory;
 import org.apache.flink.metrics.reporter.InterceptInstantiationViaReflection;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.reporter.MetricReporterFactory;
-import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 import org.apache.flink.runtime.metrics.util.TestReporter;
 import org.apache.flink.util.TestLogger;
 
@@ -257,9 +256,7 @@ public class ReporterSetupTest extends TestLogger {
 
         assertThat(
                 reporterSetup.getExcludedVariables(),
-                hasItems(
-                        ScopeFormat.asVariable(excludedVariable1),
-                        ScopeFormat.asVariable(excludedVariable2)));
+                hasItems(excludedVariable1, excludedVariable2));
     }
 
     /** Verifies that a factory configuration is correctly parsed. */

@@ -53,9 +53,7 @@ class MeasurementInfoProvider implements MetricInfoProvider<MeasurementInfo> {
         Map<String, String> tags = new HashMap<>();
         for (Map.Entry<String, String> variable : group.getAllVariables().entrySet()) {
             String name = variable.getKey();
-            tags.put(
-                    normalize(name.substring(1, name.length() - 1)),
-                    normalize(variable.getValue()));
+            tags.put(normalize(name), normalize(variable.getValue()));
         }
         return tags;
     }

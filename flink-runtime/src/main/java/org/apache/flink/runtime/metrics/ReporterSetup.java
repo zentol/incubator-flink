@@ -29,7 +29,6 @@ import org.apache.flink.metrics.reporter.InstantiateViaFactory;
 import org.apache.flink.metrics.reporter.InterceptInstantiationViaReflection;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.reporter.MetricReporterFactory;
-import org.apache.flink.runtime.metrics.scope.ScopeFormat;
 
 import org.apache.flink.shaded.guava30.com.google.common.collect.Iterators;
 
@@ -40,6 +39,7 @@ import javax.annotation.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,10 +108,8 @@ public final class ReporterSetup {
         if (excludedVariablesList == null) {
             return Collections.emptySet();
         } else {
-            final Set<String> excludedVariables = new HashSet<>();
-            for (String exclusion : excludedVariablesList.split(";")) {
-                excludedVariables.add(ScopeFormat.asVariable(exclusion));
-            }
+            final Set<String> excludedVariables =
+                    new HashSet<>(Arrays.asList(excludedVariablesList.split(";")));
             return Collections.unmodifiableSet(excludedVariables);
         }
     }

@@ -105,8 +105,7 @@ public abstract class AbstractPrometheusReporter implements MetricReporter {
         List<String> dimensionValues = new LinkedList<>();
         for (final Map.Entry<String, String> dimension : group.getAllVariables().entrySet()) {
             final String key = dimension.getKey();
-            dimensionKeys.add(
-                    CHARACTER_FILTER.filterCharacters(key.substring(1, key.length() - 1)));
+            dimensionKeys.add(CHARACTER_FILTER.filterCharacters(key));
             dimensionValues.add(labelValueCharactersFilter.filterCharacters(dimension.getValue()));
         }
 
