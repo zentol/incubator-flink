@@ -100,7 +100,8 @@ public class HandlerRequest<R extends RequestBody, M extends MessageParameters> 
                                     + value
                                     + "\".");
                 }
-
+            }
+            if (pathParameter.isResolved()) {
                 @SuppressWarnings("unchecked")
                 Class<? extends MessagePathParameter<?>> clazz =
                         (Class<? extends MessagePathParameter<?>>) pathParameter.getClass();
@@ -124,7 +125,8 @@ public class HandlerRequest<R extends RequestBody, M extends MessageParameters> 
                                     + joiner
                                     + "\".");
                 }
-
+            }
+            if (queryParameter.isResolved()) {
                 @SuppressWarnings("unchecked")
                 Class<? extends MessageQueryParameter<?>> clazz =
                         (Class<? extends MessageQueryParameter<?>>) queryParameter.getClass();
