@@ -549,31 +549,34 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
                         JobVertexBackPressureHeaders.getInstance(),
                         metricFetcher);
 
-        final JobCancellationHandler jobCancelTerminationHandler =
-                new JobCancellationHandler(
+        final AbstractRestHandler<?, ?, ?, ?> jobCancelTerminationHandler =
+                new AbstractRestHandler<>(
                         leaderRetriever,
                         timeout,
                         responseHeaders,
                         JobCancellationHeaders.getInstance(),
-                        TerminationModeQueryParameter.TerminationMode.CANCEL);
+                        new JobCancellationHandler(
+                                timeout, TerminationModeQueryParameter.TerminationMode.CANCEL));
 
         // use a separate handler for the yarn-cancel to ensure close() is only called once
-        final JobCancellationHandler yarnJobCancelTerminationHandler =
-                new JobCancellationHandler(
+        final AbstractRestHandler<?, ?, ?, ?> yarnJobCancelTerminationHandler =
+                new AbstractRestHandler<>(
                         leaderRetriever,
                         timeout,
                         responseHeaders,
                         JobCancellationHeaders.getInstance(),
-                        TerminationModeQueryParameter.TerminationMode.CANCEL);
+                        new JobCancellationHandler(
+                                timeout, TerminationModeQueryParameter.TerminationMode.CANCEL));
 
         // this is kept just for legacy reasons. STOP has been replaced by STOP-WITH-SAVEPOINT.
-        final JobCancellationHandler jobStopTerminationHandler =
-                new JobCancellationHandler(
+        final AbstractRestHandler<?, ?, ?, ?> jobStopTerminationHandler =
+                new AbstractRestHandler<>(
                         leaderRetriever,
                         timeout,
                         responseHeaders,
                         JobCancellationHeaders.getInstance(),
-                        TerminationModeQueryParameter.TerminationMode.STOP);
+                        new JobCancellationHandler(
+                                timeout, TerminationModeQueryParameter.TerminationMode.STOP));
 
         final JobVertexDetailsHandler jobVertexDetailsHandler =
                 new JobVertexDetailsHandler(

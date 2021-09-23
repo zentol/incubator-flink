@@ -48,16 +48,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>Gateways which implement this method run a REST endpoint which is reachable under the returned
  * address.
  */
-public interface RestfulGateway extends RpcGateway {
-
-    /**
-     * Cancel the given job.
-     *
-     * @param jobId identifying the job to cancel
-     * @param timeout of the operation
-     * @return A future acknowledge if the cancellation succeeded
-     */
-    CompletableFuture<Acknowledge> cancelJob(JobID jobId, @RpcTimeout Time timeout);
+public interface RestfulGateway extends RpcGateway, JobCancellationRestfulGateway {
 
     /**
      * Requests the {@link ArchivedExecutionGraph} for the given jobId. If there is no such graph,

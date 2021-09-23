@@ -35,6 +35,7 @@ import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpRequest;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +50,7 @@ import java.util.concurrent.CompletableFuture;
  * @param <P> type of outgoing responses
  */
 @ChannelHandler.Sharable
-public abstract class AbstractRestHandler<
+public class AbstractRestHandler<
                 T extends RestfulGateway,
                 R extends RequestBody,
                 P extends ResponseBody,
@@ -58,6 +59,8 @@ public abstract class AbstractRestHandler<
 
     private final MessageHeaders<R, P, M> messageHeaders;
 
+    @Nullable private final Handler<? super T, R, P, M> handler;
+
     protected AbstractRestHandler(
             GatewayRetriever<? extends T> leaderRetriever,
             Time timeout,
@@ -65,6 +68,18 @@ public abstract class AbstractRestHandler<
             MessageHeaders<R, P, M> messageHeaders) {
         super(leaderRetriever, timeout, responseHeaders, messageHeaders);
         this.messageHeaders = Preconditions.checkNotNull(messageHeaders);
+        this.handler = null;
+    }
+
+    public AbstractRestHandler(
+            GatewayRetriever<? extends T> leaderRetriever,
+            Time timeout,
+            Map<String, String> responseHeaders,
+            MessageHeaders<R, P, M> messageHeaders,
+            Handler<? super T, R, P, M> handler) {
+        super(leaderRetriever, timeout, responseHeaders, messageHeaders);
+        this.messageHeaders = Preconditions.checkNotNull(messageHeaders);
+        this.handler = Preconditions.checkNotNull(handler);
     }
 
     public MessageHeaders<R, P, M> getMessageHeaders() {
@@ -112,6 +127,8 @@ public abstract class AbstractRestHandler<
      * @return future containing a handler response
      * @throws RestHandlerException if the handling failed
      */
-    protected abstract CompletableFuture<P> handleRequest(
-            @Nonnull HandlerRequest<R, M> request, @Nonnull T gateway) throws RestHandlerException;
+    protected CompletableFuture<P> handleRequest(
+            @Nonnull HandlerRequest<R, M> request, @Nonnull T gateway) throws RestHandlerException {
+        return handler.handleRequest(request, gateway);
+    }
 }
