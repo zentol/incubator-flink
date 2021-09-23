@@ -24,6 +24,8 @@ import org.apache.flink.runtime.rpc.RpcSystem;
 import org.apache.flink.runtime.rpc.RpcSystemLoader;
 import org.apache.flink.util.IOUtils;
 
+import org.apache.flink.shaded.scala211.ScalaSubmodule;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -49,30 +51,40 @@ public class AkkaRpcSystemLoader implements RpcSystemLoader {
 
             final Path tmpDirectory = Paths.get(ConfigurationUtils.parseTempDirectories(config)[0]);
             Files.createDirectories(tmpDirectory);
-            final Path tempFile =
-                    Files.createFile(
-                            tmpDirectory.resolve("flink-rpc-akka_" + UUID.randomUUID() + ".jar"));
 
-            final InputStream resourceStream =
-                    flinkClassLoader.getResourceAsStream("flink-rpc-akka.jar");
-            if (resourceStream == null) {
-                throw new RuntimeException(
-                        "Akka RPC system could not be found. If this happened while running a test in the IDE,"
-                                + "run the process-resources phase on flink-rpc/flink-rpc-akka-loader via maven.");
-            }
-
-            IOUtils.copyBytes(resourceStream, Files.newOutputStream(tempFile));
+            final Path akkaJar = extract("flink-rpc-akka", tmpDirectory, flinkClassLoader);
+            final Path scalaJar =
+                    extract(ScalaSubmodule.getSubmoduleName(), tmpDirectory, flinkClassLoader);
 
             final SubmoduleClassLoader submoduleClassLoader =
                     new SubmoduleClassLoader(
-                            new URL[] {tempFile.toUri().toURL()}, flinkClassLoader);
+                            new URL[] {akkaJar.toUri().toURL(), scalaJar.toUri().toURL()},
+                            flinkClassLoader);
 
             return new CleanupOnCloseRpcSystem(
                     ServiceLoader.load(RpcSystem.class, submoduleClassLoader).iterator().next(),
                     submoduleClassLoader,
-                    tempFile);
+                    tmpDirectory);
         } catch (IOException e) {
             throw new RuntimeException("Could not initialize RPC system.", e);
         }
+    }
+
+    private static Path extract(String submodule, Path tmpDirectory, ClassLoader flinkClassLoader)
+            throws IOException {
+        final Path tempFile =
+                Files.createFile(
+                        tmpDirectory.resolve(submodule + "_" + UUID.randomUUID() + ".jar"));
+
+        final InputStream resourceStream = flinkClassLoader.getResourceAsStream(submodule + ".jar");
+        if (resourceStream == null) {
+            throw new RuntimeException(
+                    "Akka RPC system could not be found. If this happened while running a test in the IDE,"
+                            + "run the process-resources phase on flink-rpc/flink-rpc-akka-loader via maven.");
+        }
+
+        IOUtils.copyBytes(resourceStream, Files.newOutputStream(tempFile));
+
+        return tempFile;
     }
 }

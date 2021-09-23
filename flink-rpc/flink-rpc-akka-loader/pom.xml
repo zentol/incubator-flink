@@ -47,6 +47,12 @@ under the License.
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-shaded-scala_2.12</artifactId>
+			<version>15.0</version>
+		</dependency>
+
+		<dependency>
 			<!-- Ensures that flink-rpc-akka is built beforehand, in order to bundle the jar -->
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-rpc-akka</artifactId>
@@ -112,6 +118,7 @@ under the License.
 						<artifactSet>
 							<includes>
 								<include>org.apache.flink:flink-rpc-akka</include>
+								<include>org.apache.flink:flink-shaded-scala_2.12</include>
 							</includes>
 						</artifactSet>
 						<filters>
