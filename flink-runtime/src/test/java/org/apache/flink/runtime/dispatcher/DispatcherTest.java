@@ -63,6 +63,7 @@ import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.rest.handler.legacy.utils.ArchivedExecutionGraphBuilder;
+import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcUtils;
@@ -327,7 +328,8 @@ public class DispatcherTest extends AbstractDispatcherTest {
         // this call is supposed to fail
         try {
             dispatcherGateway
-                    .triggerSavepoint(jobId, "file:///tmp/savepoint", false, TIMEOUT)
+                    .triggerSavepoint(
+                            jobId, "file:///tmp/savepoint", false, new TriggerId(), TIMEOUT)
                     .get();
             fail("Previous statement should have failed");
         } catch (ExecutionException t) {

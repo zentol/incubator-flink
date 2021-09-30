@@ -58,12 +58,17 @@ import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.ResourceOverview;
+import org.apache.flink.runtime.rest.handler.async.CompletedOperationCache;
+import org.apache.flink.runtime.rest.handler.async.UnknownOperationKeyException;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
+import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.PermanentlyFencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcServiceUtils;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.types.Either;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
@@ -683,15 +688,42 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                 jobID, gateway -> gateway.triggerCheckpoint(timeout));
     }
 
+    private final CompletedOperationCache<AsynchronousJobOperationKey, Object>
+            completedOperationCache = new CompletedOperationCache<>();
+
     @Override
+    // TODO: this needs to return a future which gets complete once the savepoint is actually
+    // TODO: triggered; if complete reutrn 204 ACCEPTED, on error handle them
+    // TODO: / we may need a separate versions of this method for
+    // TODO: the REST API / (job client / minicluster), which _may_ need to wired down to the
+    // TODO: JobMaster
     public CompletableFuture<String> triggerSavepoint(
             final JobID jobId,
             final String targetDirectory,
             final boolean cancelJob,
+            TriggerId operationId,
             final Time timeout) {
 
+        // TODO: check cache for duplicate requests
+
         return performOperationOnJobMasterGateway(
+                // TODO: maybe derive the error code / successful trigger from whether this can
+                // TODO: returns without an exception; preconditions should be checked synchronously
                 jobId, gateway -> gateway.triggerSavepoint(targetDirectory, cancelJob, timeout));
+    }
+
+    // TODO: typing sucks hard, but separate caches for each operation seems overkill
+    public <R> CompletableFuture<Optional<Either<Throwable, R>>> getAsyncOperationResult(
+            final JobID jobId, TriggerId operationId) {
+        try {
+            return CompletableFuture.completedFuture(
+                    Optional.ofNullable(
+                            (Either<Throwable, R>)
+                                    completedOperationCache.get(
+                                            AsynchronousJobOperationKey.of(operationId, jobId))));
+        } catch (UnknownOperationKeyException e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override

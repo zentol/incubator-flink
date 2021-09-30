@@ -73,6 +73,7 @@ public class RescalingHandlers
         @Override
         protected CompletableFuture<Acknowledge> triggerOperation(
                 HandlerRequest<EmptyRequestBody, RescalingTriggerMessageParameters> request,
+                AsynchronousJobOperationKey operationKey,
                 RestfulGateway gateway) {
             throw new UnsupportedOperationException();
         }

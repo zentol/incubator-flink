@@ -71,6 +71,7 @@ import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
 import org.apache.flink.runtime.resourcemanager.StandaloneResourceManagerFactory;
+import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
@@ -741,7 +742,7 @@ public class MiniCluster implements AutoCloseableAsync {
         return runDispatcherCommand(
                 dispatcherGateway ->
                         dispatcherGateway.triggerSavepoint(
-                                jobId, targetDirectory, cancelJob, rpcTimeout));
+                                jobId, targetDirectory, cancelJob, new TriggerId(), rpcTimeout));
     }
 
     public CompletableFuture<String> triggerCheckpoint(JobID jobID) {

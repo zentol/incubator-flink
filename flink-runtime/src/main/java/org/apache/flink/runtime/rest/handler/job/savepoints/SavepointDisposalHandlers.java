@@ -66,6 +66,7 @@ public class SavepointDisposalHandlers
         @Override
         protected CompletableFuture<Acknowledge> triggerOperation(
                 HandlerRequest<SavepointDisposalRequest, EmptyMessageParameters> request,
+                OperationKey operationKey,
                 RestfulGateway gateway)
                 throws RestHandlerException {
             final String savepointPath = request.getRequestBody().getSavepointPath();

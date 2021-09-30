@@ -31,6 +31,7 @@ import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequestGateway;
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
+import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
@@ -98,7 +99,8 @@ public class EmbeddedJobClient implements JobClient, CoordinationRequestGateway 
 
     @Override
     public CompletableFuture<String> triggerSavepoint(@Nullable final String savepointDirectory) {
-        return dispatcherGateway.triggerSavepoint(jobId, savepointDirectory, false, timeout);
+        return dispatcherGateway.triggerSavepoint(
+                jobId, savepointDirectory, false, new TriggerId(), timeout);
     }
 
     @Override

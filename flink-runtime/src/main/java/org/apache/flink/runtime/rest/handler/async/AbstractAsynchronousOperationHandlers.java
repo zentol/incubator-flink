@@ -115,9 +115,10 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
         public CompletableFuture<TriggerResponse> handleRequest(
                 @Nonnull HandlerRequest<B, M> request, @Nonnull T gateway)
                 throws RestHandlerException {
-            final CompletableFuture<R> resultFuture = triggerOperation(request, gateway);
-
             final K operationKey = createOperationKey(request);
+
+            final CompletableFuture<R> resultFuture =
+                    triggerOperation(request, operationKey, gateway);
 
             completedOperationCache.registerOngoingOperation(operationKey, resultFuture);
 
@@ -129,12 +130,14 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
          * Trigger the asynchronous operation and return its future result.
          *
          * @param request with which the trigger handler has been called
+         * @param operationKey
          * @param gateway to the leader
          * @return Future result of the asynchronous operation
          * @throws RestHandlerException if something went wrong
          */
         protected abstract CompletableFuture<R> triggerOperation(
-                HandlerRequest<B, M> request, T gateway) throws RestHandlerException;
+                HandlerRequest<B, M> request, K operationKey, T gateway)
+                throws RestHandlerException;
 
         /**
          * Create the operation key under which the result future of the asynchronous operation will

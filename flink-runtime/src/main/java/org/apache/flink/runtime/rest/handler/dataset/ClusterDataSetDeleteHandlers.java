@@ -71,6 +71,7 @@ public class ClusterDataSetDeleteHandlers
         protected CompletableFuture<Void> triggerOperation(
                 HandlerRequest<EmptyRequestBody, ClusterDataSetDeleteTriggerMessageParameters>
                         request,
+                OperationKey operationKey,
                 RestfulGateway gateway)
                 throws RestHandlerException {
             final IntermediateDataSetID clusterPartitionId =

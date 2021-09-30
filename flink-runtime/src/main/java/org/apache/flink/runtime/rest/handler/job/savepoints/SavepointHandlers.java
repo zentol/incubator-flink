@@ -152,6 +152,7 @@ public class SavepointHandlers
                 final HandlerRequest<
                                 StopWithSavepointRequestBody, SavepointTriggerMessageParameters>
                         request,
+                AsynchronousJobOperationKey operationKey,
                 final RestfulGateway gateway)
                 throws RestHandlerException {
 
@@ -191,6 +192,7 @@ public class SavepointHandlers
         protected CompletableFuture<String> triggerOperation(
                 HandlerRequest<SavepointTriggerRequestBody, SavepointTriggerMessageParameters>
                         request,
+                AsynchronousJobOperationKey operationKey,
                 RestfulGateway gateway)
                 throws RestHandlerException {
             final JobID jobId = request.getPathParameter(JobIDPathParameter.class);
@@ -211,7 +213,11 @@ public class SavepointHandlers
                             ? requestedTargetDirectory
                             : defaultSavepointDir;
             return gateway.triggerSavepoint(
-                    jobId, targetDirectory, cancelJob, RpcUtils.INF_TIMEOUT);
+                    jobId,
+                    targetDirectory,
+                    cancelJob,
+                    operationKey.getTriggerId(),
+                    RpcUtils.INF_TIMEOUT);
         }
     }
 
