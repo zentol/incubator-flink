@@ -50,7 +50,9 @@ public class RestMatchers {
                 CompletableFuture<T> future, Description mismatchDescription) {
             try {
                 future.get();
-                throw new Error();
+
+                mismatchDescription.appendText("The request succeeded");
+                return false;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new Error("interrupted test");
