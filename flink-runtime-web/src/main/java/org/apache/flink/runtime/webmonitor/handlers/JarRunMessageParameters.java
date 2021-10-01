@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 /** {@link MessageParameters} for {@link JarRunHandler}. */
-public class JarRunMessageParameters extends JarMessageParameters {
+public class JarRunMessageParameters extends JarMessageParameters<JarRunMessageParameters> {
 
     final AllowNonRestoredStateQueryParameter allowNonRestoredStateQueryParameter =
             new AllowNonRestoredStateQueryParameter();

@@ -224,17 +224,16 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
 
     private static HandlerRequest<EmptyRequestBody, EmptyMessageParameters>
             triggerOperationRequest() throws HandlerRequestException {
-        return new HandlerRequest<>(
+        return HandlerRequest.create(
                 EmptyRequestBody.getInstance(), EmptyMessageParameters.getInstance());
     }
 
     private static HandlerRequest<EmptyRequestBody, TriggerMessageParameters>
             statusOperationRequest(TriggerId triggerId) throws HandlerRequestException {
-        return new HandlerRequest<>(
+        return HandlerRequest.create(
                 EmptyRequestBody.getInstance(),
-                new TriggerMessageParameters(),
-                Collections.singletonMap(TriggerIdPathParameter.KEY, triggerId.toString()),
-                Collections.emptyMap());
+                new TriggerMessageParameters().resolveTriggerId(triggerId),
+                Collections.emptyList());
     }
 
     private static final class TestOperationKey extends OperationKey {
@@ -256,6 +255,11 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
         @Override
         public Collection<MessageQueryParameter<?>> getQueryParameters() {
             return Collections.emptyList();
+        }
+
+        public TriggerMessageParameters resolveTriggerId(TriggerId triggerId) {
+            triggerIdPathParameter.resolve(triggerId);
+            return this;
         }
     }
 

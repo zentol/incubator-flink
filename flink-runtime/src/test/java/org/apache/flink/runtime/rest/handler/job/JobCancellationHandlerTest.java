@@ -115,7 +115,7 @@ public class JobCancellationHandlerTest extends TestLogger {
 
         final CompletableFuture<EmptyResponseBody> cancellationFuture =
                 jobCancellationHandler.handleRequest(
-                        new HandlerRequest<>(EmptyRequestBody.getInstance(), messageParameters),
+                        HandlerRequest.create(EmptyRequestBody.getInstance(), messageParameters),
                         gateway);
 
         assertion.accept(cancellationFuture);

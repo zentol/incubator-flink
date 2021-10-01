@@ -25,9 +25,10 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /** Base class of {@link MessageParameters} for {@link JarRunHandler} and {@link JarPlanHandler}. */
-abstract class JarMessageParameters extends MessageParameters {
+abstract class JarMessageParameters<M> extends MessageParameters {
 
     final JarIdPathParameter jarIdPathParameter = new JarIdPathParameter();
 
@@ -52,5 +53,30 @@ abstract class JarMessageParameters extends MessageParameters {
                         programArgQueryParameter,
                         entryClassQueryParameter,
                         parallelismQueryParameter));
+    }
+
+    public M resolveJarId(String jarId) {
+        jarIdPathParameter.resolve(jarId);
+        return (M) this;
+    }
+
+    public M resolveEntryClass(String entryClass) {
+        entryClassQueryParameter.resolve(Collections.singletonList(entryClass));
+        return (M) this;
+    }
+
+    public M resolveParallelism(int parallelism) {
+        parallelismQueryParameter.resolve(Collections.singletonList(parallelism));
+        return (M) this;
+    }
+
+    public M resolveProgramArgs(String programArgs) {
+        programArgsQueryParameter.resolve(Collections.singletonList(programArgs));
+        return (M) this;
+    }
+
+    public M resolveProgramArg(List<String> programArgs) {
+        programArgQueryParameter.resolve(programArgs);
+        return (M) this;
     }
 }

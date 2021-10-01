@@ -106,11 +106,9 @@ public class JarHandlers {
     public static String uploadJar(
             JarUploadHandler handler, Path jar, RestfulGateway restfulGateway) throws Exception {
         HandlerRequest<EmptyRequestBody, EmptyMessageParameters> uploadRequest =
-                new HandlerRequest<>(
+                HandlerRequest.create(
                         EmptyRequestBody.getInstance(),
                         EmptyMessageParameters.getInstance(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
                         Collections.singletonList(jar.toFile()));
         final JarUploadResponseBody uploadResponse =
                 handler.handleRequest(uploadRequest, restfulGateway).get();
@@ -120,23 +118,19 @@ public class JarHandlers {
     public static JarListInfo listJars(JarListHandler handler, RestfulGateway restfulGateway)
             throws Exception {
         HandlerRequest<EmptyRequestBody, EmptyMessageParameters> listRequest =
-                new HandlerRequest<>(
-                        EmptyRequestBody.getInstance(), EmptyMessageParameters.getInstance());
+                HandlerRequest.empty();
         return handler.handleRequest(listRequest, restfulGateway).get();
     }
 
     public static JobPlanInfo showPlan(
             JarPlanHandler handler, String jarName, RestfulGateway restfulGateway)
             throws Exception {
-        JarPlanMessageParameters planParameters =
-                JarPlanGetHeaders.getInstance().getUnresolvedMessageParameters();
         HandlerRequest<JarPlanRequestBody, JarPlanMessageParameters> planRequest =
-                new HandlerRequest<>(
+                HandlerRequest.create(
                         new JarPlanRequestBody(),
-                        planParameters,
-                        Collections.singletonMap(
-                                planParameters.jarIdPathParameter.getKey(), jarName),
-                        Collections.emptyMap(),
+                        handler.getMessageHeaders()
+                                .getUnresolvedMessageParameters()
+                                .resolveJarId(jarName),
                         Collections.emptyList());
         return handler.handleRequest(planRequest, restfulGateway).get();
     }
@@ -144,15 +138,12 @@ public class JarHandlers {
     public static JarRunResponseBody runJar(
             JarRunHandler handler, String jarName, DispatcherGateway restfulGateway)
             throws Exception {
-        final JarRunMessageParameters runParameters =
-                JarRunHeaders.getInstance().getUnresolvedMessageParameters();
         HandlerRequest<JarRunRequestBody, JarRunMessageParameters> runRequest =
-                new HandlerRequest<>(
+                HandlerRequest.create(
                         new JarRunRequestBody(),
-                        runParameters,
-                        Collections.singletonMap(
-                                runParameters.jarIdPathParameter.getKey(), jarName),
-                        Collections.emptyMap(),
+                        handler.getMessageHeaders()
+                                .getUnresolvedMessageParameters()
+                                .resolveJarId(jarName),
                         Collections.emptyList());
         return handler.handleRequest(runRequest, restfulGateway).get();
     }
@@ -160,15 +151,12 @@ public class JarHandlers {
     public static void deleteJar(
             JarDeleteHandler handler, String jarName, RestfulGateway restfulGateway)
             throws Exception {
-        JarDeleteMessageParameters deleteParameters =
-                JarDeleteHeaders.getInstance().getUnresolvedMessageParameters();
         HandlerRequest<EmptyRequestBody, JarDeleteMessageParameters> deleteRequest =
-                new HandlerRequest<>(
+                HandlerRequest.create(
                         EmptyRequestBody.getInstance(),
-                        deleteParameters,
-                        Collections.singletonMap(
-                                deleteParameters.jarIdPathParameter.getKey(), jarName),
-                        Collections.emptyMap(),
+                        handler.getMessageHeaders()
+                                .getUnresolvedMessageParameters()
+                                .resolveJarId(jarName),
                         Collections.emptyList());
         handler.handleRequest(deleteRequest, restfulGateway).get();
     }

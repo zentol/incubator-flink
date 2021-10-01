@@ -275,10 +275,10 @@ public class RestClusterClient<T> implements ClusterClient<T> {
      */
     public CompletableFuture<JobDetailsInfo> getJobDetails(JobID jobId) {
         final JobDetailsHeaders detailsHeaders = JobDetailsHeaders.getInstance();
-        final JobMessageParameters params = new JobMessageParameters();
-        params.jobPathParameter.resolve(jobId);
 
-        return sendRequest(detailsHeaders, params);
+        return sendRequest(
+                detailsHeaders,
+                detailsHeaders.getUnresolvedMessageParameters().resolveJobID(jobId));
     }
 
     @Override

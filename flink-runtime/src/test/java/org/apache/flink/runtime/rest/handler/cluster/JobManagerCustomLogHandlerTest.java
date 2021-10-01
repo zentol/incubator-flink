@@ -38,8 +38,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.Matchers.is;
@@ -92,15 +90,11 @@ public class JobManagerCustomLogHandlerTest extends TestLogger {
 
     private static HandlerRequest<EmptyRequestBody, FileMessageParameters> createHandlerRequest(
             String path) throws HandlerRequestException {
-        FileMessageParameters messageParameters = new FileMessageParameters();
-        Map<String, String> pathParameters = new HashMap<>();
-        pathParameters.put(messageParameters.logFileNamePathParameter.getKey(), path);
 
-        return new HandlerRequest<>(
+        return HandlerRequest.create(
                 EmptyRequestBody.getInstance(),
-                messageParameters,
-                pathParameters,
-                Collections.emptyMap());
+                new FileMessageParameters().resolveLogFileName(path),
+                Collections.emptyList());
     }
 
     @Test

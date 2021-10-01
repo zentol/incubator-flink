@@ -30,7 +30,8 @@ import java.util.Collections;
 /** Parameters for {@link JobManagerCustomLogHandler}. */
 public class FileMessageParameters extends MessageParameters {
 
-    public final LogFileNamePathParameter logFileNamePathParameter = new LogFileNamePathParameter();
+    private final LogFileNamePathParameter logFileNamePathParameter =
+            new LogFileNamePathParameter();
 
     @Override
     public Collection<MessagePathParameter<?>> getPathParameters() {
@@ -40,5 +41,10 @@ public class FileMessageParameters extends MessageParameters {
     @Override
     public Collection<MessageQueryParameter<?>> getQueryParameters() {
         return Collections.emptyList();
+    }
+
+    public FileMessageParameters resolveLogFileName(String path) {
+        logFileNamePathParameter.resolve(path);
+        return this;
     }
 }

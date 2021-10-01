@@ -28,7 +28,7 @@ import java.util.Collections;
 /** Message parameters for {@link JarDeleteHandler}. */
 public class JarDeleteMessageParameters extends MessageParameters {
 
-    public JarIdPathParameter jarIdPathParameter = new JarIdPathParameter();
+    private JarIdPathParameter jarIdPathParameter = new JarIdPathParameter();
 
     @Override
     public Collection<MessagePathParameter<?>> getPathParameters() {
@@ -38,5 +38,10 @@ public class JarDeleteMessageParameters extends MessageParameters {
     @Override
     public Collection<MessageQueryParameter<?>> getQueryParameters() {
         return Collections.emptyList();
+    }
+
+    public JarDeleteMessageParameters resolveJarId(String jarId) {
+        jarIdPathParameter.resolve(jarId);
+        return this;
     }
 }

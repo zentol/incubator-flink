@@ -27,7 +27,6 @@ import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.HandlerRequestException;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
-import org.apache.flink.runtime.rest.messages.MessageParameter;
 import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 import org.apache.flink.runtime.testutils.TestingUtils;
 import org.apache.flink.runtime.util.BlobServerResource;
@@ -44,6 +43,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -144,7 +144,6 @@ public abstract class JarHandlerParameterTest<
                 createRequest(
                         getDefaultJarRequestBody(),
                         getUnresolvedJarMessageParameters(),
-                        getUnresolvedJarMessageParameters(),
                         jarWithManifest));
         validateDefaultGraph();
     }
@@ -177,7 +176,6 @@ public abstract class JarHandlerParameterTest<
                 createRequest(
                         getDefaultJarRequestBody(),
                         getJarMessageParameters(programArgsParType),
-                        getUnresolvedJarMessageParameters(),
                         jarWithoutManifest));
         validateGraph();
     }
@@ -210,7 +208,6 @@ public abstract class JarHandlerParameterTest<
                 createRequest(
                         getJarRequestBodyWithJobId(jobId),
                         getUnresolvedJarMessageParameters(),
-                        getUnresolvedJarMessageParameters(),
                         jarWithManifest);
 
         handleRequest(request);
@@ -226,7 +223,6 @@ public abstract class JarHandlerParameterTest<
         handleRequest(
                 createRequest(
                         getJarRequestBody(programArgsParType),
-                        getUnresolvedJarMessageParameters(),
                         getUnresolvedJarMessageParameters(),
                         jarWithoutManifest));
         validateGraph();
@@ -259,7 +255,6 @@ public abstract class JarHandlerParameterTest<
                 createRequest(
                         getJarRequestBody(programArgsParType),
                         getWrongJarMessageParameters(programArgsParType),
-                        getUnresolvedJarMessageParameters(),
                         jarWithoutManifest));
         validateGraph();
     }
@@ -278,25 +273,14 @@ public abstract class JarHandlerParameterTest<
                 : null;
     }
 
-    protected static <REQB extends JarRequestBody, M extends JarMessageParameters>
-            HandlerRequest<REQB, M> createRequest(
-                    REQB requestBody, M parameters, M unresolvedMessageParameters, Path jar)
+    protected static <REQB extends JarRequestBody, M extends JarMessageParameters<M>>
+            HandlerRequest<REQB, M> createRequest(REQB requestBody, M parameters, Path jar)
                     throws HandlerRequestException {
 
-        final Map<String, List<String>> queryParameterAsMap =
-                parameters.getQueryParameters().stream()
-                        .filter(MessageParameter::isResolved)
-                        .collect(
-                                Collectors.toMap(
-                                        MessageParameter::getKey,
-                                        JarHandlerParameterTest::getValuesAsString));
-
-        return new HandlerRequest<>(
+        return HandlerRequest.<REQB, M>create(
                 requestBody,
-                unresolvedMessageParameters,
-                Collections.singletonMap(JarIdPathParameter.KEY, jar.getFileName().toString()),
-                queryParameterAsMap,
-                Collections.emptyList());
+                parameters.resolveJarId(jar.getFileName().toString()),
+                Collections.<File>emptyList());
     }
 
     private static <X> List<String> getValuesAsString(MessageQueryParameter<X> parameter) {
