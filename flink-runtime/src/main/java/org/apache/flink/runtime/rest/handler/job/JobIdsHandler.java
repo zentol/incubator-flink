@@ -26,6 +26,7 @@ import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -53,7 +54,7 @@ public class JobIdsHandler
     }
 
     @Override
-    protected CompletableFuture<JobIdsWithStatusOverview> handleRequest(
+    protected CompletableFuture<Rx<JobIdsWithStatusOverview>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull RestfulGateway gateway)
             throws RestHandlerException {

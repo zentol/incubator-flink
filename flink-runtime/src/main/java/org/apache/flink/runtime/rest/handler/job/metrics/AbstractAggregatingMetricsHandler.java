@@ -25,6 +25,8 @@ import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.handler.legacy.metrics.MetricFetcher;
 import org.apache.flink.runtime.rest.handler.legacy.metrics.MetricStore;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
+import org.apache.flink.runtime.rest.messages.Rx;
+import org.apache.flink.runtime.rest.messages.RxT;
 import org.apache.flink.runtime.rest.messages.job.metrics.AbstractAggregatedMetricsHeaders;
 import org.apache.flink.runtime.rest.messages.job.metrics.AbstractAggregatedMetricsParameters;
 import org.apache.flink.runtime.rest.messages.job.metrics.AggregatedMetric;
@@ -49,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -96,7 +97,7 @@ public abstract class AbstractAggregatingMetricsHandler<
             MetricStore store, HandlerRequest<EmptyRequestBody, P> request);
 
     @Override
-    protected CompletableFuture<AggregatedMetricsResponseBody> handleRequest(
+    protected CompletableFuture<Rx<AggregatedMetricsResponseBody>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, P> request, @Nonnull RestfulGateway gateway)
             throws RestHandlerException {
         return CompletableFuture.supplyAsync(
@@ -114,10 +115,12 @@ public abstract class AbstractAggregatingMetricsHandler<
 
                         if (requestedMetrics.isEmpty()) {
                             Collection<String> list = getAvailableMetrics(stores);
-                            return new AggregatedMetricsResponseBody(
-                                    list.stream()
-                                            .map(AggregatedMetric::new)
-                                            .collect(Collectors.toList()));
+                            return Rx.success(
+                                    RxT.GENERIC_OK,
+                                    new AggregatedMetricsResponseBody(
+                                            list.stream()
+                                                    .map(AggregatedMetric::new)
+                                                    .collect(Collectors.toList())));
                         }
 
                         DoubleAccumulator.DoubleMinimumFactory minimumFactory = null;
@@ -160,11 +163,13 @@ public abstract class AbstractAggregatingMetricsHandler<
                                 new MetricAccumulatorFactory(
                                         minimumFactory, maximumFactory, averageFactory, sumFactory);
 
-                        return getAggregatedMetricValues(
-                                stores, requestedMetrics, metricAccumulatorFactory);
+                        return Rx.success(
+                                RxT.GENERIC_OK,
+                                getAggregatedMetricValues(
+                                        stores, requestedMetrics, metricAccumulatorFactory));
                     } catch (Exception e) {
                         log.warn("Could not retrieve metrics.", e);
-                        throw new CompletionException(
+                        return Rx.failure(
                                 new RestHandlerException(
                                         "Could not retrieve metrics.",
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR));

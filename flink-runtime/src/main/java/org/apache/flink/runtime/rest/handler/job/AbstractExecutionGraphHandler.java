@@ -31,6 +31,8 @@ import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.JobMessageParameters;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
+import org.apache.flink.runtime.rest.messages.RxT;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
@@ -72,7 +74,7 @@ public abstract class AbstractExecutionGraphHandler<
     }
 
     @Override
-    protected CompletableFuture<R> handleRequest(
+    protected CompletableFuture<Rx<R>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, M> request, @Nonnull RestfulGateway gateway)
             throws RestHandlerException {
         JobID jobId = request.getPathParameter(JobIDPathParameter.class);
@@ -84,7 +86,8 @@ public abstract class AbstractExecutionGraphHandler<
                 .thenApplyAsync(
                         executionGraph -> {
                             try {
-                                return handleRequest(request, executionGraph);
+                                return Rx.success(
+                                        RxT.GENERIC_OK, handleRequest(request, executionGraph));
                             } catch (RestHandlerException rhe) {
                                 throw new CompletionException(rhe);
                             }

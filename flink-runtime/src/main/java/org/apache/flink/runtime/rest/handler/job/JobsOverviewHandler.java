@@ -30,6 +30,7 @@ import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.history.ArchivedJson;
 import org.apache.flink.runtime.webmonitor.history.OnlyExecutionGraphJsonArchivist;
@@ -59,7 +60,7 @@ public class JobsOverviewHandler
     }
 
     @Override
-    protected CompletableFuture<MultipleJobsDetails> handleRequest(
+    protected CompletableFuture<Rx<MultipleJobsDetails>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull RestfulGateway gateway)
             throws RestHandlerException {

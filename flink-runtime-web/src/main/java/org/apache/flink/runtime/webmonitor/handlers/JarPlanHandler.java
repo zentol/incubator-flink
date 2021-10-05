@@ -28,6 +28,7 @@ import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.JobPlanInfo;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.handlers.utils.JarHandlerUtils.JarHandlerContext;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
@@ -93,7 +94,7 @@ public class JarPlanHandler
     }
 
     @Override
-    protected CompletableFuture<JobPlanInfo> handleRequest(
+    protected CompletableFuture<Rx<JobPlanInfo>> handleRequest(
             @Nonnull final HandlerRequest<JarPlanRequestBody, JarPlanMessageParameters> request,
             @Nonnull final RestfulGateway gateway)
             throws RestHandlerException {

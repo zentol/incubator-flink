@@ -27,6 +27,7 @@ import org.apache.flink.runtime.rest.handler.legacy.metrics.MetricStore;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.messages.job.metrics.Metric;
 import org.apache.flink.runtime.rest.messages.job.metrics.MetricCollectionResponseBody;
 import org.apache.flink.runtime.rest.messages.job.metrics.MetricsFilterParameter;
@@ -78,7 +79,7 @@ public abstract class AbstractMetricsHandler<M extends MessageParameters>
     }
 
     @Override
-    protected final CompletableFuture<MetricCollectionResponseBody> handleRequest(
+    protected final CompletableFuture<Rx<MetricCollectionResponseBody>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, M> request, @Nonnull RestfulGateway gateway)
             throws RestHandlerException {
         metricFetcher.update();

@@ -30,6 +30,7 @@ import org.apache.flink.runtime.rest.messages.EmptyResponseBody;
 import org.apache.flink.runtime.rest.messages.JobCancellationMessageParameters;
 import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.messages.TerminationModeQueryParameter;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
@@ -68,7 +69,7 @@ public class JobCancellationHandler
     }
 
     @Override
-    public CompletableFuture<EmptyResponseBody> handleRequest(
+    public CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
             HandlerRequest<EmptyRequestBody, JobCancellationMessageParameters> request,
             RestfulGateway gateway)
             throws RestHandlerException {

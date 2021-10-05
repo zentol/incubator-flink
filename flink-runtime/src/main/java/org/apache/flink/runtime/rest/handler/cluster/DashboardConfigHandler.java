@@ -25,6 +25,7 @@ import org.apache.flink.runtime.rest.messages.DashboardConfiguration;
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -58,7 +59,7 @@ public class DashboardConfigHandler
     }
 
     @Override
-    public CompletableFuture<DashboardConfiguration> handleRequest(
+    public CompletableFuture<Rx<DashboardConfiguration>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull RestfulGateway gateway) {
         return CompletableFuture.completedFuture(dashboardConfiguration);

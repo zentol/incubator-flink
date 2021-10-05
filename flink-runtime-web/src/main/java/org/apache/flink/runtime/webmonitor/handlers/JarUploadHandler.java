@@ -25,6 +25,7 @@ import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -68,7 +69,7 @@ public class JarUploadHandler
     }
 
     @Override
-    protected CompletableFuture<JarUploadResponseBody> handleRequest(
+    protected CompletableFuture<Rx<JarUploadResponseBody>> handleRequest(
             @Nonnull final HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull final RestfulGateway gateway)
             throws RestHandlerException {

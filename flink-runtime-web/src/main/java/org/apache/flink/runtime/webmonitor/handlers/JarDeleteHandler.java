@@ -25,6 +25,7 @@ import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.EmptyResponseBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -65,7 +66,7 @@ public class JarDeleteHandler
     }
 
     @Override
-    protected CompletableFuture<EmptyResponseBody> handleRequest(
+    protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
             @Nonnull final HandlerRequest<EmptyRequestBody, JarDeleteMessageParameters> request,
             @Nonnull final RestfulGateway gateway)
             throws RestHandlerException {

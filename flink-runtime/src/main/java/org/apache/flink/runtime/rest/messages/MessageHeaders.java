@@ -51,6 +51,10 @@ public interface MessageHeaders<
      */
     HttpResponseStatus getResponseStatusCode();
 
+    default Collection<RxT> getResponseStatusCodes() {
+        return Collections.singleton(RxT.GENERIC_OK);
+    }
+
     /**
      * Returns the collection of type parameters for the response type.
      *

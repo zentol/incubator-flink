@@ -25,6 +25,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
@@ -66,7 +67,7 @@ public class TestRestHandler<
     }
 
     @Override
-    protected CompletableFuture<RES> handleRequest(
+    protected CompletableFuture<Rx<RES>> handleRequest(
             @Nullable HandlerRequest<REQ, M> request, @Nullable G gateway)
             throws RestHandlerException {
         final CompletableFuture<RES> result = responseQueue.poll();

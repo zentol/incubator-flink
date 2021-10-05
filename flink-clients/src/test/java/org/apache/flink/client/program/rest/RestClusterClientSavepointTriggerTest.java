@@ -37,6 +37,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rest.messages.TriggerIdPathParameter;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointInfo;
@@ -292,7 +293,7 @@ public class RestClusterClientSavepointTriggerTest extends TestLogger {
         }
 
         @Override
-        protected CompletableFuture<TriggerResponse> handleRequest(
+        protected CompletableFuture<Rx<TriggerResponse>> handleRequest(
                 @Nonnull
                         HandlerRequest<
                                         SavepointTriggerRequestBody,
@@ -323,7 +324,7 @@ public class RestClusterClientSavepointTriggerTest extends TestLogger {
         }
 
         @Override
-        protected CompletableFuture<AsynchronousOperationResult<SavepointInfo>> handleRequest(
+        protected CompletableFuture<Rx<AsynchronousOperationResult<SavepointInfo>>> handleRequest(
                 @Nonnull HandlerRequest<EmptyRequestBody, SavepointStatusMessageParameters> request,
                 @Nonnull DispatcherGateway gateway)
                 throws RestHandlerException {

@@ -24,6 +24,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.Preconditions;
@@ -77,7 +78,7 @@ public abstract class AbstractRestHandler<
             HttpRequest httpRequest,
             HandlerRequest<R, M> handlerRequest,
             T gateway) {
-        CompletableFuture<P> response;
+        CompletableFuture<Rx<P>> response;
 
         try {
             response = handleRequest(handlerRequest, gateway);
@@ -86,13 +87,20 @@ public abstract class AbstractRestHandler<
         }
 
         return response.thenAccept(
-                resp ->
+                resp -> {
+                    Preconditions.checkArgument(
+                            messageHeaders.getResponseStatusCodes().contains(resp.getReturnCode()));
+                    if (resp.isSuccess()) {
                         HandlerUtils.sendResponse(
                                 ctx,
                                 httpRequest,
-                                resp,
-                                messageHeaders.getResponseStatusCode(),
-                                responseHeaders));
+                                resp.getContent(),
+                                resp.getResponseCode(),
+                                responseHeaders);
+                    } else {
+                        handleException(resp.getError(), ctx, httpRequest);
+                    }
+                });
     }
 
     /**
@@ -112,6 +120,6 @@ public abstract class AbstractRestHandler<
      * @return future containing a handler response
      * @throws RestHandlerException if the handling failed
      */
-    protected abstract CompletableFuture<P> handleRequest(
+    protected abstract CompletableFuture<Rx<P>> handleRequest(
             @Nonnull HandlerRequest<R, M> request, @Nonnull T gateway) throws RestHandlerException;
 }

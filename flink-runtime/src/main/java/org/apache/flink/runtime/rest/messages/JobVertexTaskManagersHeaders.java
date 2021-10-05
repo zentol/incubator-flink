@@ -23,6 +23,9 @@ import org.apache.flink.runtime.rest.handler.job.JobVertexTaskManagersHandler;
 
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
+import java.util.Collections;
+import java.util.Set;
+
 /** Message headers for the {@link JobVertexTaskManagersHandler}. */
 public class JobVertexTaskManagersHeaders
         implements MessageHeaders<
@@ -78,5 +81,9 @@ public class JobVertexTaskManagersHeaders
     @Override
     public String getDescription() {
         return "Returns task information aggregated by task manager.";
+    }
+
+    public Set<RxT> responseCodes() {
+        return Collections.singleton(RxT.GENERIC_OK);
     }
 }

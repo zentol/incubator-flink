@@ -28,6 +28,7 @@ import org.apache.flink.runtime.rest.handler.async.AsynchronousOperationResult;
 import org.apache.flink.runtime.rest.handler.async.TriggerResponse;
 import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -61,7 +62,7 @@ public class RescalingHandlers
         }
 
         @Override
-        public CompletableFuture<TriggerResponse> handleRequest(
+        public CompletableFuture<Rx<TriggerResponse>> handleRequest(
                 @Nonnull
                         final HandlerRequest<EmptyRequestBody, RescalingTriggerMessageParameters>
                                 request,
@@ -97,7 +98,7 @@ public class RescalingHandlers
         }
 
         @Override
-        public CompletableFuture<AsynchronousOperationResult<AsynchronousOperationInfo>>
+        public CompletableFuture<Rx<AsynchronousOperationResult<AsynchronousOperationInfo>>>
                 handleRequest(
                         @Nonnull
                                 final HandlerRequest<

@@ -30,6 +30,7 @@ import org.apache.flink.runtime.rest.handler.AbstractRestHandler;
 import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.handlers.utils.JarHandlerUtils.JarHandlerContext;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -82,7 +83,7 @@ public class JarRunHandler
     }
 
     @Override
-    protected CompletableFuture<JarRunResponseBody> handleRequest(
+    protected CompletableFuture<Rx<JarRunResponseBody>> handleRequest(
             @Nonnull final HandlerRequest<JarRunRequestBody, JarRunMessageParameters> request,
             @Nonnull final DispatcherGateway gateway)
             throws RestHandlerException {

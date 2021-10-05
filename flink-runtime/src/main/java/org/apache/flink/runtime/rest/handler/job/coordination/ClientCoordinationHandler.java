@@ -29,6 +29,7 @@ import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.OperatorIDPathParameter;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.messages.job.coordination.ClientCoordinationMessageParameters;
 import org.apache.flink.runtime.rest.messages.job.coordination.ClientCoordinationRequestBody;
 import org.apache.flink.runtime.rest.messages.job.coordination.ClientCoordinationResponseBody;
@@ -69,7 +70,7 @@ public class ClientCoordinationHandler
     }
 
     @Override
-    protected CompletableFuture<ClientCoordinationResponseBody> handleRequest(
+    protected CompletableFuture<Rx<ClientCoordinationResponseBody>> handleRequest(
             @Nonnull
                     HandlerRequest<
                                     ClientCoordinationRequestBody,

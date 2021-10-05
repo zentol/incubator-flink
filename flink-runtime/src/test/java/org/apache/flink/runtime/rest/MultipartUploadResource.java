@@ -31,6 +31,7 @@ import org.apache.flink.runtime.rest.messages.EmptyResponseBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.util.TestRestServerEndpoint;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
@@ -265,7 +266,7 @@ public class MultipartUploadResource extends ExternalResource {
         }
 
         @Override
-        protected CompletableFuture<EmptyResponseBody> handleRequest(
+        protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
                 @Nonnull HandlerRequest<TestRequestBody, EmptyMessageParameters> request,
                 @Nonnull RestfulGateway gateway)
                 throws RestHandlerException {
@@ -337,7 +338,7 @@ public class MultipartUploadResource extends ExternalResource {
         }
 
         @Override
-        protected CompletableFuture<EmptyResponseBody> handleRequest(
+        protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
                 @Nonnull HandlerRequest<TestRequestBody, EmptyMessageParameters> request,
                 @Nonnull RestfulGateway gateway)
                 throws RestHandlerException {
@@ -393,7 +394,7 @@ public class MultipartUploadResource extends ExternalResource {
         }
 
         @Override
-        protected CompletableFuture<EmptyResponseBody> handleRequest(
+        protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
                 @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
                 @Nonnull RestfulGateway gateway)
                 throws RestHandlerException {

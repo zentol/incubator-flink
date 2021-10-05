@@ -28,6 +28,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.Preconditions;
@@ -69,7 +70,7 @@ public abstract class AbstractResourceManagerHandler<
     }
 
     @Override
-    protected CompletableFuture<P> handleRequest(
+    protected CompletableFuture<Rx<P>> handleRequest(
             @Nonnull HandlerRequest<R, M> request, @Nonnull T gateway) throws RestHandlerException {
         ResourceManagerGateway resourceManagerGateway =
                 getResourceManagerGateway(resourceManagerGatewayRetriever);

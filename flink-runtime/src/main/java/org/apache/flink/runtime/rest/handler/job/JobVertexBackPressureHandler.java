@@ -35,6 +35,7 @@ import org.apache.flink.runtime.rest.messages.JobVertexBackPressureInfo.SubtaskB
 import org.apache.flink.runtime.rest.messages.JobVertexIdPathParameter;
 import org.apache.flink.runtime.rest.messages.JobVertexMessageParameters;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 
@@ -68,7 +69,7 @@ public class JobVertexBackPressureHandler
     }
 
     @Override
-    protected CompletableFuture<JobVertexBackPressureInfo> handleRequest(
+    protected CompletableFuture<Rx<JobVertexBackPressureInfo>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, JobVertexMessageParameters> request,
             @Nonnull RestfulGateway gateway)
             throws RestHandlerException {

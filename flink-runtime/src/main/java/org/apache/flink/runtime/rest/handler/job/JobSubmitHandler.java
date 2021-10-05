@@ -31,6 +31,7 @@ import org.apache.flink.runtime.rest.handler.AbstractRestHandler;
 import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.messages.job.JobSubmitHeaders;
 import org.apache.flink.runtime.rest.messages.job.JobSubmitRequestBody;
 import org.apache.flink.runtime.rest.messages.job.JobSubmitResponseBody;
@@ -79,7 +80,7 @@ public final class JobSubmitHandler
     }
 
     @Override
-    protected CompletableFuture<JobSubmitResponseBody> handleRequest(
+    protected CompletableFuture<Rx<JobSubmitResponseBody>> handleRequest(
             @Nonnull HandlerRequest<JobSubmitRequestBody, EmptyMessageParameters> request,
             @Nonnull DispatcherGateway gateway)
             throws RestHandlerException {

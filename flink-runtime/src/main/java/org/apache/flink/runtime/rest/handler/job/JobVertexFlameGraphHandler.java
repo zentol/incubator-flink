@@ -29,6 +29,7 @@ import org.apache.flink.runtime.rest.messages.FlameGraphTypeQueryParameter;
 import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.JobVertexFlameGraphHeaders;
 import org.apache.flink.runtime.rest.messages.JobVertexFlameGraphParameters;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexFlameGraph;
@@ -151,7 +152,7 @@ public class JobVertexFlameGraphHandler
         }
 
         @Override
-        protected CompletableFuture<JobVertexFlameGraph> handleRequest(
+        protected CompletableFuture<Rx<JobVertexFlameGraph>> handleRequest(
                 @Nonnull HandlerRequest<EmptyRequestBody, JobVertexFlameGraphParameters> request,
                 @Nonnull RestfulGateway gateway)
                 throws RestHandlerException {

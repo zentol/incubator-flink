@@ -26,6 +26,7 @@ import org.apache.flink.runtime.rest.handler.legacy.messages.ClusterOverviewWith
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
@@ -57,7 +58,7 @@ public class ClusterOverviewHandler
     }
 
     @Override
-    public CompletableFuture<ClusterOverviewWithVersion> handleRequest(
+    public CompletableFuture<Rx<ClusterOverviewWithVersion>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull RestfulGateway gateway) {
         CompletableFuture<ClusterOverview> overviewFuture = gateway.requestClusterOverview(timeout);

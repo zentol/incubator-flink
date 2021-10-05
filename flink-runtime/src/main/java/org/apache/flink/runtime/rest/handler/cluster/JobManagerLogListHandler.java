@@ -27,6 +27,7 @@ import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.LogInfo;
 import org.apache.flink.runtime.rest.messages.LogListInfo;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -62,7 +63,7 @@ public class JobManagerLogListHandler
     }
 
     @Override
-    protected CompletableFuture<LogListInfo> handleRequest(
+    protected CompletableFuture<Rx<LogListInfo>> handleRequest(
             @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
             @Nonnull RestfulGateway gateway)
             throws RestHandlerException {

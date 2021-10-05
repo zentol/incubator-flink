@@ -36,6 +36,7 @@ import org.apache.flink.shaded.netty4.io.netty.channel.ChannelHandlerContext;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.DefaultFullHttpRequest;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpMethod;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpRequest;
+import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpVersion;
 import org.apache.flink.shaded.netty4.io.netty.util.Attribute;
 import org.apache.flink.shaded.netty4.io.netty.util.AttributeKey;
@@ -206,6 +207,11 @@ public class AbstractHandlerTest extends TestLogger {
             @Override
             public boolean acceptsFileUploads() {
                 return true;
+            }
+
+            @Override
+            public HttpResponseStatus getResponseStatusCode() {
+                return HttpResponseStatus.OK;
             }
         }
     }

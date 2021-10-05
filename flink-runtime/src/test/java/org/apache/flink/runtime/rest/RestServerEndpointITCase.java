@@ -43,6 +43,7 @@ import org.apache.flink.runtime.rest.messages.MessagePathParameter;
 import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.ResponseBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.rest.util.RestClientException;
 import org.apache.flink.runtime.rest.util.TestRestHandler;
 import org.apache.flink.runtime.rest.util.TestRestServerEndpoint;
@@ -743,7 +744,7 @@ public class RestServerEndpointITCase extends TestLogger {
         }
 
         @Override
-        protected CompletableFuture<TestResponse> handleRequest(
+        protected CompletableFuture<Rx<TestResponse>> handleRequest(
                 @Nonnull HandlerRequest<TestRequest, TestParameters> request,
                 RestfulGateway gateway) {
             assertEquals(request.getPathParameter(JobIDPathParameter.class), PATH_JOB_ID);
@@ -966,7 +967,7 @@ public class RestServerEndpointITCase extends TestLogger {
         }
 
         @Override
-        protected CompletableFuture<EmptyResponseBody> handleRequest(
+        protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
                 @Nonnull final HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
                 @Nonnull final RestfulGateway gateway)
                 throws RestHandlerException {
@@ -1012,7 +1013,7 @@ public class RestServerEndpointITCase extends TestLogger {
         }
 
         @Override
-        protected CompletableFuture<EmptyResponseBody> handleRequest(
+        protected CompletableFuture<Rx<EmptyResponseBody>> handleRequest(
                 @Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,
                 @Nonnull RestfulGateway gateway)
                 throws RestHandlerException {

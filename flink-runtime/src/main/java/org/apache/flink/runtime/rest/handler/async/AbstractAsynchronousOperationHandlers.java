@@ -27,6 +27,7 @@ import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
+import org.apache.flink.runtime.rest.messages.Rx;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.types.Either;
@@ -112,7 +113,7 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
         }
 
         @Override
-        public CompletableFuture<TriggerResponse> handleRequest(
+        public CompletableFuture<Rx<TriggerResponse>> handleRequest(
                 @Nonnull HandlerRequest<B, M> request, @Nonnull T gateway)
                 throws RestHandlerException {
             final CompletableFuture<R> resultFuture = triggerOperation(request, gateway);
@@ -169,7 +170,7 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
         }
 
         @Override
-        public CompletableFuture<AsynchronousOperationResult<V>> handleRequest(
+        public CompletableFuture<Rx<AsynchronousOperationResult<V>>> handleRequest(
                 @Nonnull HandlerRequest<EmptyRequestBody, M> request, @Nonnull T gateway)
                 throws RestHandlerException {
 
