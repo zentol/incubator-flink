@@ -143,6 +143,9 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
     private DispatcherBootstrap dispatcherBootstrap;
 
+    private final CompletedOperationCache<AsynchronousJobOperationKey, String>
+            savepointOperationsCache = new CompletedOperationCache<>();
+
     /** Enum to distinguish between initial job submission and re-submission for recovery. */
     protected enum ExecutionType {
         SUBMISSION,
@@ -687,37 +690,28 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
                 jobID, gateway -> gateway.triggerCheckpoint(timeout));
     }
 
-    private final CompletedOperationCache<AsynchronousJobOperationKey, Object>
-            completedOperationCache = new CompletedOperationCache<>();
-
     @Override
-    // TODO: this needs to return a future which gets complete once the savepoint is actually
-    // TODO: triggered; if complete reutrn 204 ACCEPTED, on error handle them
-    // TODO: / we may need a separate versions of this method for
-    // TODO: the REST API / (job client / minicluster), which _may_ need to wired down to the
-    // TODO: JobMaster
     public CompletableFuture<String> triggerSavepoint(
             final JobID jobId,
             final String targetDirectory,
             final boolean cancelJob,
             TriggerId operationId,
             final Time timeout) {
+        AsynchronousJobOperationKey operationKey =
+                AsynchronousJobOperationKey.of(operationId, jobId);
 
-        // TODO: check cache for duplicate requests
-
-        return performOperationOnJobMasterGateway(
-                // TODO: maybe derive the error code / successful trigger from whether this can
-                // TODO: returns without an exception; preconditions should be checked synchronously
-                jobId, gateway -> gateway.triggerSavepoint(targetDirectory, cancelJob, timeout));
-    }
-
-    // TODO: typing sucks hard, but separate caches for each operation seems overkill
-    public CompletableFuture<Object> getAsyncOperationResult(
-            final JobID jobId, TriggerId operationId) {
         try {
-            return completedOperationCache.get(AsynchronousJobOperationKey.of(operationId, jobId));
+            // Check if a trigger request for this key exists already
+            return savepointOperationsCache.get(operationKey);
         } catch (UnknownOperationKeyException e) {
-            return CompletableFuture.failedFuture(e);
+            // Trigger a new savepoint
+            CompletableFuture<String> savepointPathFuture =
+                    performOperationOnJobMasterGateway(
+                            jobId,
+                            gateway ->
+                                    gateway.triggerSavepoint(targetDirectory, cancelJob, timeout));
+            savepointOperationsCache.registerOngoingOperation(operationKey, savepointPathFuture);
+            return savepointPathFuture;
         }
     }
 
