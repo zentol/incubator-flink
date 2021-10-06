@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,7 +57,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 @ThreadSafe
 class CompletedOperationCache<K extends OperationKey, R> implements AutoCloseableAsync {
 
-    private static final long COMPLETED_OPERATION_RESULT_CACHE_DURATION_SECONDS = 300L;
+    private static final Duration COMPLETED_OPERATION_RESULT_CACHE_DURATION = Duration.ofMinutes(5);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletedOperationCache.class);
 
@@ -79,8 +80,7 @@ class CompletedOperationCache<K extends OperationKey, R> implements AutoCloseabl
     CompletedOperationCache(final Ticker ticker) {
         completedOperations =
                 CacheBuilder.newBuilder()
-                        .expireAfterWrite(
-                                COMPLETED_OPERATION_RESULT_CACHE_DURATION_SECONDS, TimeUnit.SECONDS)
+                        .expireAfterWrite(COMPLETED_OPERATION_RESULT_CACHE_DURATION)
                         .removalListener(
                                 (RemovalListener<K, ResultAccessTracker<R>>)
                                         removalNotification -> {
@@ -103,7 +103,7 @@ class CompletedOperationCache<K extends OperationKey, R> implements AutoCloseabl
                                                 LOGGER.info(
                                                         "Evicted result with trigger id {} because its TTL of {}s has expired.",
                                                         removalNotification.getKey().getTriggerId(),
-                                                        COMPLETED_OPERATION_RESULT_CACHE_DURATION_SECONDS);
+                                                        COMPLETED_OPERATION_RESULT_CACHE_DURATION);
                                             }
                                         })
                         .ticker(ticker)
@@ -177,7 +177,7 @@ class CompletedOperationCache<K extends OperationKey, R> implements AutoCloseabl
                 terminationFuture =
                         FutureUtils.orTimeout(
                                 asyncWaitForResultsToBeAccessed(),
-                                COMPLETED_OPERATION_RESULT_CACHE_DURATION_SECONDS,
+                                COMPLETED_OPERATION_RESULT_CACHE_DURATION,
                                 TimeUnit.SECONDS);
             }
 
