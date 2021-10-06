@@ -24,6 +24,7 @@ import org.apache.flink.runtime.rest.handler.AbstractRestHandler;
 import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
+import org.apache.flink.runtime.rest.messages.EmptyResponseBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
@@ -31,6 +32,8 @@ import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.types.Either;
 import org.apache.flink.util.concurrent.FutureUtils;
+
+import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
 import javax.annotation.Nonnull;
 
@@ -228,5 +231,56 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
          * @return Operation result
          */
         protected abstract V operationResultResponse(R operationResult);
+    }
+
+    /**
+     * Handler which will delete the asynchronous operation's result.
+     *
+     * @param <T> type of the leader gateway
+     * @param <M> type of the message headers
+     */
+    protected abstract class DeleteHandler<T extends RestfulGateway, M extends MessageParameters>
+            extends AbstractRestHandler<T, EmptyRequestBody, EmptyResponseBody, M> {
+
+        protected DeleteHandler(
+                GatewayRetriever<? extends T> leaderRetriever,
+                Time timeout,
+                Map<String, String> responseHeaders,
+                MessageHeaders<EmptyRequestBody, EmptyResponseBody, M> messageHeaders) {
+            super(leaderRetriever, timeout, responseHeaders, messageHeaders);
+        }
+
+        @Override
+        public CompletableFuture<EmptyResponseBody> handleRequest(
+                @Nonnull HandlerRequest<EmptyRequestBody, M> request, @Nonnull T gateway)
+                throws RestHandlerException {
+
+            try {
+                if (completedOperationCache.get(getOperationKey(request)) != null) {
+                    // the get implicitly deletes the entry
+                    // replace with dedicated delete call later on because that's an implementation
+                    // detail
+                    return CompletableFuture.completedFuture(EmptyResponseBody.getInstance());
+                } else {
+                    throw new RestHandlerException(
+                            "The operation is still in-progress.", HttpResponseStatus.CONFLICT);
+                }
+            } catch (UnknownOperationKeyException e) {
+                return CompletableFuture.completedFuture(EmptyResponseBody.getInstance());
+            }
+        }
+
+        @Override
+        public CompletableFuture<Void> closeHandlerAsync() {
+            return completedOperationCache.closeAsync();
+        }
+
+        /**
+         * Extract the operation key under which the operation result future is stored.
+         *
+         * @param request with which the status handler has been called
+         * @return Operation key under which the operation result future is stored
+         */
+        protected abstract K getOperationKey(HandlerRequest<EmptyRequestBody, M> request);
     }
 }

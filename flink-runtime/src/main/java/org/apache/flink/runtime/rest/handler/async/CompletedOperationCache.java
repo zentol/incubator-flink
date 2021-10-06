@@ -138,6 +138,15 @@ class CompletedOperationCache<K extends OperationKey, R> implements AutoCloseabl
                 });
     }
 
+    public void remove(final K operationKey) {
+        // TODO: clarify behavior if op is in-progress
+        // TODO: (deleting an in-progress operation is annoying because the future completion may
+        // TODO: run concurrently)
+        ResultAccessTracker<R> resultAccessTracker = completedOperations.getIfPresent(operationKey);
+        resultAccessTracker.markAccessed();
+        completedOperations.invalidate(operationKey);
+    }
+
     @GuardedBy("lock")
     private boolean isRunning() {
         return terminationFuture == null;

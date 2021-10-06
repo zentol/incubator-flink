@@ -33,6 +33,7 @@ import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rest.messages.TriggerIdPathParameter;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointInfo;
+import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointOperationDeleteHeaders;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointStatusHeaders;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointStatusMessageParameters;
 import org.apache.flink.runtime.rest.messages.job.savepoints.SavepointTriggerHeaders;
@@ -229,9 +230,7 @@ public class SavepointHandlers
         @Override
         protected AsynchronousJobOperationKey getOperationKey(
                 HandlerRequest<EmptyRequestBody, SavepointStatusMessageParameters> request) {
-            final TriggerId triggerId = request.getPathParameter(TriggerIdPathParameter.class);
-            final JobID jobId = request.getPathParameter(JobIDPathParameter.class);
-            return AsynchronousJobOperationKey.of(triggerId, jobId);
+            return SavepointHandlers.getOperationKey(request);
         }
 
         @Override
@@ -243,5 +242,33 @@ public class SavepointHandlers
         protected SavepointInfo operationResultResponse(String operationResult) {
             return new SavepointInfo(operationResult, null);
         }
+    }
+
+    /** HTTP handler to delete the result of a savepoint operation. */
+    public class SavepointOperationDeleteHandler
+            extends DeleteHandler<RestfulGateway, SavepointStatusMessageParameters> {
+
+        public SavepointOperationDeleteHandler(
+                final GatewayRetriever<? extends RestfulGateway> leaderRetriever,
+                final Time timeout,
+                final Map<String, String> responseHeaders) {
+            super(
+                    leaderRetriever,
+                    timeout,
+                    responseHeaders,
+                    SavepointOperationDeleteHeaders.getInstance());
+        }
+
+        @Override
+        protected AsynchronousJobOperationKey getOperationKey(
+                HandlerRequest<EmptyRequestBody, SavepointStatusMessageParameters> request) {
+            return SavepointHandlers.getOperationKey(request);
+        }
+    }
+
+    private static AsynchronousJobOperationKey getOperationKey(HandlerRequest<?, ?> request) {
+        final TriggerId triggerId = request.getPathParameter(TriggerIdPathParameter.class);
+        final JobID jobId = request.getPathParameter(JobIDPathParameter.class);
+        return AsynchronousJobOperationKey.of(triggerId, jobId);
     }
 }
