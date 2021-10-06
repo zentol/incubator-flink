@@ -68,7 +68,6 @@ import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcServiceUtils;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.types.Either;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
@@ -713,14 +712,10 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
     }
 
     // TODO: typing sucks hard, but separate caches for each operation seems overkill
-    public <R> CompletableFuture<Optional<Either<Throwable, R>>> getAsyncOperationResult(
+    public CompletableFuture<Object> getAsyncOperationResult(
             final JobID jobId, TriggerId operationId) {
         try {
-            return CompletableFuture.completedFuture(
-                    Optional.ofNullable(
-                            (Either<Throwable, R>)
-                                    completedOperationCache.get(
-                                            AsynchronousJobOperationKey.of(operationId, jobId))));
+            return completedOperationCache.get(AsynchronousJobOperationKey.of(operationId, jobId));
         } catch (UnknownOperationKeyException e) {
             return CompletableFuture.failedFuture(e);
         }

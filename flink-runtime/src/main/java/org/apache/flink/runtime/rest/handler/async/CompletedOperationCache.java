@@ -32,6 +32,7 @@ import org.apache.flink.shaded.guava30.com.google.common.cache.RemovalListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
@@ -114,11 +115,12 @@ public class CompletedOperationCache<K extends OperationKey, R> implements AutoC
      * Registers an ongoing operation with the cache.
      *
      * @param operationResultFuture A future containing the operation result.
-     * @throw IllegalStateException if the cache is already shutting down
+     * @throws IllegalStateException if the cache is already shutting down
      */
     public void registerOngoingOperation(
             final K operationKey, final CompletableFuture<R> operationResultFuture) {
-        final ResultAccessTracker<R> inProgress = ResultAccessTracker.inProgress();
+        final ResultAccessTracker<R> inProgress =
+                ResultAccessTracker.inProgress(operationResultFuture);
 
         synchronized (lock) {
             checkState(isRunning(), "The CompletedOperationCache has already been closed.");
@@ -144,21 +146,35 @@ public class CompletedOperationCache<K extends OperationKey, R> implements AutoC
     }
 
     /**
-     * Returns the operation result or a {@code Throwable} if the {@code CompletableFuture}
-     * finished, otherwise {@code null}.
+     * Returns a future holding the result of the operation with the specified key. It may already
+     * be complete, and may complete exceptionally with a {@code Throwable} in case the operation
+     * fails.
      *
      * @throws UnknownOperationKeyException If the operation is not found, and there is no ongoing
      *     operation under the provided key.
      */
-    @Nullable
-    public Either<Throwable, R> get(final K operationKey) throws UnknownOperationKeyException {
+    public CompletableFuture<R> get(final K operationKey) throws UnknownOperationKeyException {
         ResultAccessTracker<R> resultAccessTracker;
-        if ((resultAccessTracker = registeredOperationTriggers.get(operationKey)) == null
-                && (resultAccessTracker = completedOperations.getIfPresent(operationKey)) == null) {
-            throw new UnknownOperationKeyException(operationKey);
+
+        if ((resultAccessTracker = completedOperations.getIfPresent(operationKey)) != null) {
+            Either<Throwable, R> result = resultAccessTracker.accessOperationResultOrError();
+
+            if (result == null) {
+                return CompletableFuture.failedFuture(
+                        new IllegalStateException(
+                                "Completed operation has neither result nor error."));
+            } else if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.left());
+            }
+
+            return CompletableFuture.completedFuture(result.right());
         }
 
-        return resultAccessTracker.accessOperationResultOrError();
+        if ((resultAccessTracker = registeredOperationTriggers.get(operationKey)) != null) {
+            return resultAccessTracker.accessOperationResultFuture();
+        }
+
+        throw new UnknownOperationKeyException(operationKey);
     }
 
     @Override
@@ -193,24 +209,34 @@ public class CompletedOperationCache<K extends OperationKey, R> implements AutoC
     /** Stores the result of an asynchronous operation, and tracks accesses to it. */
     private static class ResultAccessTracker<R> {
 
+        /**
+         * Future that completes with the result of the asynchronous operation that this instance
+         * tracks.
+         */
+        @Nonnull private final CompletableFuture<R> operationResultFuture;
+
         /** Result of an asynchronous operation. Null if operation is in progress. */
         @Nullable private final Either<Throwable, R> operationResultOrError;
 
         /** Future that completes if a non-null {@link #operationResultOrError} is accessed. */
         private final CompletableFuture<Void> accessed;
 
-        private static <R> ResultAccessTracker<R> inProgress() {
-            return new ResultAccessTracker<>();
+        private static <R> ResultAccessTracker<R> inProgress(
+                CompletableFuture<R> operationResultFuture) {
+            return new ResultAccessTracker<>(operationResultFuture);
         }
 
-        private ResultAccessTracker() {
+        private ResultAccessTracker(CompletableFuture<R> operationResultFuture) {
+            this.operationResultFuture = checkNotNull(operationResultFuture);
             this.operationResultOrError = null;
             this.accessed = new CompletableFuture<>();
         }
 
         private ResultAccessTracker(
+                final CompletableFuture<R> operationResultFuture,
                 final Either<Throwable, R> operationResultOrError,
                 final CompletableFuture<Void> accessed) {
+            this.operationResultFuture = checkNotNull(operationResultFuture);
             this.operationResultOrError = checkNotNull(operationResultOrError);
             this.accessed = checkNotNull(accessed);
         }
@@ -222,7 +248,18 @@ public class CompletedOperationCache<K extends OperationKey, R> implements AutoC
                 final Either<Throwable, R> operationResultOrError) {
             checkState(this.operationResultOrError == null);
 
-            return new ResultAccessTracker<>(checkNotNull(operationResultOrError), this.accessed);
+            return new ResultAccessTracker<>(
+                    this.operationResultFuture,
+                    checkNotNull(operationResultOrError),
+                    this.accessed);
+        }
+
+        public boolean isDone() {
+            return this.operationResultFuture.isDone();
+        }
+
+        public CompletableFuture<R> accessOperationResultFuture() {
+            return operationResultFuture;
         }
 
         /**

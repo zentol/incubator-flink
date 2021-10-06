@@ -29,7 +29,6 @@ import org.apache.flink.runtime.rest.messages.MessageParameters;
 import org.apache.flink.runtime.rest.messages.RequestBody;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.types.Either;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import javax.annotation.Nonnull;
@@ -178,28 +177,28 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
 
             final K key = getOperationKey(request);
 
-            final Either<Throwable, R> operationResultOrError;
+            final CompletableFuture<R> operationResultFuture;
             try {
-                operationResultOrError = completedOperationCache.get(key);
+                operationResultFuture = completedOperationCache.get(key);
             } catch (UnknownOperationKeyException e) {
                 return FutureUtils.completedExceptionally(
                         new NotFoundException("Operation not found under key: " + key, e));
             }
 
-            if (operationResultOrError != null) {
-                if (operationResultOrError.isLeft()) {
-                    return CompletableFuture.completedFuture(
-                            AsynchronousOperationResult.completed(
-                                    exceptionalOperationResultResponse(
-                                            operationResultOrError.left())));
-                } else {
-                    return CompletableFuture.completedFuture(
-                            AsynchronousOperationResult.completed(
-                                    operationResultResponse(operationResultOrError.right())));
-                }
-            } else {
+            if (!operationResultFuture.isDone()) {
                 return CompletableFuture.completedFuture(AsynchronousOperationResult.inProgress());
             }
+
+            return operationResultFuture.handle(
+                    (result, error) -> {
+                        if (error != null) {
+                            return AsynchronousOperationResult.completed(
+                                    exceptionalOperationResultResponse(error));
+                        } else {
+                            return AsynchronousOperationResult.completed(
+                                    operationResultResponse(result));
+                        }
+                    });
         }
 
         @Override
