@@ -34,7 +34,7 @@ import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.metrics.dump.MetricQueryService;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
-import org.apache.flink.runtime.rest.messages.TriggerId;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcTimeout;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
@@ -135,19 +135,16 @@ public interface RestfulGateway extends RpcGateway {
     /**
      * Triggers a savepoint with the given savepoint directory as a target.
      *
-     * @param jobId ID of the job for which the savepoint should be triggered.
+     * @param operationKey the key of the operation, for deduplication purposes
      * @param targetDirectory Target directory for the savepoint.
-     * @param operationId the ID of the operation fot deduplication purposes
      * @param timeout Timeout for the asynchronous operation
      * @return A future to the {@link CompletedCheckpoint#getExternalPointer() external pointer} of
      *     the savepoint.
      */
     default CompletableFuture<String> triggerSavepoint(
-            JobID jobId,
+            AsynchronousJobOperationKey operationKey,
             String targetDirectory,
             boolean cancelJob,
-            // TODO: refactor to use AsynchronousJobOperationKey?
-            TriggerId operationId,
             @RpcTimeout Time timeout) {
         throw new UnsupportedOperationException();
     }

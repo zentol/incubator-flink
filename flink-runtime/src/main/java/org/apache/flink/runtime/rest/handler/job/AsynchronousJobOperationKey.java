@@ -48,6 +48,15 @@ public class AsynchronousJobOperationKey extends OperationKey {
         return new AsynchronousJobOperationKey(triggerId, jobId);
     }
 
+    /**
+     * Get the job id for the igven operation key.
+     *
+     * @return job id
+     */
+    public JobID getJobId() {
+        return jobId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

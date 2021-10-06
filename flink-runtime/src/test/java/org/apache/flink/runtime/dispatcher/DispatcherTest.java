@@ -62,6 +62,7 @@ import org.apache.flink.runtime.leaderelection.TestingLeaderElectionService;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rest.handler.legacy.utils.ArchivedExecutionGraphBuilder;
 import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
@@ -329,7 +330,10 @@ public class DispatcherTest extends AbstractDispatcherTest {
         try {
             dispatcherGateway
                     .triggerSavepoint(
-                            jobId, "file:///tmp/savepoint", false, new TriggerId(), TIMEOUT)
+                            AsynchronousJobOperationKey.of(new TriggerId(), jobId),
+                            "file:///tmp/savepoint",
+                            false,
+                            TIMEOUT)
                     .get();
             fail("Previous statement should have failed");
         } catch (ExecutionException t) {

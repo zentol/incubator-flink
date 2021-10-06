@@ -61,7 +61,6 @@ import org.apache.flink.runtime.resourcemanager.ResourceOverview;
 import org.apache.flink.runtime.rest.handler.async.CompletedOperationCache;
 import org.apache.flink.runtime.rest.handler.async.UnknownOperationKeyException;
 import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
-import org.apache.flink.runtime.rest.messages.TriggerId;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.PermanentlyFencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcService;
@@ -692,13 +691,10 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
     @Override
     public CompletableFuture<String> triggerSavepoint(
-            final JobID jobId,
+            final AsynchronousJobOperationKey operationKey,
             final String targetDirectory,
             final boolean cancelJob,
-            TriggerId operationId,
             final Time timeout) {
-        AsynchronousJobOperationKey operationKey =
-                AsynchronousJobOperationKey.of(operationId, jobId);
 
         try {
             // Check if a trigger request for this key exists already
@@ -707,7 +703,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
             // Trigger a new savepoint
             CompletableFuture<String> savepointPathFuture =
                     performOperationOnJobMasterGateway(
-                            jobId,
+                            operationKey.getJobId(),
                             gateway ->
                                     gateway.triggerSavepoint(targetDirectory, cancelJob, timeout));
             savepointOperationsCache.registerOngoingOperation(operationKey, savepointPathFuture);

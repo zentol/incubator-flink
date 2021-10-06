@@ -35,6 +35,7 @@ import org.apache.flink.runtime.messages.webmonitor.ClusterOverview;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.operators.coordination.CoordinationRequest;
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rpc.RpcTimeout;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.util.SerializedValue;
@@ -97,7 +98,8 @@ public final class TestingDispatcherGateway extends TestingRestfulGateway
                     requestMetricQueryServiceAddressesSupplier,
             Supplier<CompletableFuture<Collection<Tuple2<ResourceID, String>>>>
                     requestTaskManagerMetricQueryServiceGatewaysSupplier,
-            BiFunction<JobID, String, CompletableFuture<String>> triggerSavepointFunction,
+            BiFunction<AsynchronousJobOperationKey, String, CompletableFuture<String>>
+                    triggerSavepointFunction,
             BiFunction<JobID, String, CompletableFuture<String>> stopWithSavepointFunction,
             Function<JobGraph, CompletableFuture<Acknowledge>> submitFunction,
             Supplier<CompletableFuture<Collection<JobID>>> listFunction,

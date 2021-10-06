@@ -24,6 +24,7 @@ import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.HandlerRequestException;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
 import org.apache.flink.runtime.rest.handler.async.AsynchronousOperationResult;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.JobIDPathParameter;
 import org.apache.flink.runtime.rest.messages.TriggerId;
@@ -92,7 +93,8 @@ public class SavepointHandlersTest extends TestLogger {
         final TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String targetDirectory) ->
+                                (AsynchronousJobOperationKey operationKey,
+                                        String targetDirectory) ->
                                         CompletableFuture.completedFuture(
                                                 COMPLETED_SAVEPOINT_EXTERNAL_POINTER))
                         .build();
@@ -122,7 +124,8 @@ public class SavepointHandlersTest extends TestLogger {
         final TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String targetDirectory) -> {
+                                (AsynchronousJobOperationKey operationKey,
+                                        String targetDirectory) -> {
                                     targetDirectoryFuture.complete(targetDirectory);
                                     return CompletableFuture.completedFuture(
                                             COMPLETED_SAVEPOINT_EXTERNAL_POINTER);
@@ -146,7 +149,7 @@ public class SavepointHandlersTest extends TestLogger {
         TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String directory) ->
+                                (AsynchronousJobOperationKey operationKey, String directory) ->
                                         CompletableFuture.completedFuture(
                                                 COMPLETED_SAVEPOINT_EXTERNAL_POINTER))
                         .build();
@@ -172,7 +175,7 @@ public class SavepointHandlersTest extends TestLogger {
         TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String directory) ->
+                                (AsynchronousJobOperationKey operationKey, String directory) ->
                                         FutureUtils.completedExceptionally(
                                                 new RuntimeException("expected")))
                         .build();

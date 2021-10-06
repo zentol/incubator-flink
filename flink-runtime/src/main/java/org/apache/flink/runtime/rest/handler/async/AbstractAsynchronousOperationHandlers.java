@@ -129,7 +129,7 @@ public abstract class AbstractAsynchronousOperationHandlers<K extends OperationK
          * Trigger the asynchronous operation and return its future result.
          *
          * @param request with which the trigger handler has been called
-         * @param operationKey
+         * @param operationKey the key of the operation, for deduplication purposes
          * @param gateway to the leader
          * @return Future result of the asynchronous operation
          * @throws RestHandlerException if something went wrong

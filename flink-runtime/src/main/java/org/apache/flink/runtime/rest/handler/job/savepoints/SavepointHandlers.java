@@ -195,7 +195,6 @@ public class SavepointHandlers
                 AsynchronousJobOperationKey operationKey,
                 RestfulGateway gateway)
                 throws RestHandlerException {
-            final JobID jobId = request.getPathParameter(JobIDPathParameter.class);
             final String requestedTargetDirectory = request.getRequestBody().getTargetDirectory();
 
             if (requestedTargetDirectory == null && defaultSavepointDir == null) {
@@ -213,11 +212,7 @@ public class SavepointHandlers
                             ? requestedTargetDirectory
                             : defaultSavepointDir;
             return gateway.triggerSavepoint(
-                    jobId,
-                    targetDirectory,
-                    cancelJob,
-                    operationKey.getTriggerId(),
-                    RpcUtils.INF_TIMEOUT);
+                    operationKey, targetDirectory, cancelJob, RpcUtils.INF_TIMEOUT);
         }
     }
 

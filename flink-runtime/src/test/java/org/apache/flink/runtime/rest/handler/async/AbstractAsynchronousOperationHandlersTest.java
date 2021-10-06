@@ -24,6 +24,7 @@ import org.apache.flink.runtime.rest.HttpMethodWrapper;
 import org.apache.flink.runtime.rest.handler.HandlerRequest;
 import org.apache.flink.runtime.rest.handler.HandlerRequestException;
 import org.apache.flink.runtime.rest.handler.RestHandlerException;
+import org.apache.flink.runtime.rest.handler.job.AsynchronousJobOperationKey;
 import org.apache.flink.runtime.rest.messages.EmptyMessageParameters;
 import org.apache.flink.runtime.rest.messages.EmptyRequestBody;
 import org.apache.flink.runtime.rest.messages.MessageHeaders;
@@ -99,7 +100,8 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
         final TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String directory) -> savepointFuture)
+                                (AsynchronousJobOperationKey operationKey, String directory) ->
+                                        savepointFuture)
                         .build();
 
         // trigger the operation
@@ -137,7 +139,7 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
         final TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String directory) ->
+                                (AsynchronousJobOperationKey operationKey, String directory) ->
                                         FutureUtils.completedExceptionally(testException))
                         .build();
 
@@ -198,7 +200,8 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
         final TestingRestfulGateway testingRestfulGateway =
                 new TestingRestfulGateway.Builder()
                         .setTriggerSavepointFunction(
-                                (JobID jobId, String directory) -> savepointFuture)
+                                (AsynchronousJobOperationKey operationKey, String directory) ->
+                                        savepointFuture)
                         .build();
 
         final TriggerId triggerId =
@@ -380,7 +383,11 @@ public class AbstractAsynchronousOperationHandlersTest extends TestLogger {
                     TestOperationKey operationKey,
                     RestfulGateway gateway)
                     throws RestHandlerException {
-                return gateway.triggerSavepoint(new JobID(), null, false, new TriggerId(), timeout);
+                return gateway.triggerSavepoint(
+                        AsynchronousJobOperationKey.of(new TriggerId(), new JobID()),
+                        null,
+                        false,
+                        timeout);
             }
 
             @Override
