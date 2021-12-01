@@ -70,6 +70,15 @@ public class ExecutionGraphHandler {
         this.mainThreadExecutor = mainThreadExecutor;
     }
 
+    public Optional<Long> getLastCompletedCheckpointTime() {
+        return Optional.ofNullable(
+                        executionGraph
+                                .getCheckpointStatsSnapshot()
+                                .getHistory()
+                                .getLatestCompletedCheckpoint())
+                .map(x -> x.getLatestAckTimestamp());
+    }
+
     public void reportCheckpointMetrics(
             ExecutionAttemptID attemptId, long id, CheckpointMetrics metrics) {
         processCheckpointCoordinatorMessage(

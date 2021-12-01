@@ -189,6 +189,7 @@ public class AdaptiveScheduler
     private final Duration resourceStabilizationTimeout;
 
     private final ExecutionGraphFactory executionGraphFactory;
+    private final JobStatusStore jobStatusStore;
 
     private State state = new Created(this, LOG);
 
@@ -202,6 +203,8 @@ public class AdaptiveScheduler
     private BackgroundTask<ExecutionGraph> backgroundTask = BackgroundTask.finishedBackgroundTask();
 
     private final SchedulerExecutionMode executionMode;
+
+    private long effectiveUptime = 0;
 
     public AdaptiveScheduler(
             JobGraph jobGraph,
@@ -257,7 +260,7 @@ public class AdaptiveScheduler
 
         this.componentMainThreadExecutor = mainThreadExecutor;
 
-        final JobStatusStore jobStatusStore = new JobStatusStore(initializationTimestamp);
+        this.jobStatusStore = new JobStatusStore(initializationTimestamp);
         this.jobStatusListeners =
                 Arrays.asList(Preconditions.checkNotNull(jobStatusListener), jobStatusStore);
 
@@ -271,6 +274,7 @@ public class AdaptiveScheduler
 
         SchedulerBase.registerJobMetrics(
                 jobManagerJobMetricGroup, jobStatusStore, () -> (long) numRestarts);
+        jobManagerJobMetricGroup.gauge("effectiveUpTime", () -> effectiveUptime);
     }
 
     private static void assertPreconditions(JobGraph jobGraph) throws RuntimeException {
@@ -839,6 +843,11 @@ public class AdaptiveScheduler
                     executionVertex.getParallelSubtaskIndex(),
                     attemptNumber + 1);
         }
+
+        final Optional<Long> lastCompletedCheckpointTime =
+                executionGraphHandler.getLastCompletedCheckpointTime();
+        lastCompletedCheckpointTime.ifPresent(
+                x -> effectiveUptime += x - jobStatusStore.getStatusTimestamp(JobStatus.RUNNING));
 
         transitionToState(
                 new Restarting.Factory(
