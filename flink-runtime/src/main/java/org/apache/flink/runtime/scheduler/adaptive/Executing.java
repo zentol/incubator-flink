@@ -66,6 +66,12 @@ class Executing extends StateWithExecutionGraph implements ResourceConsumer {
 
         // check if new resources have come available in the meantime
         context.runIfState(this, this::notifyNewResourcesAvailable, Duration.ZERO);
+        context.runIfState(this, this::XXX, Duration.ofSeconds(10));
+    }
+
+    private void XXX() {
+        context.updateUptimeMetrics(getExecutionGraphHandler());
+        context.runIfState(this, this::XXX, Duration.ofSeconds(10));
     }
 
     @Override
@@ -223,6 +229,8 @@ class Executing extends StateWithExecutionGraph implements ResourceConsumer {
          * @return true, if we can scale up
          */
         boolean canScaleUp(ExecutionGraph executionGraph);
+
+        void updateUptimeMetrics(ExecutionGraphHandler executionGraphHandler);
 
         /**
          * Transitions into the {@link Restarting} state.

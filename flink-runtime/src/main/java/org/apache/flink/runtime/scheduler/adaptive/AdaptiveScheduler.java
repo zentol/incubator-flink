@@ -204,7 +204,9 @@ public class AdaptiveScheduler
 
     private final SchedulerExecutionMode executionMode;
 
-    private long effectiveUptime = 0;
+    private long effectiveUptime = 0L;
+    private double effectiveUptimePercentage = 0.0;
+    private long lastCompletedCheckpointTime = -1L;
 
     public AdaptiveScheduler(
             JobGraph jobGraph,
@@ -275,6 +277,8 @@ public class AdaptiveScheduler
         SchedulerBase.registerJobMetrics(
                 jobManagerJobMetricGroup, jobStatusStore, () -> (long) numRestarts);
         jobManagerJobMetricGroup.gauge("effectiveUpTime", () -> effectiveUptime);
+        jobManagerJobMetricGroup.gauge(
+                "effectiveUpTimePercentage", () -> effectiveUptimePercentage);
     }
 
     private static void assertPreconditions(JobGraph jobGraph) throws RuntimeException {
@@ -828,6 +832,31 @@ public class AdaptiveScheduler
     }
 
     @Override
+    public void updateUptimeMetrics(ExecutionGraphHandler executionGraphHandler) {
+        final long runningTimestamp = jobStatusStore.getStatusTimestamp(JobStatus.RUNNING);
+
+        executionGraphHandler
+                .getLastCompletedCheckpointTime()
+                .filter(x -> x > lastCompletedCheckpointTime && x > runningTimestamp)
+                .map(
+                        latestCompletedCheckpointTime -> {
+                            long x =
+                                    latestCompletedCheckpointTime
+                                            - Math.max(
+                                                    runningTimestamp, lastCompletedCheckpointTime);
+                            lastCompletedCheckpointTime = latestCompletedCheckpointTime;
+                            return x;
+                        })
+                .ifPresent(
+                        x -> {
+                            double runtime = System.currentTimeMillis() - initializationTimestamp;
+
+                            effectiveUptime += x;
+                            effectiveUptimePercentage = effectiveUptime / runtime;
+                        });
+    }
+
+    @Override
     public void goToRestarting(
             ExecutionGraph executionGraph,
             ExecutionGraphHandler executionGraphHandler,
@@ -844,10 +873,8 @@ public class AdaptiveScheduler
                     attemptNumber + 1);
         }
 
-        final Optional<Long> lastCompletedCheckpointTime =
-                executionGraphHandler.getLastCompletedCheckpointTime();
-        lastCompletedCheckpointTime.ifPresent(
-                x -> effectiveUptime += x - jobStatusStore.getStatusTimestamp(JobStatus.RUNNING));
+        // not user-friendly
+        // updateUptimeMetrics(executionGraphHandler);
 
         transitionToState(
                 new Restarting.Factory(

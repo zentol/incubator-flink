@@ -533,6 +533,9 @@ public class ExecutingTest extends TestLogger {
         }
 
         @Override
+        public void updateUptimeMetrics(ExecutionGraphHandler executionGraphHandler) {}
+
+        @Override
         public void goToRestarting(
                 ExecutionGraph executionGraph,
                 ExecutionGraphHandler executionGraphHandler,
