@@ -24,6 +24,7 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.configuration.SchedulerExecutionMode;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.queryablestate.KvStateID;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
@@ -118,6 +119,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -190,6 +192,7 @@ public class AdaptiveScheduler
 
     private final ExecutionGraphFactory executionGraphFactory;
     private final JobStatusStore jobStatusStore;
+    private final CumulativeStatusTimeMetrics cumulativeStatusTimeMetrics;
 
     private State state = new Created(this, LOG);
 
@@ -263,8 +266,6 @@ public class AdaptiveScheduler
         this.componentMainThreadExecutor = mainThreadExecutor;
 
         this.jobStatusStore = new JobStatusStore(initializationTimestamp);
-        this.jobStatusListeners =
-                Arrays.asList(Preconditions.checkNotNull(jobStatusListener), jobStatusStore);
 
         this.scaleUpController = new ReactiveScaleUpController(configuration);
 
@@ -274,11 +275,63 @@ public class AdaptiveScheduler
 
         this.executionGraphFactory = executionGraphFactory;
 
+        this.cumulativeStatusTimeMetrics =
+                new CumulativeStatusTimeMetrics(jobManagerJobMetricGroup, initializationTimestamp);
+
+        this.jobStatusListeners =
+                Arrays.asList(
+                        Preconditions.checkNotNull(jobStatusListener),
+                        jobStatusStore,
+                        cumulativeStatusTimeMetrics);
+
         SchedulerBase.registerJobMetrics(
                 jobManagerJobMetricGroup, jobStatusStore, () -> (long) numRestarts);
         jobManagerJobMetricGroup.gauge("effectiveUpTime", () -> effectiveUptime);
         jobManagerJobMetricGroup.gauge(
                 "effectiveUpTimePercentage", () -> effectiveUptimePercentage);
+        jobManagerJobMetricGroup.gauge(
+                "runtime",
+                () -> {
+                    long currentTimeStamp =
+                            jobStatusStore.getState().isGloballyTerminalState()
+                                    ? jobStatusStore.getStatusTimestamp(jobStatusStore.getState())
+                                    : System.currentTimeMillis();
+                    return currentTimeStamp - initializationTimestamp;
+                });
+    }
+
+    private static class CumulativeStatusTimeMetrics implements JobStatusListener {
+
+        private final long[] cumulativeStatusTimes = new long[JobStatus.values().length];
+
+        private JobStatus currentStatus = JobStatus.INITIALIZING;
+        private long currentStatusTimestamp = 0L;
+
+        public CumulativeStatusTimeMetrics(MetricGroup metricGroup, long initializationTimestamp) {
+            currentStatusTimestamp = initializationTimestamp;
+            for (JobStatus value : JobStatus.values()) {
+                if (!value.isTerminalState()) {
+                    metricGroup.gauge(
+                            value.name().toLowerCase(Locale.ROOT) + "TimeTotal",
+                            () -> cumulativeStatusTimes[value.ordinal()]);
+                }
+            }
+        }
+
+        public void ping() {
+            final long currentTime = System.currentTimeMillis();
+            cumulativeStatusTimes[currentStatus.ordinal()] +=
+                    System.currentTimeMillis() - currentStatusTimestamp;
+            currentStatusTimestamp = currentTime;
+        }
+
+        @Override
+        public void jobStatusChanges(JobID jobId, JobStatus newJobStatus, long timestamp) {
+            cumulativeStatusTimes[currentStatus.ordinal()] += timestamp - currentStatusTimestamp;
+
+            currentStatus = newJobStatus;
+            currentStatusTimestamp = timestamp;
+        }
     }
 
     private static void assertPreconditions(JobGraph jobGraph) throws RuntimeException {
@@ -833,6 +886,7 @@ public class AdaptiveScheduler
 
     @Override
     public void updateUptimeMetrics(ExecutionGraphHandler executionGraphHandler) {
+        cumulativeStatusTimeMetrics.ping(); // TODO: rework to view
         final long runningTimestamp = jobStatusStore.getStatusTimestamp(JobStatus.RUNNING);
 
         executionGraphHandler

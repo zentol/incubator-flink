@@ -82,6 +82,8 @@ public class CheckpointStatsTracker {
      */
     private volatile boolean dirty;
 
+    private volatile int numCheckpointFailuresInARow = 0;
+
     /** The latest completed checkpoint. Used by the latest completed checkpoint metrics. */
     @Nullable private volatile CompletedCheckpointStats latestCompletedCheckpoint;
 
@@ -213,6 +215,7 @@ public class CheckpointStatsTracker {
             history.replacePendingCheckpointById(completed);
 
             summary.updateSummary(completed);
+            numCheckpointFailuresInARow = 0;
 
             dirty = true;
         } finally {
@@ -230,6 +233,7 @@ public class CheckpointStatsTracker {
         try {
             counts.incrementFailedCheckpoints();
             history.replacePendingCheckpointById(failed);
+            numCheckpointFailuresInARow++;
 
             dirty = true;
         } finally {
@@ -374,6 +378,7 @@ public class CheckpointStatsTracker {
         metricGroup.gauge(
                 LATEST_COMPLETED_CHECKPOINT_EXTERNAL_PATH_METRIC,
                 new LatestCompletedCheckpointExternalPathGauge());
+        metricGroup.gauge("numFailedCheckpointsInARow", () -> numCheckpointFailuresInARow);
     }
 
     private class CheckpointsCounter implements Gauge<Long> {
