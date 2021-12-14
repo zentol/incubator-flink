@@ -67,6 +67,9 @@ under the License.
 						</goals>
 						<configuration>
 							<finalName>HighParallelismIterationsTestProgram</finalName>
+							<artifactSet>
+								<includes>org.apache.flink:flink-examples-batch*</includes>
+							</artifactSet>
 							<filters>
 								<filter>
 									<artifact>org.apache.flink:flink-examples-batch*</artifact>
