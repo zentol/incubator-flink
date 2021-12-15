@@ -108,6 +108,8 @@ deactivate
 
 cd "${CURRENT_DIR}"
 
+cp ${FLINK_DIR}/opt/flink-python* ${FLINK_DIR}/lib/
+
 start_cluster
 
 echo "Test PyFlink Table job:"
