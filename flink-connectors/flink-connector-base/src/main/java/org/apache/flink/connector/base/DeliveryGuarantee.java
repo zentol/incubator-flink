@@ -19,9 +19,6 @@ package org.apache.flink.connector.base;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.DescribedEnum;
-import org.apache.flink.configuration.description.InlineElement;
-
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /**
  * DeliverGuarantees that can be chosen. In general your pipeline can only offer the lowest delivery
@@ -36,35 +33,32 @@ public enum DeliveryGuarantee implements DescribedEnum {
      */
     EXACTLY_ONCE(
             "exactly-once",
-            text(
-                    "Records are only delivered exactly-once also under failover scenarios. To build a complete exactly-once pipeline is required that the source and sink support exactly-once and are properly configured.")),
+            "Records are only delivered exactly-once also under failover scenarios. To build a complete exactly-once pipeline is required that the source and sink support exactly-once and are properly configured."),
     /**
      * Records are ensured to be delivered but it may happen that the same record is delivered
      * multiple times. Usually, this guarantee is faster than the exactly-once delivery.
      */
     AT_LEAST_ONCE(
             "at-least-once",
-            text(
-                    "Records are ensured to be delivered but it may happen that the same record is delivered multiple times. Usually, this guarantee is faster than the exactly-once delivery.")),
+            "Records are ensured to be delivered but it may happen that the same record is delivered multiple times. Usually, this guarantee is faster than the exactly-once delivery."),
     /**
      * Records are delivered on a best effort basis. It is often the fastest way to process records
      * but it may happen that records are lost or duplicated.
      */
     NONE(
             "none",
-            text(
-                    "Records are delivered on a best effort basis. It is often the fastest way to process records but it may happen that records are lost or duplicated."));
+            "Records are delivered on a best effort basis. It is often the fastest way to process records but it may happen that records are lost or duplicated.");
 
     private final String name;
-    private final InlineElement description;
+    private final String description;
 
-    DeliveryGuarantee(String name, InlineElement description) {
+    DeliveryGuarantee(String name, String description) {
         this.name = name;
         this.description = description;
     }
 
     @Override
-    public InlineElement getDescription() {
+    public String getDescription() {
         return description;
     }
 

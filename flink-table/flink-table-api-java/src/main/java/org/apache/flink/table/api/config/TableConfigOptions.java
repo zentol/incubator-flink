@@ -23,13 +23,11 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.DescribedEnum;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.table.api.PlannerType;
 import org.apache.flink.table.api.SqlDialect;
 import org.apache.flink.table.catalog.Catalog;
 
 import static org.apache.flink.configuration.ConfigOptions.key;
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /**
  * This class holds {@link org.apache.flink.configuration.ConfigOption}s used by table planner.
@@ -152,39 +150,36 @@ public class TableConfigOptions {
     @PublicEvolving
     public enum CatalogPlanCompilation implements DescribedEnum {
         ALL(
-                text(
-                        "All metadata about catalog tables, functions, or data types will "
-                                + "be persisted into the plan during compilation. For catalog tables, "
-                                + "this includes the table's identifier, schema, and options. For "
-                                + "catalog functions, this includes the function's identifier and "
-                                + "class. For catalog data types, this includes the identifier and "
-                                + "entire type structure. "
-                                + "With this strategy, the catalog's metadata doesn't have to be "
-                                + "available anymore during a restore operation.")),
+                "All metadata about catalog tables, functions, or data types will "
+                        + "be persisted into the plan during compilation. For catalog tables, "
+                        + "this includes the table's identifier, schema, and options. For "
+                        + "catalog functions, this includes the function's identifier and "
+                        + "class. For catalog data types, this includes the identifier and "
+                        + "entire type structure. "
+                        + "With this strategy, the catalog's metadata doesn't have to be "
+                        + "available anymore during a restore operation."),
         SCHEMA(
-                text(
-                        "In addition to an identifier, schema information about catalog tables, "
-                                + "functions, or data types will be persisted into the plan during "
-                                + "compilation. A schema allows for detecting incompatible changes "
-                                + "in the catalog during a plan restore operation. However, all "
-                                + "other metadata will still be retrieved from the catalog.")),
+                "In addition to an identifier, schema information about catalog tables, "
+                        + "functions, or data types will be persisted into the plan during "
+                        + "compilation. A schema allows for detecting incompatible changes "
+                        + "in the catalog during a plan restore operation. However, all "
+                        + "other metadata will still be retrieved from the catalog."),
 
         IDENTIFIER(
-                text(
-                        "Only the identifier of catalog tables, functions, or data types will be "
-                                + "persisted into the plan during compilation. All metadata will "
-                                + "be retrieved from the catalog during a restore operation. With "
-                                + "this strategy, plans become less verbose."));
+                "Only the identifier of catalog tables, functions, or data types will be "
+                        + "persisted into the plan during compilation. All metadata will "
+                        + "be retrieved from the catalog during a restore operation. With "
+                        + "this strategy, plans become less verbose.");
 
-        private final InlineElement description;
+        private final String description;
 
-        CatalogPlanCompilation(InlineElement description) {
+        CatalogPlanCompilation(String description) {
             this.description = description;
         }
 
         @Internal
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }
@@ -193,38 +188,35 @@ public class TableConfigOptions {
     @PublicEvolving
     public enum CatalogPlanRestore implements DescribedEnum {
         ALL(
-                text(
-                        "Reads all metadata about catalog tables, functions, or data types that has "
-                                + "been persisted in the plan. The strategy performs a catalog "
-                                + "lookup by identifier to fill in missing information or enrich "
-                                + "mutable options. If the original object is not available in the "
-                                + "catalog anymore, pipelines can still be restored if all information "
-                                + "necessary is contained in the plan.")),
+                "Reads all metadata about catalog tables, functions, or data types that has "
+                        + "been persisted in the plan. The strategy performs a catalog "
+                        + "lookup by identifier to fill in missing information or enrich "
+                        + "mutable options. If the original object is not available in the "
+                        + "catalog anymore, pipelines can still be restored if all information "
+                        + "necessary is contained in the plan."),
         ALL_ENFORCED(
-                text(
-                        "Requires that all metadata about catalog tables, functions, or data types "
-                                + "that has been persisted in the plan. The strategy will neither "
-                                + "perform a catalog lookup by identifier nor enrich mutable "
-                                + "options with catalog information. A restore will fail if not all "
-                                + "information necessary is contained in the plan.")),
+                "Requires that all metadata about catalog tables, functions, or data types "
+                        + "that has been persisted in the plan. The strategy will neither "
+                        + "perform a catalog lookup by identifier nor enrich mutable "
+                        + "options with catalog information. A restore will fail if not all "
+                        + "information necessary is contained in the plan."),
 
         IDENTIFIER(
-                text(
-                        "Uses only the identifier of catalog tables, functions, or data types and "
-                                + "always performs a catalog lookup. A restore will fail if the "
-                                + "original object is not available in the catalog anymore. "
-                                + "Additional metadata that might be contained in the plan will "
-                                + "be ignored."));
+                "Uses only the identifier of catalog tables, functions, or data types and "
+                        + "always performs a catalog lookup. A restore will fail if the "
+                        + "original object is not available in the catalog anymore. "
+                        + "Additional metadata that might be contained in the plan will "
+                        + "be ignored.");
 
-        private final InlineElement description;
+        private final String description;
 
-        CatalogPlanRestore(InlineElement description) {
+        CatalogPlanRestore(String description) {
             this.description = description;
         }
 
         @Internal
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

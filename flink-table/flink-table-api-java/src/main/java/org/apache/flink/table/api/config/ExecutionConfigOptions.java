@@ -26,7 +26,6 @@ import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 
 import java.time.Duration;
 
@@ -421,21 +420,20 @@ public class ExecutionConfigOptions {
     /** The enforcer to guarantee NOT NULL column constraint when writing data into sink. */
     @PublicEvolving
     public enum NotNullEnforcer implements DescribedEnum {
-        ERROR(text("Throw a runtime exception when writing null values into NOT NULL column.")),
+        ERROR("Throw a runtime exception when writing null values into NOT NULL column."),
         DROP(
-                text(
-                        "Drop records silently if a null value would have to be inserted "
-                                + "into a NOT NULL column."));
+                "Drop records silently if a null value would have to be inserted "
+                        + "into a NOT NULL column.");
 
-        private final InlineElement description;
+        private final String description;
 
-        NotNullEnforcer(InlineElement description) {
+        NotNullEnforcer(String description) {
             this.description = description;
         }
 
         @Internal
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }
@@ -447,23 +445,21 @@ public class ExecutionConfigOptions {
     @PublicEvolving
     public enum TypeLengthEnforcer implements DescribedEnum {
         IGNORE(
-                text(
-                        "Don't apply any trimming and padding, and instead "
-                                + "ignore the CHAR/VARCHAR/BINARY/VARBINARY length directive.")),
+                "Don't apply any trimming and padding, and instead "
+                        + "ignore the CHAR/VARCHAR/BINARY/VARBINARY length directive."),
         TRIM_PAD(
-                text(
-                        "Trim and pad string and binary values to match the length "
-                                + "defined by the CHAR/VARCHAR/BINARY/VARBINARY length."));
+                "Trim and pad string and binary values to match the length "
+                        + "defined by the CHAR/VARCHAR/BINARY/VARBINARY length.");
 
-        private final InlineElement description;
+        private final String description;
 
-        TypeLengthEnforcer(InlineElement description) {
+        TypeLengthEnforcer(String description) {
             this.description = description;
         }
 
         @Internal
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }
@@ -499,20 +495,20 @@ public class ExecutionConfigOptions {
     /** Determine if CAST operates using the legacy behaviour or the new one. */
     @Deprecated
     public enum LegacyCastBehaviour implements DescribedEnum {
-        ENABLED(true, text("CAST will operate following the legacy behaviour.")),
-        DISABLED(false, text("CAST will operate following the new correct behaviour."));
+        ENABLED(true, "CAST will operate following the legacy behaviour."),
+        DISABLED(false, "CAST will operate following the new correct behaviour.");
 
         private final boolean enabled;
-        private final InlineElement description;
+        private final String description;
 
-        LegacyCastBehaviour(boolean enabled, InlineElement description) {
+        LegacyCastBehaviour(boolean enabled, String description) {
             this.enabled = enabled;
             this.description = description;
         }
 
         @Internal
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
 

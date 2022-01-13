@@ -19,28 +19,24 @@
 package org.apache.flink.table.client.config;
 
 import org.apache.flink.configuration.DescribedEnum;
-import org.apache.flink.configuration.description.InlineElement;
-
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /** The mode when display the result of the query in the sql client. */
 public enum ResultMode implements DescribedEnum {
     TABLE(
-            text(
-                    "Materializes results in memory and visualizes them in a regular, paginated table representation.")),
+            "Materializes results in memory and visualizes them in a regular, paginated table representation."),
 
-    CHANGELOG(text("Visualizes the result stream that is produced by a continuous query.")),
+    CHANGELOG("Visualizes the result stream that is produced by a continuous query."),
 
-    TABLEAU(text("Display results in the screen directly in a tableau format."));
+    TABLEAU("Display results in the screen directly in a tableau format.");
 
-    private final InlineElement description;
+    private final String description;
 
-    ResultMode(InlineElement description) {
+    ResultMode(String description) {
         this.description = description;
     }
 
     @Override
-    public InlineElement getDescription() {
+    public String getDescription() {
         return description;
     }
 }

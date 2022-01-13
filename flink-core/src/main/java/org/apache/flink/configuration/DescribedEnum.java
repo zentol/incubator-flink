@@ -19,28 +19,17 @@
 package org.apache.flink.configuration;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
-import org.apache.flink.configuration.description.TextElement;
 
 /**
  * Describe enum constants used in {@link ConfigOption}s.
  *
- * <p>For enums used as config options, this interface can be implemented to provide a {@link
- * Description} for each enum constant. This will be used when generating documentation for config
- * options to include a list of available values alongside their respective descriptions.
- *
- * <p>More precisely, only an {@link InlineElement} can be returned as block elements cannot be
- * nested into a list.
+ * <p>For enums used as config options, this interface can be implemented to provide a description
+ * for each enum constant. This will be used when generating documentation for config options to
+ * include a list of available values alongside their respective descriptions.
  */
 @PublicEvolving
 public interface DescribedEnum {
 
-    /**
-     * Returns the description for the enum constant.
-     *
-     * <p>If you want to include links or code blocks, use {@link
-     * TextElement#wrap(InlineElement...)} to wrap multiple inline elements into a single one.
-     */
-    InlineElement getDescription();
+    /** Returns the description for the enum constant. */
+    String getDescription();
 }

@@ -20,9 +20,6 @@ package org.apache.flink.api.common;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.ExecutionOptions;
-import org.apache.flink.configuration.description.InlineElement;
-
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /**
  * Defines how data is exchanged between tasks in batch {@link ExecutionOptions#RUNTIME_MODE} if the
@@ -47,9 +44,8 @@ public enum BatchShuffleMode implements DescribedEnum {
      * tasks.
      */
     ALL_EXCHANGES_PIPELINED(
-            text(
-                    "Upstream and downstream tasks run simultaneously. This leads to lower latency "
-                            + "and more evenly distributed (but higher) resource usage across tasks.")),
+            "Upstream and downstream tasks run simultaneously. This leads to lower latency "
+                    + "and more evenly distributed (but higher) resource usage across tasks."),
 
     /**
      * Upstream and downstream tasks run subsequently.
@@ -58,18 +54,17 @@ public enum BatchShuffleMode implements DescribedEnum {
      * finished.
      */
     ALL_EXCHANGES_BLOCKING(
-            text(
-                    "Upstream and downstream tasks run subsequently. This reduces the resource usage "
-                            + "as downstream tasks are started after upstream tasks finished."));
+            "Upstream and downstream tasks run subsequently. This reduces the resource usage "
+                    + "as downstream tasks are started after upstream tasks finished.");
 
-    private final InlineElement description;
+    private final String description;
 
-    BatchShuffleMode(InlineElement description) {
+    BatchShuffleMode(String description) {
         this.description = description;
     }
 
     @Override
-    public InlineElement getDescription() {
+    public String getDescription() {
         return description;
     }
 }

@@ -23,7 +23,6 @@ import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.ExternalResourceOptions;
 import org.apache.flink.configuration.SecurityOptions;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 
 import java.util.List;
 
@@ -411,19 +410,19 @@ public class YarnConfigOptions {
 
     /** @see YarnConfigOptions#CLASSPATH_INCLUDE_USER_JAR */
     public enum UserJarInclusion implements DescribedEnum {
-        DISABLED(text("Exclude user jars from the system class path")),
-        FIRST(text("Position at the beginning")),
-        LAST(text("Position at the end")),
-        ORDER(text("Position based on the name of the jar"));
+        DISABLED("Exclude user jars from the system class path"),
+        FIRST("Position at the beginning"),
+        LAST("Position at the end"),
+        ORDER("Position based on the name of the jar");
 
-        private final InlineElement description;
+        private final String description;
 
-        UserJarInclusion(InlineElement description) {
+        UserJarInclusion(String description) {
             this.description = description;
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

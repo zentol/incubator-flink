@@ -26,7 +26,6 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.state.CheckpointStorage;
 import org.apache.flink.runtime.state.StateBackend;
@@ -43,7 +42,6 @@ import java.net.URI;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.flink.configuration.description.TextElement.text;
 import static org.apache.flink.runtime.checkpoint.CheckpointFailureManager.UNLIMITED_TOLERABLE_FAILURE_NUMBER;
 import static org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration.MINIMAL_CHECKPOINT_TIME;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -750,9 +748,8 @@ public class CheckpointConfig implements java.io.Serializable {
          * JobStatus#FAILED}.
          */
         DELETE_ON_CANCELLATION(
-                text(
-                        "Checkpoint state is only kept when the owning job fails. It is deleted if "
-                                + "the job is cancelled.")),
+                "Checkpoint state is only kept when the owning job fails. It is deleted if "
+                        + "the job is cancelled."),
 
         /**
          * Retain externalized checkpoints on job cancellation.
@@ -764,14 +761,14 @@ public class CheckpointConfig implements java.io.Serializable {
          * JobStatus#FAILED}.
          */
         RETAIN_ON_CANCELLATION(
-                text("Checkpoint state is kept when the owning job is cancelled or fails.")),
+                "Checkpoint state is kept when the owning job is cancelled or fails."),
 
         /** Externalized checkpoints are disabled completely. */
-        NO_EXTERNALIZED_CHECKPOINTS(text("Externalized checkpoints are disabled."));
+        NO_EXTERNALIZED_CHECKPOINTS("Externalized checkpoints are disabled.");
 
-        private final InlineElement description;
+        private final String description;
 
-        ExternalizedCheckpointCleanup(InlineElement description) {
+        ExternalizedCheckpointCleanup(String description) {
             this.description = description;
         }
 
@@ -787,7 +784,7 @@ public class CheckpointConfig implements java.io.Serializable {
 
         @Override
         @Internal
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

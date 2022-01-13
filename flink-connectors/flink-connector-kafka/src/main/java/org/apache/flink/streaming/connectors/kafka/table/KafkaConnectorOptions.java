@@ -23,7 +23,6 @@ import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.table.factories.FactoryUtil;
 
@@ -261,21 +260,20 @@ public class KafkaConnectorOptions {
 
     /** Startup mode for the Kafka consumer, see {@link #SCAN_STARTUP_MODE}. */
     public enum ScanStartupMode implements DescribedEnum {
-        EARLIEST_OFFSET("earliest-offset", text("Start from the earliest offset possible.")),
-        LATEST_OFFSET("latest-offset", text("Start from the latest offset.")),
+        EARLIEST_OFFSET("earliest-offset", "Start from the earliest offset possible."),
+        LATEST_OFFSET("latest-offset", "Start from the latest offset."),
         GROUP_OFFSETS(
                 "group-offsets",
-                text(
-                        "Start from committed offsets in ZooKeeper / Kafka brokers of a specific consumer group.")),
-        TIMESTAMP("timestamp", text("Start from user-supplied timestamp for each partition.")),
+                "Start from committed offsets in ZooKeeper / Kafka brokers of a specific consumer group."),
+        TIMESTAMP("timestamp", "Start from user-supplied timestamp for each partition."),
         SPECIFIC_OFFSETS(
                 "specific-offsets",
-                text("Start from user-supplied specific offsets for each partition."));
+                "Start from user-supplied specific offsets for each partition.");
 
         private final String value;
-        private final InlineElement description;
+        private final String description;
 
-        ScanStartupMode(String value, InlineElement description) {
+        ScanStartupMode(String value, String description) {
             this.value = value;
             this.description = description;
         }
@@ -286,7 +284,7 @@ public class KafkaConnectorOptions {
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

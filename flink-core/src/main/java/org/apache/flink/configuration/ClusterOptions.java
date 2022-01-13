@@ -21,13 +21,11 @@ package org.apache.flink.configuration;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 
 import static org.apache.flink.configuration.ClusterOptions.UserSystemExitMode.THROW;
 import static org.apache.flink.configuration.ConfigOptions.key;
 import static org.apache.flink.configuration.description.LinkElement.link;
 import static org.apache.flink.configuration.description.TextElement.code;
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /** Options which control the cluster behaviour. */
 @PublicEvolving
@@ -189,18 +187,18 @@ public class ClusterOptions {
 
     /** The mode of how to handle user code attempting to exit JVM. */
     public enum UserSystemExitMode implements DescribedEnum {
-        DISABLED(text("Flink is not monitoring or intercepting calls to System.exit()")),
-        LOG(text("Log exit attempt with stack trace but still allowing exit to be performed")),
-        THROW(text("Throw exception when exit is attempted disallowing JVM termination"));
+        DISABLED("Flink is not monitoring or intercepting calls to System.exit()"),
+        LOG("Log exit attempt with stack trace but still allowing exit to be performed"),
+        THROW("Throw exception when exit is attempted disallowing JVM termination");
 
-        private final InlineElement description;
+        private final String description;
 
-        UserSystemExitMode(InlineElement description) {
+        UserSystemExitMode(String description) {
             this.description = description;
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

@@ -31,7 +31,6 @@ import org.apache.flink.configuration.PipelineOptions;
 import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.configuration.StateChangelogOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.util.Preconditions;
 
 import com.esotericsoftware.kryo.Serializer;
@@ -46,7 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.apache.flink.configuration.description.TextElement.text;
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
@@ -1087,20 +1085,20 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 
     /** Configuration settings for the closure cleaner. */
     public enum ClosureCleanerLevel implements DescribedEnum {
-        NONE(text("Disables the closure cleaner completely.")),
+        NONE("Disables the closure cleaner completely."),
 
-        TOP_LEVEL(text("Cleans only the top-level class without recursing into fields.")),
+        TOP_LEVEL("Cleans only the top-level class without recursing into fields."),
 
-        RECURSIVE(text("Cleans all fields recursively."));
+        RECURSIVE("Cleans all fields recursively.");
 
-        private final InlineElement description;
+        private final String description;
 
-        ClosureCleanerLevel(InlineElement description) {
+        ClosureCleanerLevel(String description) {
             this.description = description;
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

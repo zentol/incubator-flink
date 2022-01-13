@@ -21,7 +21,6 @@ package org.apache.flink.connectors.hive;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 
 import java.time.Duration;
 
@@ -142,18 +141,16 @@ public class HiveOptions {
     public enum PartitionOrder implements DescribedEnum {
         CREATE_TIME(
                 "create-time",
-                text(
-                        "Compares partition / file creation time, which is not the partition creation time in the Hive metastore, "
-                                + "but the folder / file modification time in the filesystem; e.g., adding a new file into "
-                                + "the folder may affect how the data is consumed.")),
-        PARTITION_TIME(
-                "partition-time", text("Compares the time extracted from the partition name.")),
-        PARTITION_NAME("partition-name", text("Compares partition names lexicographically."));
+                "Compares partition / file creation time, which is not the partition creation time in the Hive metastore, "
+                        + "but the folder / file modification time in the filesystem; e.g., adding a new file into "
+                        + "the folder may affect how the data is consumed."),
+        PARTITION_TIME("partition-time", "Compares the time extracted from the partition name."),
+        PARTITION_NAME("partition-name", "Compares partition names lexicographically.");
 
         private final String value;
-        private final InlineElement description;
+        private final String description;
 
-        PartitionOrder(String value, InlineElement description) {
+        PartitionOrder(String value, String description) {
             this.value = value;
             this.description = description;
         }
@@ -164,7 +161,7 @@ public class HiveOptions {
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

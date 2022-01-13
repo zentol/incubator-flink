@@ -21,9 +21,6 @@ package org.apache.flink.runtime.jobgraph;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.DescribedEnum;
-import org.apache.flink.configuration.description.InlineElement;
-
-import static org.apache.flink.configuration.description.TextElement.text;
 
 /** Defines how Flink should restore from a given savepoint or retained checkpoint. */
 @PublicEvolving
@@ -50,7 +47,7 @@ public enum RestoreMode implements DescribedEnum {
 
     @Override
     @Internal
-    public InlineElement getDescription() {
-        return text(description);
+    public String getDescription() {
+        return description;
     }
 }

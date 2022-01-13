@@ -23,7 +23,6 @@ import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.description.Description;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.table.factories.FactoryUtil;
 
 import java.time.Duration;
@@ -224,19 +223,17 @@ public class FileSystemConnectorOptions {
     public enum PartitionCommitTriggerType implements DescribedEnum {
         PROCESS_TIME(
                 "process-time",
-                text(
-                        "Based on the time of the machine, requires neither partition time extraction nor watermark generation. "
-                                + "Commits partition once the current system time passes partition creation system time plus delay.")),
+                "Based on the time of the machine, requires neither partition time extraction nor watermark generation. "
+                        + "Commits partition once the current system time passes partition creation system time plus delay."),
         PARTITION_TIME(
                 "partition-time",
-                text(
-                        "Based on the  time extracted from partition values, requires watermark generation. "
-                                + "Commits partition once the watermark passes the time extracted from partition values plus delay."));
+                "Based on the  time extracted from partition values, requires watermark generation. "
+                        + "Commits partition once the watermark passes the time extracted from partition values plus delay.");
 
         private final String value;
-        private final InlineElement description;
+        private final String description;
 
-        PartitionCommitTriggerType(String value, InlineElement description) {
+        PartitionCommitTriggerType(String value, String description) {
             this.value = value;
             this.description = description;
         }
@@ -247,7 +244,7 @@ public class FileSystemConnectorOptions {
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

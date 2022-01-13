@@ -29,7 +29,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.metrics.MetricGroup;
@@ -75,7 +74,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.apache.flink.configuration.description.TextElement.text;
 import static org.apache.flink.contrib.streaming.state.RocksDBConfigurableOptions.WRITE_BATCH_SIZE;
 import static org.apache.flink.contrib.streaming.state.RocksDBOptions.CHECKPOINT_TRANSFER_THREAD_NUM;
 import static org.apache.flink.contrib.streaming.state.RocksDBOptions.TIMER_SERVICE_FACTORY;
@@ -948,17 +946,17 @@ public class EmbeddedRocksDBStateBackend extends AbstractManagedMemoryStateBacke
 
     /** The options to chose for the type of priority queue state. */
     public enum PriorityQueueStateType implements DescribedEnum {
-        HEAP(text("Heap-based")),
-        ROCKSDB(text("Implementation based on RocksDB"));
+        HEAP("Heap-based"),
+        ROCKSDB("Implementation based on RocksDB");
 
-        private final InlineElement description;
+        private final String description;
 
-        PriorityQueueStateType(InlineElement description) {
+        PriorityQueueStateType(String description) {
             this.description = description;
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }

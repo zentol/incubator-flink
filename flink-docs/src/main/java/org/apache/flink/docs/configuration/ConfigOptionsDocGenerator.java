@@ -523,7 +523,7 @@ public class ConfigOptionsDocGenerator {
 
         if (DescribedEnum.class.isAssignableFrom(e.getClass())) {
             elements.add(text(": "));
-            elements.add(((DescribedEnum) e).getDescription());
+            elements.add(text(((DescribedEnum) e).getDescription()));
         }
 
         return elements;

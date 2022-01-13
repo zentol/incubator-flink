@@ -28,7 +28,6 @@ import org.apache.flink.configuration.DescribedEnum;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.description.Formatter;
 import org.apache.flink.configuration.description.HtmlFormatter;
-import org.apache.flink.configuration.description.InlineElement;
 import org.apache.flink.docs.configuration.data.TestCommonOptions;
 import org.apache.flink.util.FileUtils;
 
@@ -45,7 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.flink.configuration.description.TextElement.text;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -79,17 +77,17 @@ public class ConfigOptionsDocGeneratorTest {
     }
 
     private enum DescribedTestEnum implements DescribedEnum {
-        A(text("First letter of the alphabet")),
-        B(text("Second letter of the alphabet"));
+        A("First letter of the alphabet"),
+        B("Second letter of the alphabet");
 
-        private final InlineElement description;
+        private final String description;
 
-        DescribedTestEnum(InlineElement description) {
+        DescribedTestEnum(String description) {
             this.description = description;
         }
 
         @Override
-        public InlineElement getDescription() {
+        public String getDescription() {
             return description;
         }
     }
