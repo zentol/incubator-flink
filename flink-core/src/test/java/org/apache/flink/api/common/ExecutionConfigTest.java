@@ -22,6 +22,7 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.ClosureCleaner;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 import org.apache.flink.configuration.Configuration;
@@ -341,6 +342,12 @@ public class ExecutionConfigTest extends TestLogger {
         serialiers.put(ExecutionConfigTest.class, TestSerializer1.class);
         serialiers.put(TestSerializer1.class, TestSerializer2.class);
         assertThat(config.getDefaultKryoSerializerClasses(), equalTo(serialiers));
+    }
+
+    @Test
+    public void testIsSerializableWithDescribedEnum() {
+        ExecutionConfig config = new ExecutionConfig();
+        ClosureCleaner.clean(config, ExecutionConfig.ClosureCleanerLevel.RECURSIVE, true);
     }
 
     private static class TestSerializer1 extends Serializer<ExecutionConfigTest>
