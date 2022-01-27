@@ -18,6 +18,11 @@
 
 package org.apache.flink.runtime.execution;
 
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * An enumeration of all states that a task can be in during its execution. Tasks usually start in
  * the state {@code CREATED} and switch states according to this diagram:
@@ -75,5 +80,35 @@ public enum ExecutionState {
 
     public boolean isTerminal() {
         return this == FINISHED || this == CANCELED || this == FAILED;
+    }
+
+    public enum Transitions {
+        ;
+        static final EnumMap<ExecutionState, Set<ExecutionState>> stateTransitions =
+                new EnumMap<>(ExecutionState.class);
+
+        static {
+            // TODO: how to handle ignored transitions like FAILED -> CANCELING
+            // TODO: or going from CANCELING -> CANCELED on failure?
+
+            add(CREATED, SCHEDULED, CANCELED, FAILED);
+            add(SCHEDULED, DEPLOYING, CANCELED, FAILED);
+            add(DEPLOYING, INITIALIZING, FINISHED, CANCELING, FAILED);
+            add(INITIALIZING, RUNNING, FINISHED, CANCELING, FAILED);
+            add(RUNNING, FINISHED, CANCELING, FAILED);
+            add(CANCELING, CANCELED);
+            // terminal states
+            add(FINISHED);
+            add(CANCELED);
+            add(FAILED);
+            // unused
+            add(RECONCILING);
+        }
+
+        static void add(ExecutionState state, ExecutionState... targetStates) {
+            stateTransitions.put(state, new HashSet<>(Arrays.asList(targetStates)));
+        }
+
+        private Transitions(ExecutionState start, ExecutionState targetState) {}
     }
 }
