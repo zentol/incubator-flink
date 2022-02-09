@@ -64,16 +64,12 @@ public class FileSlotAllocationSnapshotPersistenceService
         final File slotAllocationSnapshotFile =
                 slotAllocationFile(slotAllocationSnapshot.getSlotID().getSlotNumber());
 
-        try (ObjectOutputStream oos =
-                new ObjectOutputStream(new FileOutputStream(slotAllocationSnapshotFile))) {
-            oos.writeObject(slotAllocationSnapshot);
-
-            LOG.debug(
-                    "Successfully written allocation state metadata file {} for job {} and allocation {}.",
-                    slotAllocationSnapshotFile.toPath(),
-                    slotAllocationSnapshot.getJobId(),
-                    slotAllocationSnapshot.getAllocationId());
-        }
+        writeTo(slotAllocationSnapshot, slotAllocationSnapshotFile);
+        LOG.debug(
+                "Successfully written allocation state metadata file {} for job {} and allocation {}.",
+                slotAllocationSnapshotFile.toPath(),
+                slotAllocationSnapshot.getJobId(),
+                slotAllocationSnapshot.getAllocationId());
     }
 
     private File slotAllocationFile(int slotIndex) {
@@ -119,9 +115,8 @@ public class FileSlotAllocationSnapshotPersistenceService
                 new ArrayList<>(slotAllocationFiles.length);
 
         for (File allocationFile : slotAllocationFiles) {
-            try (ObjectInputStream ois =
-                    new ObjectInputStream(new FileInputStream(allocationFile))) {
-                slotAllocationSnapshots.add((SlotAllocationSnapshot) ois.readObject());
+            try {
+                slotAllocationSnapshots.add(readFrom(allocationFile));
             } catch (IOException | ClassNotFoundException e) {
                 LOG.debug(
                         "Cannot read the local allocations state file {}. Deleting it now.",
@@ -132,5 +127,20 @@ public class FileSlotAllocationSnapshotPersistenceService
         }
 
         return slotAllocationSnapshots;
+    }
+
+    private static void writeTo(SlotAllocationSnapshot slotAllocationSnapshot, File allocationFile)
+            throws IOException {
+        try (ObjectOutputStream oos =
+                new ObjectOutputStream(new FileOutputStream(allocationFile))) {
+            oos.writeObject(slotAllocationSnapshot);
+        }
+    }
+
+    private static SlotAllocationSnapshot readFrom(File allocationFile)
+            throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(allocationFile))) {
+            return (SlotAllocationSnapshot) ois.readObject();
+        }
     }
 }
