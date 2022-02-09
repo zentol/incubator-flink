@@ -18,7 +18,15 @@
 
 package org.apache.flink.runtime.taskexecutor.slot;
 
+import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.util.FileUtils;
+
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonGenerator;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializerProvider;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.module.SimpleModule;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,6 +135,53 @@ public class FileSlotAllocationSnapshotPersistenceService
         }
 
         return slotAllocationSnapshots;
+    }
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static void main(String[] args) throws JsonProcessingException {
+        final SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(ResourceProfile.class, new ResourceProfileSerializer());
+
+        OBJECT_MAPPER.registerModules(simpleModule);
+
+        System.out.println(OBJECT_MAPPER.writeValueAsString(ResourceProfile.ZERO));
+        System.out.println(OBJECT_MAPPER.writeValueAsString(ResourceProfile.ANY));
+        System.out.println(OBJECT_MAPPER.writeValueAsString(ResourceProfile.UNKNOWN));
+        System.out.println(OBJECT_MAPPER.writeValueAsString(ResourceProfile.newBuilder().build()));
+    }
+
+    private static class ResourceProfileSerializer extends StdSerializer<ResourceProfile> {
+        private static final long serialVersionUID = -8261203772397053138L;
+
+        protected ResourceProfileSerializer() {
+            super(ResourceProfile.class);
+        }
+
+        @Override
+        public void serialize(
+                ResourceProfile resourceProfile,
+                JsonGenerator jsonGenerator,
+                SerializerProvider serializerProvider)
+                throws IOException {
+
+            if (resourceProfile == ResourceProfile.ZERO) {
+                jsonGenerator.writeString("zero");
+            } else if (resourceProfile == ResourceProfile.UNKNOWN) {
+                jsonGenerator.writeString("unknown");
+            } else if (resourceProfile == ResourceProfile.ANY) {
+                jsonGenerator.writeString("any");
+            } else {
+                jsonGenerator.writeString("some");
+
+                jsonGenerator.writeString(resourceProfile.getManagedMemory().toString());
+                jsonGenerator.writeString(resourceProfile.getNetworkMemory().toString());
+                jsonGenerator.writeString(resourceProfile.getOperatorsMemory().toString());
+                jsonGenerator.writeString(resourceProfile.getTaskHeapMemory().toString());
+                jsonGenerator.writeString(resourceProfile.getTaskOffHeapMemory().toString());
+                jsonGenerator.writeString(resourceProfile.getTotalMemory().toString());
+            }
+        }
     }
 
     private static void writeTo(SlotAllocationSnapshot slotAllocationSnapshot, File allocationFile)
