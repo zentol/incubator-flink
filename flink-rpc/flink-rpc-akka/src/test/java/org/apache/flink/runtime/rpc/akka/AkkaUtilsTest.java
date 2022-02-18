@@ -26,6 +26,8 @@ import org.apache.flink.util.NetUtils;
 
 import com.typesafe.config.Config;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -36,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests for the {@link AkkaUtils}. */
+@Execution(ExecutionMode.CONCURRENT)
 class AkkaUtilsTest {
 
     @Test

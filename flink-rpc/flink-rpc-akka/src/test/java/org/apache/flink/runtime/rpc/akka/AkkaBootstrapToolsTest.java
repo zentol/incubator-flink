@@ -25,6 +25,8 @@ import org.apache.flink.util.function.CheckedSupplier;
 
 import akka.actor.ActorSystem;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests for the {@link AkkaBootstrapTools}. */
+@Execution(ExecutionMode.CONCURRENT)
 class AkkaBootstrapToolsTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(AkkaBootstrapToolsTest.class);

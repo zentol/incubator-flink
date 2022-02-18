@@ -33,6 +33,8 @@ import akka.actor.Props;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests that akka rpc invocation messages are properly serialized and errors reported. */
+@Execution(ExecutionMode.CONCURRENT)
 class MessageSerializationTest {
     private static AkkaRpcService akkaRpcService1;
     private static AkkaRpcService akkaRpcService2;
@@ -136,6 +139,7 @@ class MessageSerializationTest {
 
     /** Tests that a message which exceeds the maximum frame size will be dropped. */
     @Test
+    @Execution(ExecutionMode.SAME_THREAD)
     void testMaximumFramesizeRemoteMessageTransfer() throws Throwable {
         LinkedBlockingQueue<Object> linkedBlockingQueue = new LinkedBlockingQueue<>();
 

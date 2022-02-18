@@ -22,6 +22,8 @@ import org.apache.flink.util.function.SupplierWithException;
 import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tests for the {@link ClassLoadingUtils}. */
+@Execution(ExecutionMode.CONCURRENT)
 class ClassLoadingUtilsTest {
 
     private static final ClassLoader TEST_CLASS_LOADER =

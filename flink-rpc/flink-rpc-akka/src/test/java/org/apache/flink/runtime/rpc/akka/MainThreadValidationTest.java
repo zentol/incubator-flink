@@ -23,12 +23,15 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcService;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests that the {@link AkkaRpcService} runs all RPCs in the {@link AkkaRpcActor}'s main thread.
  */
+@Execution(ExecutionMode.CONCURRENT)
 class MainThreadValidationTest {
 
     @Test

@@ -30,6 +30,8 @@ import akka.actor.Terminated;
 import akka.japi.pf.ReceiveBuilder;
 import akka.pattern.Patterns;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for the {@link akka.actor.ActorSystem} instantiated through {@link
  * org.apache.flink.runtime.rpc.akka.AkkaUtils}.
  */
+@Execution(ExecutionMode.CONCURRENT)
 class AkkaActorSystemTest {
 
     @Test
