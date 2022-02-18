@@ -34,6 +34,8 @@ import akka.actor.Terminated;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nonnull;
 
@@ -53,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 /** Tests for the {@link AkkaRpcService}. */
+@Execution(ExecutionMode.CONCURRENT)
 class AkkaRpcServiceTest {
 
     private static final Time TIMEOUT = Time.milliseconds(10000L);

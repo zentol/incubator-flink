@@ -34,6 +34,8 @@ import org.apache.flink.util.function.FunctionWithException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nonnull;
 
@@ -43,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests for the over sized response message handling of the {@link AkkaRpcActor}. */
+@Execution(ExecutionMode.CONCURRENT)
 class AkkaRpcActorOversizedResponseMessageTest {
 
     private static final Time TIMEOUT = Time.seconds(10L);
