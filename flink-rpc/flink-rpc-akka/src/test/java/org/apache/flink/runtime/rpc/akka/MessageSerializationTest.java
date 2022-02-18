@@ -25,6 +25,11 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.util.concurrent.FutureUtils;
 
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Dropped;
+import akka.actor.Props;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,8 +47,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests that akka rpc invocation messages are properly serialized and errors reported. */
 class MessageSerializationTest {
-    private static RpcService akkaRpcService1;
-    private static RpcService akkaRpcService2;
+    private static AkkaRpcService akkaRpcService1;
+    private static AkkaRpcService akkaRpcService2;
 
     private static final int maxFrameSize = 32000;
 
@@ -129,7 +134,7 @@ class MessageSerializationTest {
         assertThat(linkedBlockingQueue.take()).isEqualTo(expected);
     }
 
-    /** Tests that a message which exceeds the maximum frame size will cause timeout exception. */
+    /** Tests that a message which exceeds the maximum frame size will be dropped. */
     @Test
     void testMaximumFramesizeRemoteMessageTransfer() throws Throwable {
         LinkedBlockingQueue<Object> linkedBlockingQueue = new LinkedBlockingQueue<>();
@@ -144,9 +149,17 @@ class MessageSerializationTest {
         int bufferSize = maxFrameSize + 1;
         byte[] buffer = new byte[bufferSize];
 
+        final CompletableFuture<Void> oversizedMessageDroppedFuture = new CompletableFuture<>();
+        completeOnDroppedMessage(oversizedMessageDroppedFuture);
+
         CompletableFuture<Void> completableFuture = remoteGateway.foobar(buffer);
 
-        assertThatThrownBy(completableFuture::get).hasCauseInstanceOf(TimeoutException.class);
+        // the message was dropped by akka; the response future will eventually fail with a timeout
+        oversizedMessageDroppedFuture.get();
+        assertThat(completableFuture)
+                .satisfiesAnyOf(
+                        f -> assertThat(f).isNotDone(),
+                        f -> assertThatThrownBy(f::get).hasCauseInstanceOf(TimeoutException.class));
     }
 
     private interface TestGateway extends RpcGateway {
@@ -191,6 +204,35 @@ class MessageSerializationTest {
         @Override
         public int hashCode() {
             return value * 41;
+        }
+    }
+
+    private static void completeOnDroppedMessage(CompletableFuture<Void> futureToComplete) {
+        final ActorSystem actorSystem = akkaRpcService2.getActorSystem();
+        final ActorRef droppedMessageSubscriber =
+                actorSystem.actorOf(
+                        Props.create(OversizedMessageSubscriber.class, futureToComplete));
+        actorSystem.eventStream().subscribe(droppedMessageSubscriber, Dropped.class);
+        futureToComplete.thenRun(() -> actorSystem.stop(droppedMessageSubscriber));
+    }
+
+    private static class OversizedMessageSubscriber extends AbstractActor {
+
+        private final CompletableFuture<Void> oversizedMessagedDroppedFuture;
+
+        public OversizedMessageSubscriber(CompletableFuture<Void> oversizedMessagedDroppedFuture) {
+            this.oversizedMessagedDroppedFuture = oversizedMessagedDroppedFuture;
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().match(Dropped.class, this::process).build();
+        }
+
+        private void process(Dropped message) {
+            if (message.reason().contains("Discarding oversized payload")) {
+                oversizedMessagedDroppedFuture.complete(null);
+            }
         }
     }
 }
