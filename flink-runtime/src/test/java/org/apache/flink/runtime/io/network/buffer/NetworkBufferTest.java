@@ -23,7 +23,9 @@ import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.flink.runtime.io.network.netty.NettyBufferPool;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,6 +37,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /** Tests for the {@link NetworkBuffer} class. */
+@Execution(ExecutionMode.CONCURRENT)
 public class NetworkBufferTest extends AbstractByteBufTest {
 
     /** Upper limit for the max size that is sufficient for all the tests. */
