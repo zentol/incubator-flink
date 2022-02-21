@@ -25,6 +25,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -51,6 +53,7 @@ import static org.junit.Assert.assertTrue;
  * PermanentBlobCache}. When new BLOBs are intended to be stored and the size limit exceeds, {@link
  * BlobCacheSizeTracker} will provide excess BLOBs for {@link PermanentBlobCache} to delete.
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class PermanentBlobCacheSizeLimitTest {
 
     private static final Random RANDOM = new Random();

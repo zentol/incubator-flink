@@ -26,6 +26,8 @@ import org.apache.flink.util.Reference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -40,6 +42,7 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.put;
 import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 
 /** This class contains unit tests for the {@link BlobCacheService}. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheSuccessTest {
 
     @TempDir File serverTmpDir;

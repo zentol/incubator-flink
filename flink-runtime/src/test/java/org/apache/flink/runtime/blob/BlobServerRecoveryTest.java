@@ -28,6 +28,8 @@ import org.apache.flink.util.concurrent.Executors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** Tests for the recovery of files of a {@link BlobServer} from a HA store. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobServerRecoveryTest {
 
     @TempDir File storageTmpDir;

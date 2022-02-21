@@ -27,6 +27,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /** Tests for {@link BlobUtils} working on non-writable directories. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobUtilsNonWritableTest {
 
     private static final String CANNOT_CREATE_THIS = "cannot-create-this";

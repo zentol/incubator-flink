@@ -28,6 +28,8 @@ import org.apache.flink.util.Reference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests for {@link BlobUtils}. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobUtilsTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(BlobUtilsTest.class);

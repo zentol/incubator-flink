@@ -31,6 +31,8 @@ import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -62,6 +64,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 /** A few tests for the cleanup of {@link PermanentBlobCache} and {@link TransientBlobCache}. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheCleanupTest {
 
     private final Random rnd = new Random();

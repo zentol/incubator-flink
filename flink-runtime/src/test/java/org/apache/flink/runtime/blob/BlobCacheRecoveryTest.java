@@ -27,6 +27,8 @@ import org.apache.flink.runtime.jobmanager.HighAvailabilityMode;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +46,7 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 import static org.junit.Assert.assertTrue;
 
 /** Tests for the recovery of files of a {@link BlobCacheService} from a HA store. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheRecoveryTest {
 
     @TempDir File tmpDir;

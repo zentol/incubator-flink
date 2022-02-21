@@ -29,6 +29,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -59,6 +61,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 /** This class contains unit tests for the {@link BlobClient}. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobClientTest {
 
     /** The buffer size used during the tests in bytes. */

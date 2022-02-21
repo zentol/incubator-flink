@@ -24,6 +24,8 @@ import org.apache.flink.configuration.Configuration;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +38,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 /** Tests to ensure that the BlobServer properly starts on a specified range of available ports. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobServerRangeTest {
 
     @TempDir File serverTmpDir;

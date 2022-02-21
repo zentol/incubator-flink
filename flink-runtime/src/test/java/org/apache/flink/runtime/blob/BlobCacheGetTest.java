@@ -28,6 +28,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -83,6 +85,7 @@ import static org.mockito.Mockito.mock;
  * <p>Most successful GET requests are tested in conjunction wit the PUT requests by {@link
  * BlobCachePutTest}.
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheGetTest {
 
     private final Random rnd = new Random();

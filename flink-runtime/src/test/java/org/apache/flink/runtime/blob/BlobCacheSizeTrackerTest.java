@@ -24,6 +24,8 @@ import org.apache.flink.runtime.blob.BlobKey.BlobType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests for {@link BlobCacheSizeTracker}. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheSizeTrackerTest {
 
     private BlobCacheSizeTracker tracker;

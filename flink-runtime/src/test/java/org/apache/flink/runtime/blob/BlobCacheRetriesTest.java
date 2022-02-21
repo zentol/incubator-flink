@@ -24,6 +24,8 @@ import org.apache.flink.configuration.HighAvailabilityOptions;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +40,7 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 import static org.junit.Assert.fail;
 
 /** Unit tests for the blob cache retrying the connection to the server. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheRetriesTest {
 
     @TempDir File serverTmpDir;

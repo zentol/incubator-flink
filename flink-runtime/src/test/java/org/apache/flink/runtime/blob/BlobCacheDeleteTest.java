@@ -22,11 +22,12 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
-import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -55,7 +56,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /** Tests how DELETE requests behave. */
-public class BlobCacheDeleteTest extends TestLogger {
+@Execution(ExecutionMode.CONCURRENT)
+public class BlobCacheDeleteTest {
 
     private final Random rnd = new Random();
 

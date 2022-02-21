@@ -29,6 +29,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -60,6 +62,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /** Tests how DELETE requests behave. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobServerDeleteTest {
 
     private final Random rnd = new Random();

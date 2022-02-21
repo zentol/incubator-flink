@@ -29,6 +29,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Tests for the {@link TransientBlobCache}. */
 @ExtendWith(TestLoggerExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class TransientBlobCacheTest {
 
     @Test

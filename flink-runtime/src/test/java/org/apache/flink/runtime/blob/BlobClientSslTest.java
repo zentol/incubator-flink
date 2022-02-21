@@ -28,6 +28,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** This class contains unit tests for the {@link BlobClient} with ssl enabled. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobClientSslTest extends BlobClientTest {
 
     /** The instance of the SSL BLOB server used during the tests. */

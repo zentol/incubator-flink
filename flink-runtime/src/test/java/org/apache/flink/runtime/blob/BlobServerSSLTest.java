@@ -22,6 +22,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.SecurityOptions;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import static org.apache.flink.util.ExceptionUtils.findThrowableWithMessage;
 import static org.junit.Assert.fail;
 
 /** Testing a {@link BlobServer} would fail with improper SSL config. */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobServerSSLTest {
 
     @Test

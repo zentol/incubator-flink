@@ -31,6 +31,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -73,6 +75,7 @@ import static org.junit.Assume.assumeTrue;
  * <p>Successful GET requests are tested in conjunction wit the PUT requests by {@link
  * BlobServerPutTest}.
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobServerGetTest {
 
     private final Random rnd = new Random();

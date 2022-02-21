@@ -29,6 +29,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -79,6 +81,7 @@ import static org.mockito.Mockito.verify;
  * Tests for successful and failing PUT operations against the BLOB server, and successful GET
  * operations.
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCachePutTest {
 
     private final Random rnd = new Random();

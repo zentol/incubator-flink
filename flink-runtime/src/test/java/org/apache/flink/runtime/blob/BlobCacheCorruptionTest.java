@@ -26,6 +26,8 @@ import org.apache.flink.core.testutils.FlinkAssertions;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import javax.annotation.Nullable;
 
@@ -49,6 +51,7 @@ import static org.junit.Assert.assertTrue;
  *
  * <p>Successful GET requests are tested in conjunction wit the PUT requests.
  */
+@Execution(ExecutionMode.CONCURRENT)
 public class BlobCacheCorruptionTest {
 
     @TempDir File tmpDir;
