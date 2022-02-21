@@ -25,9 +25,8 @@ import org.apache.flink.util.OperatingSystem;
 import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -60,7 +59,8 @@ public class BlobCacheDeleteTest extends TestLogger {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
 
     @Test
     public void testDeleteTransient1() throws IOException {
@@ -99,12 +99,11 @@ public class BlobCacheDeleteTest extends TestLogger {
 
         final Configuration config = new Configuration();
 
-        try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+        try (BlobServer server = new BlobServer(config, serverTmpDir, new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -179,12 +178,11 @@ public class BlobCacheDeleteTest extends TestLogger {
     private void testDeleteTransientAlreadyDeleted(@Nullable final JobID jobId) throws IOException {
 
         final Configuration config = new Configuration();
-        try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+        try (BlobServer server = new BlobServer(config, serverTmpDir, new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -234,12 +232,11 @@ public class BlobCacheDeleteTest extends TestLogger {
         final Configuration config = new Configuration();
         File blobFile = null;
         File directory = null;
-        try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+        try (BlobServer server = new BlobServer(config, serverTmpDir, new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -315,12 +312,11 @@ public class BlobCacheDeleteTest extends TestLogger {
 
         final byte[] data = {1, 2, 3};
 
-        try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+        try (BlobServer server = new BlobServer(config, serverTmpDir, new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 

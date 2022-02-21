@@ -23,12 +23,10 @@ import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.HighAvailabilityOptions;
 import org.apache.flink.core.testutils.FlinkAssertions;
-import org.apache.flink.util.TestLogger;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,9 +46,11 @@ import static org.junit.Assert.assertTrue;
  *
  * <p>Successful GET requests are tested in conjunction wit the PUT requests.
  */
-public class BlobServerCorruptionTest extends TestLogger {
+public class BlobServerCorruptionTest {
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File storageTmpDir;
+    @TempDir File haTmpDir;
 
     /**
      * Checks the GET operation fails when the downloaded file (from {@link BlobServer} or HA store)
@@ -61,18 +61,15 @@ public class BlobServerCorruptionTest extends TestLogger {
 
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY,
-                TEMPORARY_FOLDER.newFolder().getAbsolutePath());
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, TEMPORARY_FOLDER.newFolder().getPath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         BlobStoreService blobStoreService = null;
 
         try {
             blobStoreService = BlobUtils.createBlobStoreFromConfig(config);
 
-            testGetFailsFromCorruptFile(config, blobStoreService, TEMPORARY_FOLDER.newFolder());
+            testGetFailsFromCorruptFile(config, blobStoreService, serverTmpDir);
         } finally {
             if (blobStoreService != null) {
                 blobStoreService.closeAndCleanupAllData();

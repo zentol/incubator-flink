@@ -20,11 +20,11 @@ package org.apache.flink.runtime.blob;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -61,14 +61,17 @@ public class PermanentBlobCacheSizeLimitTest {
     private static final int MAX_NUM_OF_ACCEPTED_BLOBS = 2;
     private static final int TOTAL_NUM_OF_BLOBS = 3;
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
+    @TempDir File transientCacheTmpDir;
 
     @Test
     public void testTrackSizeLimitAndDeleteExcessSequentially() throws Exception {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                        new BlobServer(config, TEMPORARY_FOLDER.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         initBlobCacheServiceWithSizeLimit(
                                 config, new InetSocketAddress("localhost", server.getPort()))) {
@@ -116,7 +119,8 @@ public class PermanentBlobCacheSizeLimitTest {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                        new BlobServer(config, TEMPORARY_FOLDER.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         initBlobCacheServiceWithSizeLimit(
                                 config, new InetSocketAddress("localhost", server.getPort()))) {
@@ -212,20 +216,20 @@ public class PermanentBlobCacheSizeLimitTest {
         return blobs;
     }
 
-    private static BlobCacheService initBlobCacheServiceWithSizeLimit(
+    private BlobCacheService initBlobCacheServiceWithSizeLimit(
             Configuration config, @Nullable final InetSocketAddress serverAddress)
             throws IOException {
 
         final PermanentBlobCache permanentBlobCache =
                 new PermanentBlobCache(
                         config,
-                        TEMPORARY_FOLDER.newFolder(),
+                        cacheTmpDir,
                         new VoidBlobStore(),
                         serverAddress,
                         new BlobCacheSizeTracker(MAX_NUM_OF_ACCEPTED_BLOBS * BLOB_SIZE));
 
         final TransientBlobCache transientBlobCache =
-                new TransientBlobCache(config, TEMPORARY_FOLDER.newFolder(), serverAddress);
+                new TransientBlobCache(config, transientCacheTmpDir, serverAddress);
 
         return new BlobCacheService(permanentBlobCache, transientBlobCache);
     }

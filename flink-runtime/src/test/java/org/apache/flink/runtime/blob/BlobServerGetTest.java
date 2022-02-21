@@ -26,13 +26,11 @@ import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
 import org.apache.flink.util.Reference;
-import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -75,11 +73,12 @@ import static org.junit.Assume.assumeTrue;
  * <p>Successful GET requests are tested in conjunction wit the PUT requests by {@link
  * BlobServerPutTest}.
  */
-public class BlobServerGetTest extends TestLogger {
+public class BlobServerGetTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File storageTmpDir;
 
     @Test
     public void testGetTransientFailsDuringLookup1() throws IOException {
@@ -114,7 +113,7 @@ public class BlobServerGetTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -161,8 +160,7 @@ public class BlobServerGetTest extends TestLogger {
 
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, temporaryFolder.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, storageTmpDir.getPath());
 
         BlobStoreService blobStore = null;
 
@@ -171,7 +169,7 @@ public class BlobServerGetTest extends TestLogger {
 
             File tempFileDir = null;
             try (BlobServer server =
-                    new BlobServer(config, temporaryFolder.newFolder(), blobStore)) {
+                    new BlobServer(config, Reference.borrowed(serverTmpDir), blobStore)) {
 
                 server.start();
 
@@ -233,8 +231,7 @@ public class BlobServerGetTest extends TestLogger {
 
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, temporaryFolder.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, storageTmpDir.getPath());
 
         BlobStoreService blobStore = null;
 
@@ -243,7 +240,7 @@ public class BlobServerGetTest extends TestLogger {
 
             File jobStoreDir = null;
             try (BlobServer server =
-                    new BlobServer(config, temporaryFolder.newFolder(), blobStore)) {
+                    new BlobServer(config, Reference.borrowed(serverTmpDir), blobStore)) {
 
                 server.start();
 
@@ -296,7 +293,7 @@ public class BlobServerGetTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -363,7 +360,7 @@ public class BlobServerGetTest extends TestLogger {
         final byte[] data = new byte[] {1, 2, 3};
         final byte[] corruptedData = new byte[] {3, 2, 1};
 
-        final File storageDir = temporaryFolder.newFolder();
+        final File storageDir = storageTmpDir;
         try (final BlobServer blobServer =
                 new BlobServer(
                         new Configuration(), Reference.borrowed(storageDir), new VoidBlobStore())) {
@@ -398,7 +395,7 @@ public class BlobServerGetTest extends TestLogger {
         final byte[] data = new byte[] {1, 2, 3};
         final byte[] corruptedData = new byte[] {3, 2, 1};
 
-        final File storageDir = temporaryFolder.newFolder();
+        final File storageDir = storageTmpDir;
         final OneShotLatch getCalled = new OneShotLatch();
         final BlobStore blobStore =
                 new TestingBlobStoreBuilder()
@@ -459,7 +456,7 @@ public class BlobServerGetTest extends TestLogger {
                 Executors.newFixedThreadPool(numberConcurrentGetOperations);
 
         try (final BlobServer server =
-                new BlobServer(new Configuration(), temporaryFolder.newFolder(), blobStore)) {
+                new BlobServer(new Configuration(), serverTmpDir, blobStore)) {
 
             server.start();
 

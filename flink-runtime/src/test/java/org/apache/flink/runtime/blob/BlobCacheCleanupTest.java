@@ -24,19 +24,20 @@ import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.util.FlinkException;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.hamcrest.collection.IsEmptyCollection;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,11 +62,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 /** A few tests for the cleanup of {@link PermanentBlobCache} and {@link TransientBlobCache}. */
-public class BlobCacheCleanupTest extends TestLogger {
+public class BlobCacheCleanupTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
 
     /**
      * Tests that {@link PermanentBlobCache} cleans up after calling {@link
@@ -85,15 +87,14 @@ public class BlobCacheCleanupTest extends TestLogger {
             Configuration config = new Configuration();
             config.setLong(BlobServerOptions.CLEANUP_INTERVAL, 1L);
 
-            server = new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+            server =
+                    new BlobServer(
+                            config,
+                            Files.createDirectory(serverTmpDir.toPath().resolve("server")).toFile(),
+                            new VoidBlobStore());
             server.start();
             InetSocketAddress serverAddress = new InetSocketAddress("localhost", server.getPort());
-            cache =
-                    new PermanentBlobCache(
-                            config,
-                            temporaryFolder.newFolder(),
-                            new VoidBlobStore(),
-                            serverAddress);
+            cache = new PermanentBlobCache(config, cacheTmpDir, new VoidBlobStore(), serverAddress);
 
             // upload blobs
             keys.add(server.putPermanent(jobId, buf));
@@ -153,7 +154,7 @@ public class BlobCacheCleanupTest extends TestLogger {
      * when registering, releasing, and re-registering jobs.
      */
     @Test
-    public void testPermanentJobReferences() throws IOException {
+    public void testPermanentJobReferences(@TempDir File cacheTmpDir) throws IOException {
 
         JobID jobId = new JobID();
 
@@ -166,8 +167,7 @@ public class BlobCacheCleanupTest extends TestLogger {
         InetSocketAddress serverAddress = new InetSocketAddress("localhost", 12345);
 
         try (PermanentBlobCache cache =
-                new PermanentBlobCache(
-                        config, temporaryFolder.newFolder(), new VoidBlobStore(), serverAddress)) {
+                new PermanentBlobCache(config, cacheTmpDir, new VoidBlobStore(), serverAddress)) {
 
             // register once
             cache.registerJob(jobId);
@@ -215,7 +215,7 @@ public class BlobCacheCleanupTest extends TestLogger {
      * cleaned up.
      */
     @Test
-    @Ignore(
+    @Disabled(
             "manual test due to stalling: ensures a BLOB is retained first and only deleted after the (long) timeout ")
     public void testPermanentBlobDeferredCleanup() throws IOException, InterruptedException {
         // file should be deleted between 5 and 10s after last job release
@@ -232,18 +232,18 @@ public class BlobCacheCleanupTest extends TestLogger {
             Configuration config = new Configuration();
             config.setLong(BlobServerOptions.CLEANUP_INTERVAL, cleanupInterval);
 
-            server = new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+            server =
+                    new BlobServer(
+                            config,
+                            Files.createDirectory(serverTmpDir.toPath().resolve("server")).toFile(),
+                            new VoidBlobStore());
             server.start();
             InetSocketAddress serverAddress = new InetSocketAddress("localhost", server.getPort());
             final BlobCacheSizeTracker tracker =
                     new BlobCacheSizeTracker(MemorySize.ofMebiBytes(100).getBytes());
             cache =
                     new PermanentBlobCache(
-                            config,
-                            temporaryFolder.newFolder(),
-                            new VoidBlobStore(),
-                            serverAddress,
-                            tracker);
+                            config, cacheTmpDir, new VoidBlobStore(), serverAddress, tracker);
 
             // upload blobs
             keys.add(server.putPermanent(jobId, buf));
@@ -350,11 +350,12 @@ public class BlobCacheCleanupTest extends TestLogger {
 
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 final BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
             ConcurrentMap<Tuple2<JobID, TransientBlobKey>, Long> transientBlobExpiryTimes =

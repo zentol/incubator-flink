@@ -24,14 +24,11 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.core.testutils.CheckedThread;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -39,6 +36,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,6 +63,7 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.BlockingInputStrea
 import static org.apache.flink.runtime.blob.BlobServerPutTest.ChunkedInputStream;
 import static org.apache.flink.runtime.blob.BlobServerPutTest.put;
 import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -79,13 +79,12 @@ import static org.mockito.Mockito.verify;
  * Tests for successful and failing PUT operations against the BLOB server, and successful GET
  * operations.
  */
-public class BlobCachePutTest extends TestLogger {
+public class BlobCachePutTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Rule public final ExpectedException exception = ExpectedException.none();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
 
     // --- concurrency tests for utility methods which could fail during the put operation ---
 
@@ -142,11 +141,12 @@ public class BlobCachePutTest extends TestLogger {
             throws Exception {
         final Configuration config = new Configuration();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 final TransientBlobCache cache =
                         new TransientBlobCache(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
             server.start();
@@ -168,11 +168,12 @@ public class BlobCachePutTest extends TestLogger {
         final JobID jobId = new JobID();
         final Configuration config = new Configuration();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 final PermanentBlobCache cache =
                         new PermanentBlobCache(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -250,11 +251,12 @@ public class BlobCachePutTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -366,11 +368,12 @@ public class BlobCachePutTest extends TestLogger {
 
         final Configuration config = new Configuration();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -482,11 +485,12 @@ public class BlobCachePutTest extends TestLogger {
 
         final Configuration config = new Configuration();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -587,11 +591,12 @@ public class BlobCachePutTest extends TestLogger {
         final Configuration config = new Configuration();
         File tempFileDir = null;
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -607,10 +612,9 @@ public class BlobCachePutTest extends TestLogger {
             rnd.nextBytes(data);
 
             // upload the file to the server via the cache
-            exception.expect(IOException.class);
-            exception.expectMessage("PUT operation failed: ");
-
-            put(cache, jobId, data, blobType);
+            assertThatThrownBy(() -> put(cache, jobId, data, blobType))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("PUT operation failed: ");
 
         } finally {
             // set writable again to make sure we can remove the directory
@@ -650,11 +654,12 @@ public class BlobCachePutTest extends TestLogger {
         final Configuration config = new Configuration();
         File tempFileDir = null;
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -669,12 +674,11 @@ public class BlobCachePutTest extends TestLogger {
             byte[] data = new byte[2000000];
             rnd.nextBytes(data);
 
-            // upload the file to the server via the cache
-            exception.expect(IOException.class);
-            exception.expectMessage("PUT operation failed: ");
-
             try {
-                put(cache, jobId, data, blobType);
+                // upload the file to the server via the cache
+                assertThatThrownBy(() -> put(cache, jobId, data, blobType))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("PUT operation failed: ");
             } finally {
                 File storageDir = tempFileDir.getParentFile();
                 // only the incoming directory should exist (no job directory!)
@@ -718,11 +722,12 @@ public class BlobCachePutTest extends TestLogger {
         final Configuration config = new Configuration();
         File jobStoreDir = null;
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -738,12 +743,11 @@ public class BlobCachePutTest extends TestLogger {
             byte[] data = new byte[2000000];
             rnd.nextBytes(data);
 
-            // upload the file to the server via the cache
-            exception.expect(IOException.class);
-            exception.expectMessage("PUT operation failed: ");
-
             try {
-                put(cache, jobId, data, blobType);
+                // upload the file to the server via the cache
+                assertThatThrownBy(() -> put(cache, jobId, data, blobType))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("PUT operation failed: ");
             } finally {
                 // there should be no remaining incoming files
                 File incomingFileDir = new File(jobStoreDir.getParent(), "incoming");
@@ -762,21 +766,21 @@ public class BlobCachePutTest extends TestLogger {
     }
 
     @Test
-    public void testConcurrentPutOperationsNoJob()
+    public void testConcurrentPutOperationsNoJob(@TempDir File tmpDir)
             throws IOException, ExecutionException, InterruptedException {
-        testConcurrentPutOperations(null, TRANSIENT_BLOB);
+        testConcurrentPutOperations(null, TRANSIENT_BLOB, tmpDir);
     }
 
     @Test
-    public void testConcurrentPutOperationsForJob()
+    public void testConcurrentPutOperationsForJob(@TempDir File tmpDir)
             throws IOException, ExecutionException, InterruptedException {
-        testConcurrentPutOperations(new JobID(), TRANSIENT_BLOB);
+        testConcurrentPutOperations(new JobID(), TRANSIENT_BLOB, tmpDir);
     }
 
     @Test
-    public void testConcurrentPutOperationsForJobHa()
+    public void testConcurrentPutOperationsForJobHa(@TempDir File tmpDir)
             throws IOException, ExecutionException, InterruptedException {
-        testConcurrentPutOperations(new JobID(), PERMANENT_BLOB);
+        testConcurrentPutOperations(new JobID(), PERMANENT_BLOB, tmpDir);
     }
 
     /**
@@ -785,9 +789,10 @@ public class BlobCachePutTest extends TestLogger {
      *
      * @param jobId job ID to use (or <tt>null</tt> if job-unrelated)
      * @param blobType whether the BLOB should become permanent or transient
+     * @param tmpDir
      */
     private void testConcurrentPutOperations(
-            @Nullable final JobID jobId, final BlobKey.BlobType blobType)
+            @Nullable final JobID jobId, final BlobKey.BlobType blobType, File tmpDir)
             throws IOException, InterruptedException, ExecutionException {
         final Configuration config = new Configuration();
         final BlobStore blobStoreServer = mock(BlobStore.class);
@@ -802,9 +807,9 @@ public class BlobCachePutTest extends TestLogger {
         final List<Path> jars;
         if (blobType == PERMANENT_BLOB) {
             // implement via JAR file upload instead:
-            File tmpFile = temporaryFolder.newFile();
-            FileUtils.writeByteArrayToFile(tmpFile, data);
-            jars = Collections.singletonList(new Path(tmpFile.getAbsolutePath()));
+            final java.nio.file.Path tmpFile =
+                    Files.write(tmpDir.toPath().resolve("file"), data, StandardOpenOption.CREATE);
+            jars = Collections.singletonList(new Path(tmpFile.toAbsolutePath().toString()));
         } else {
             jars = null;
         }
@@ -815,11 +820,11 @@ public class BlobCachePutTest extends TestLogger {
         ExecutorService executor = Executors.newFixedThreadPool(concurrentPutOperations);
 
         try (final BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), blobStoreServer);
+                        new BlobServer(config, Reference.borrowed(serverTmpDir), blobStoreServer);
                 final BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 blobStoreCache,
                                 new InetSocketAddress("localhost", server.getPort()))) {
 

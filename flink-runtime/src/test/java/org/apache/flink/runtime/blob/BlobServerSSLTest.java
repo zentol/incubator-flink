@@ -20,9 +20,8 @@ package org.apache.flink.runtime.blob;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.SecurityOptions;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import static org.apache.flink.util.ExceptionUtils.findThrowableWithMessage;
 import static org.junit.Assert.fail;
 
 /** Testing a {@link BlobServer} would fail with improper SSL config. */
-public class BlobServerSSLTest extends TestLogger {
+public class BlobServerSSLTest {
 
     @Test
     public void testFailedToInitWithTwoProtocolsSet() {

@@ -21,14 +21,14 @@ package org.apache.flink.runtime.blob;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.blob.BlobKey.BlobType;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -36,13 +36,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests for {@link BlobCacheSizeTracker}. */
-public class BlobCacheSizeTrackerTest extends TestLogger {
+public class BlobCacheSizeTrackerTest {
 
     private BlobCacheSizeTracker tracker;
     private JobID jobId;
     private BlobKey blobKey;
 
-    @Before
+    @BeforeEach
     public void setup() {
         tracker = new BlobCacheSizeTracker(5L);
         jobId = new JobID();
@@ -68,9 +68,10 @@ public class BlobCacheSizeTrackerTest extends TestLogger {
         assertEquals(0, keys.size());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCheckLimitForBlobWithNegativeSize() {
-        tracker.checkLimit(-1L);
+        assertThatThrownBy(() -> tracker.checkLimit(-1L))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -111,9 +112,14 @@ public class BlobCacheSizeTrackerTest extends TestLogger {
      * Since the BlobCacheSizeLimitTracker only works in {@link PermanentBlobCache}, the JobID
      * shouldn't be null.
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testUntrackBlobWithNullJobId() {
-        tracker.untrack(Tuple2.of(null, BlobKey.createKey(BlobType.PERMANENT_BLOB)));
+        assertThatThrownBy(
+                        () ->
+                                tracker.untrack(
+                                        Tuple2.of(
+                                                null, BlobKey.createKey(BlobType.PERMANENT_BLOB))))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test

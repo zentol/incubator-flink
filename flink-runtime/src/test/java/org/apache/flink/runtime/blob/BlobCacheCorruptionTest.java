@@ -22,12 +22,10 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.HighAvailabilityOptions;
 import org.apache.flink.core.testutils.FlinkAssertions;
-import org.apache.flink.util.TestLogger;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -51,9 +49,10 @@ import static org.junit.Assert.assertTrue;
  *
  * <p>Successful GET requests are tested in conjunction wit the PUT requests.
  */
-public class BlobCacheCorruptionTest extends TestLogger {
+public class BlobCacheCorruptionTest {
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir File tmpDir;
+    @TempDir File haTmpDir;
 
     @Test
     public void testGetFailsFromCorruptFile1() throws IOException {
@@ -91,8 +90,7 @@ public class BlobCacheCorruptionTest extends TestLogger {
 
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, TEMPORARY_FOLDER.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         BlobStoreService blobStoreService = null;
 
@@ -100,12 +98,7 @@ public class BlobCacheCorruptionTest extends TestLogger {
             blobStoreService = BlobUtils.createBlobStoreFromConfig(config);
 
             testGetFailsFromCorruptFile(
-                    jobId,
-                    blobType,
-                    corruptOnHAStore,
-                    config,
-                    blobStoreService,
-                    TEMPORARY_FOLDER.newFolder());
+                    jobId, blobType, corruptOnHAStore, config, blobStoreService, tmpDir);
         } finally {
             if (blobStoreService != null) {
                 blobStoreService.closeAndCleanupAllData();

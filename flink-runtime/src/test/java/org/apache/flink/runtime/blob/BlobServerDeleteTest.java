@@ -23,13 +23,12 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.hamcrest.collection.IsEmptyCollection;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -61,11 +60,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /** Tests how DELETE requests behave. */
-public class BlobServerDeleteTest extends TestLogger {
+public class BlobServerDeleteTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
 
     @Test
     public void testDeleteTransient1() throws IOException {
@@ -112,7 +111,7 @@ public class BlobServerDeleteTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -179,7 +178,7 @@ public class BlobServerDeleteTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -234,7 +233,7 @@ public class BlobServerDeleteTest extends TestLogger {
         File directory = null;
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -292,7 +291,7 @@ public class BlobServerDeleteTest extends TestLogger {
 
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -370,7 +369,7 @@ public class BlobServerDeleteTest extends TestLogger {
         final byte[] data = {1, 2, 3};
 
         try (final BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 

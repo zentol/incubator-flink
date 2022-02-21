@@ -22,14 +22,12 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -64,6 +62,7 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.put;
 import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 import static org.apache.flink.runtime.blob.BlobUtils.JOB_DIR_PREFIX;
 import static org.apache.flink.runtime.blob.BlobUtils.NO_JOB_DIR_PREFIX;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
@@ -84,13 +83,12 @@ import static org.mockito.Mockito.mock;
  * <p>Most successful GET requests are tested in conjunction wit the PUT requests by {@link
  * BlobCachePutTest}.
  */
-public class BlobCacheGetTest extends TestLogger {
+public class BlobCacheGetTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Rule public final ExpectedException exception = ExpectedException.none();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
 
     @Test
     public void testGetTransientFailsDuringLookup1() throws IOException, InterruptedException {
@@ -125,11 +123,12 @@ public class BlobCacheGetTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -216,11 +215,12 @@ public class BlobCacheGetTest extends TestLogger {
         final Configuration config = new Configuration();
         File tempFileDir = null;
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -244,12 +244,11 @@ public class BlobCacheGetTest extends TestLogger {
             assertTrue(tempFileDir.setReadable(true, false));
             assertTrue(tempFileDir.setWritable(false, false));
 
-            // request the file from the server via the cache
-            exception.expect(IOException.class);
-            exception.expectMessage("Failed to fetch BLOB ");
-
             try {
-                get(cache, jobId, blobKey);
+                // request the file from the server via the cache
+                assertThatThrownBy(() -> get(cache, jobId, blobKey))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("Failed to fetch BLOB ");
             } finally {
                 HashSet<String> expectedDirs = new HashSet<>();
                 expectedDirs.add("incoming");
@@ -318,11 +317,12 @@ public class BlobCacheGetTest extends TestLogger {
         final Configuration config = new Configuration();
         File jobStoreDir = null;
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -350,11 +350,10 @@ public class BlobCacheGetTest extends TestLogger {
             assertTrue(jobStoreDir.setReadable(true, false));
             assertTrue(jobStoreDir.setWritable(false, false));
 
-            // request the file from the server via the cache
-            exception.expect(AccessDeniedException.class);
-
             try {
-                get(cache, jobId, blobKey);
+                // request the file from the server via the cache
+                assertThatThrownBy(() -> get(cache, jobId, blobKey))
+                        .isInstanceOf(AccessDeniedException.class);
             } finally {
                 // there should be no remaining incoming files
                 File incomingFileDir = new File(jobStoreDir.getParent(), "incoming");
@@ -390,11 +389,12 @@ public class BlobCacheGetTest extends TestLogger {
 
         final Configuration config = new Configuration();
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -408,12 +408,11 @@ public class BlobCacheGetTest extends TestLogger {
 
             File tempFileDir = server.createTemporaryFilename().getParentFile();
 
-            // request the file from the server via the cache
-            exception.expect(IOException.class);
-            exception.expectMessage("Failed to fetch BLOB ");
-
             try {
-                get(cache, jobId, blobKey);
+                // request the file from the server via the cache
+                assertThatThrownBy(() -> get(cache, jobId, blobKey))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining("Failed to fetch BLOB ");
             } finally {
                 HashSet<String> expectedDirs = new HashSet<>();
                 expectedDirs.add("incoming");
@@ -457,11 +456,12 @@ public class BlobCacheGetTest extends TestLogger {
         File directory = null;
 
         try (BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+                        new BlobServer(
+                                config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
                 BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -560,11 +560,11 @@ public class BlobCacheGetTest extends TestLogger {
                 Executors.newFixedThreadPool(numberConcurrentGetOperations);
 
         try (final BlobServer server =
-                        new BlobServer(config, temporaryFolder.newFolder(), blobStoreServer);
+                        new BlobServer(config, Reference.borrowed(serverTmpDir), blobStoreServer);
                 final BlobCacheService cache =
                         new BlobCacheService(
                                 config,
-                                temporaryFolder.newFolder(),
+                                cacheTmpDir,
                                 cacheAccessesHAStore ? blobStoreServer : blobStoreCache,
                                 new InetSocketAddress("localhost", server.getPort()))) {
 

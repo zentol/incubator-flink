@@ -24,11 +24,9 @@ import org.apache.flink.configuration.HighAvailabilityOptions;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.jobmanager.HighAvailabilityMode;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,9 +44,10 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 import static org.junit.Assert.assertTrue;
 
 /** Tests for the recovery of files of a {@link BlobCacheService} from a HA store. */
-public class BlobCacheRecoveryTest extends TestLogger {
+public class BlobCacheRecoveryTest {
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir File tmpDir;
+    @TempDir File haTmpDir;
 
     /**
      * Tests that with {@link HighAvailabilityMode#ZOOKEEPER} distributed JARs are recoverable from
@@ -58,15 +57,14 @@ public class BlobCacheRecoveryTest extends TestLogger {
     public void testBlobCacheRecovery() throws Exception {
         Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, TEMPORARY_FOLDER.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         BlobStoreService blobStoreService = null;
 
         try {
             blobStoreService = BlobUtils.createBlobStoreFromConfig(config);
 
-            testBlobCacheRecovery(config, blobStoreService, TEMPORARY_FOLDER.newFolder());
+            testBlobCacheRecovery(config, blobStoreService, tmpDir);
         } finally {
             if (blobStoreService != null) {
                 blobStoreService.closeAndCleanupAllData();

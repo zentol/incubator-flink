@@ -25,14 +25,12 @@ import org.apache.flink.core.testutils.CheckedThread;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OperatingSystem;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -65,6 +63,7 @@ import static org.apache.flink.runtime.blob.BlobKey.BlobType.TRANSIENT_BLOB;
 import static org.apache.flink.runtime.blob.BlobKeyTest.verifyKeyDifferentHashEquals;
 import static org.apache.flink.runtime.blob.BlobServerGetTest.get;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -76,13 +75,11 @@ import static org.junit.Assume.assumeTrue;
  * Tests for successful and failing PUT operations against the BLOB server, and successful GET
  * operations.
  */
-public class BlobServerPutTest extends TestLogger {
+public class BlobServerPutTest {
 
     private final Random rnd = new Random();
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Rule public final ExpectedException exception = ExpectedException.none();
+    @TempDir File serverTmpDir;
 
     // --- concurrency tests for utility methods which could fail during the put operation ---
 
@@ -122,7 +119,7 @@ public class BlobServerPutTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -202,7 +199,7 @@ public class BlobServerPutTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -290,7 +287,7 @@ public class BlobServerPutTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -378,7 +375,7 @@ public class BlobServerPutTest extends TestLogger {
         final Configuration config = new Configuration();
 
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -456,7 +453,7 @@ public class BlobServerPutTest extends TestLogger {
 
         File tempFileDir = null;
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -470,9 +467,8 @@ public class BlobServerPutTest extends TestLogger {
             rnd.nextBytes(data);
 
             // upload the file to the server directly
-            exception.expect(AccessDeniedException.class);
-
-            put(server, jobId, data, blobType);
+            assertThatThrownBy(() -> put(server, jobId, data, blobType))
+                    .isInstanceOf(AccessDeniedException.class);
 
         } finally {
             // set writable again to make sure we can remove the directory
@@ -513,7 +509,7 @@ public class BlobServerPutTest extends TestLogger {
 
         File tempFileDir = null;
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -526,12 +522,11 @@ public class BlobServerPutTest extends TestLogger {
             byte[] data = new byte[2000000];
             rnd.nextBytes(data);
 
-            // upload the file to the server directly
-            exception.expect(IOException.class);
-            exception.expectMessage(" (Permission denied)");
-
             try {
-                put(server, jobId, data, blobType);
+                // upload the file to the server directly
+                assertThatThrownBy(() -> put(server, jobId, data, blobType))
+                        .isInstanceOf(IOException.class)
+                        .hasMessageContaining(" (Permission denied)");
             } finally {
                 File storageDir = tempFileDir.getParentFile();
                 // only the incoming directory should exist (no job directory!)
@@ -576,7 +571,7 @@ public class BlobServerPutTest extends TestLogger {
 
         File jobStoreDir = null;
         try (BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore())) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore())) {
 
             server.start();
 
@@ -590,11 +585,10 @@ public class BlobServerPutTest extends TestLogger {
             byte[] data = new byte[2000000];
             rnd.nextBytes(data);
 
-            // upload the file to the server directly
-            exception.expect(AccessDeniedException.class);
-
             try {
-                put(server, jobId, data, blobType);
+                // upload the file to the server directly
+                assertThatThrownBy(() -> put(server, jobId, data, blobType))
+                        .isInstanceOf(AccessDeniedException.class);
             } finally {
                 // there should be no remaining incoming files
                 File incomingFileDir = new File(jobStoreDir.getParent(), "incoming");
@@ -636,7 +630,6 @@ public class BlobServerPutTest extends TestLogger {
         final JobID jobId = JobID.generate();
         final byte[] data = new byte[] {1, 2, 3};
 
-        final File storageDir = temporaryFolder.newFolder();
         final TestingBlobStore blobStore =
                 new TestingBlobStoreBuilder()
                         .setPutFunction(
@@ -645,7 +638,7 @@ public class BlobServerPutTest extends TestLogger {
                                 })
                         .createTestingBlobStore();
         try (final BlobServer blobServer =
-                new BlobServer(new Configuration(), storageDir, blobStore)) {
+                new BlobServer(new Configuration(), serverTmpDir, blobStore)) {
             try {
                 put(blobServer, jobId, data, blobType);
                 fail("Expected that the put operation fails with an IOException.");
@@ -654,7 +647,9 @@ public class BlobServerPutTest extends TestLogger {
             }
 
             final File jobSpecificStorageDirectory =
-                    new File(BlobUtils.getStorageLocationPath(storageDir.getAbsolutePath(), jobId));
+                    new File(
+                            BlobUtils.getStorageLocationPath(
+                                    serverTmpDir.getAbsolutePath(), jobId));
 
             assertThat(jobSpecificStorageDirectory).isEmptyDirectory();
         }
@@ -692,7 +687,7 @@ public class BlobServerPutTest extends TestLogger {
         ExecutorService executor = Executors.newFixedThreadPool(concurrentPutOperations);
 
         try (final BlobServer server =
-                new BlobServer(config, temporaryFolder.newFolder(), blobStore)) {
+                new BlobServer(config, Reference.borrowed(serverTmpDir), blobStore)) {
 
             server.start();
 

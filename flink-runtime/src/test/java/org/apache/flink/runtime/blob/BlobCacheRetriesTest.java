@@ -21,14 +21,13 @@ package org.apache.flink.runtime.blob;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.HighAvailabilityOptions;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -39,9 +38,11 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 import static org.junit.Assert.fail;
 
 /** Unit tests for the blob cache retrying the connection to the server. */
-public class BlobCacheRetriesTest extends TestLogger {
+public class BlobCacheRetriesTest {
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
+    @TempDir File haTmpDir;
 
     /**
      * A test where the connection fails twice and then the get operation succeeds (job-unrelated
@@ -69,8 +70,7 @@ public class BlobCacheRetriesTest extends TestLogger {
     public void testBlobFetchRetriesHa() throws IOException {
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, TEMPORARY_FOLDER.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         BlobStoreService blobStoreService = null;
 
@@ -91,7 +91,7 @@ public class BlobCacheRetriesTest extends TestLogger {
      *
      * @param blobType whether the BLOB should become permanent or transient
      */
-    private static void testBlobFetchRetries(
+    private void testBlobFetchRetries(
             final BlobStore blobStore, @Nullable final JobID jobId, BlobKey.BlobType blobType)
             throws IOException {
 
@@ -100,12 +100,11 @@ public class BlobCacheRetriesTest extends TestLogger {
         final byte[] data = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 
         try (BlobServer server =
-                        new TestingFailingBlobServer(
-                                configuration, TEMPORARY_FOLDER.newFolder(), blobStore, 2);
+                        new TestingFailingBlobServer(configuration, serverTmpDir, blobStore, 2);
                 BlobCacheService cache =
                         new BlobCacheService(
                                 configuration,
-                                TEMPORARY_FOLDER.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 
@@ -146,8 +145,7 @@ public class BlobCacheRetriesTest extends TestLogger {
     public void testBlobForJobFetchWithTooManyFailuresHa() throws IOException {
         final Configuration config = new Configuration();
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, TEMPORARY_FOLDER.getRoot().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         BlobStoreService blobStoreService = null;
 
@@ -168,7 +166,7 @@ public class BlobCacheRetriesTest extends TestLogger {
      *
      * @param blobType whether the BLOB should become permanent or transient
      */
-    private static void testBlobFetchWithTooManyFailures(
+    private void testBlobFetchWithTooManyFailures(
             final BlobStore blobStore, @Nullable final JobID jobId, BlobKey.BlobType blobType)
             throws IOException {
         final Configuration configuration = new Configuration();
@@ -177,11 +175,11 @@ public class BlobCacheRetriesTest extends TestLogger {
 
         try (BlobServer server =
                         new TestingFailingBlobServer(
-                                configuration, TEMPORARY_FOLDER.newFolder(), blobStore, 0, 10);
+                                configuration, serverTmpDir, blobStore, 0, 10);
                 BlobCacheService cache =
                         new BlobCacheService(
                                 configuration,
-                                TEMPORARY_FOLDER.newFolder(),
+                                cacheTmpDir,
                                 new VoidBlobStore(),
                                 new InetSocketAddress("localhost", server.getPort()))) {
 

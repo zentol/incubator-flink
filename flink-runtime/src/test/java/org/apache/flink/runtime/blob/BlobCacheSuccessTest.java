@@ -22,14 +22,14 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.HighAvailabilityOptions;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -40,9 +40,12 @@ import static org.apache.flink.runtime.blob.BlobServerPutTest.put;
 import static org.apache.flink.runtime.blob.BlobServerPutTest.verifyContents;
 
 /** This class contains unit tests for the {@link BlobCacheService}. */
-public class BlobCacheSuccessTest extends TestLogger {
+public class BlobCacheSuccessTest {
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
+    @TempDir File cacheTmpDir;
+    @TempDir File storageTmpDir;
+    @TempDir File haTmpDir;
 
     /**
      * BlobCache with no HA, job-unrelated BLOBs. BLOBs need to be downloaded form a working
@@ -51,8 +54,7 @@ public class BlobCacheSuccessTest extends TestLogger {
     @Test
     public void testBlobNoJobCache() throws IOException {
         Configuration config = new Configuration();
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
 
         uploadFileGetTest(config, null, false, false, TRANSIENT_BLOB);
     }
@@ -64,8 +66,7 @@ public class BlobCacheSuccessTest extends TestLogger {
     @Test
     public void testBlobForJobCache() throws IOException {
         Configuration config = new Configuration();
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
 
         uploadFileGetTest(config, new JobID(), false, false, TRANSIENT_BLOB);
     }
@@ -78,11 +79,9 @@ public class BlobCacheSuccessTest extends TestLogger {
     @Test
     public void testBlobForJobCacheHa() throws IOException {
         Configuration config = new Configuration();
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, temporaryFolder.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         uploadFileGetTest(config, new JobID(), true, true, PERMANENT_BLOB);
     }
@@ -95,11 +94,9 @@ public class BlobCacheSuccessTest extends TestLogger {
     @Test
     public void testBlobForJobCacheHa2() throws IOException {
         Configuration config = new Configuration();
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, temporaryFolder.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
         uploadFileGetTest(config, new JobID(), false, true, PERMANENT_BLOB);
     }
 
@@ -110,11 +107,9 @@ public class BlobCacheSuccessTest extends TestLogger {
     @Test
     public void testBlobForJobCacheHaFallback() throws IOException {
         Configuration config = new Configuration();
-        config.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        config.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
         config.setString(HighAvailabilityOptions.HA_MODE, "ZOOKEEPER");
-        config.setString(
-                HighAvailabilityOptions.HA_STORAGE_PATH, temporaryFolder.newFolder().getPath());
+        config.setString(HighAvailabilityOptions.HA_STORAGE_PATH, haTmpDir.getPath());
 
         uploadFileGetTest(config, new JobID(), false, false, PERMANENT_BLOB);
     }
@@ -141,13 +136,12 @@ public class BlobCacheSuccessTest extends TestLogger {
             throws IOException {
 
         final Configuration cacheConfig = new Configuration(config);
-        cacheConfig.setString(
-                BlobServerOptions.STORAGE_DIRECTORY, temporaryFolder.newFolder().getAbsolutePath());
+        cacheConfig.setString(BlobServerOptions.STORAGE_DIRECTORY, storageTmpDir.getAbsolutePath());
         if (!cacheHasAccessToFs) {
             // make sure the cache cannot access the HA store directly
             cacheConfig.setString(
                     HighAvailabilityOptions.HA_STORAGE_PATH,
-                    temporaryFolder.newFolder().getPath() + "/does-not-exist");
+                    haTmpDir.getPath() + "/does-not-exist");
         }
 
         // First create two BLOBs and upload them to BLOB server
@@ -160,11 +154,12 @@ public class BlobCacheSuccessTest extends TestLogger {
         try {
             blobStoreService = BlobUtils.createBlobStoreFromConfig(cacheConfig);
             try (BlobServer server =
-                            new BlobServer(config, temporaryFolder.newFolder(), blobStoreService);
+                            new BlobServer(
+                                    config, Reference.borrowed(serverTmpDir), blobStoreService);
                     BlobCacheService cache =
                             new BlobCacheService(
                                     cacheConfig,
-                                    temporaryFolder.newFolder(),
+                                    cacheTmpDir,
                                     blobStoreService,
                                     new InetSocketAddress("localhost", server.getPort()))) {
 

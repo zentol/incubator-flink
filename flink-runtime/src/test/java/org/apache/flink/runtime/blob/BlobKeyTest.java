@@ -21,9 +21,8 @@ package org.apache.flink.runtime.blob;
 import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.util.AbstractID;
 import org.apache.flink.util.StringUtils;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,6 +30,7 @@ import java.io.IOException;
 
 import static org.apache.flink.runtime.blob.BlobKey.BlobType.PERMANENT_BLOB;
 import static org.apache.flink.runtime.blob.BlobKey.BlobType.TRANSIENT_BLOB;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /** This class contains unit tests for the {@link BlobKey} class. */
-public final class BlobKeyTest extends TestLogger {
+public final class BlobKeyTest {
     /** The first key array to be used during the unit tests. */
     private static final byte[] KEY_ARRAY_1 = new byte[BlobKey.SIZE];
 
@@ -200,18 +200,22 @@ public final class BlobKeyTest extends TestLogger {
         assertThat(blobKey, equalTo(parsedBlobKey));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testFromStringFailsWithWrongInput() {
-        BlobKey.fromString("foobar");
+        assertThatThrownBy(() -> BlobKey.fromString("foobar"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testFromStringFailsWithInvalidBlobKeyType() {
-        BlobKey.fromString(
-                String.format(
-                        "x-%s-%s",
-                        StringUtils.byteToHexString(KEY_ARRAY_1),
-                        StringUtils.byteToHexString(RANDOM_ARRAY_1)));
+        assertThatThrownBy(
+                        () ->
+                                BlobKey.fromString(
+                                        String.format(
+                                                "x-%s-%s",
+                                                StringUtils.byteToHexString(KEY_ARRAY_1),
+                                                StringUtils.byteToHexString(RANDOM_ARRAY_1))))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     /** Test the serialization/deserialization using input/output streams. */

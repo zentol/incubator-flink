@@ -23,13 +23,12 @@ import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.util.ExceptionUtils;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.Reference;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.annotation.Nullable;
 
@@ -40,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +59,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 /** This class contains unit tests for the {@link BlobClient}. */
-public class BlobClientTest extends TestLogger {
+public class BlobClientTest {
 
     /** The buffer size used during the tests in bytes. */
     private static final int TEST_BUFFER_SIZE = 17 * 1000;
@@ -70,20 +70,21 @@ public class BlobClientTest extends TestLogger {
     /** The blob service (non-ssl) client configuration. */
     static Configuration clientConfig;
 
-    @ClassRule public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir static File serverTmpDir;
+    @TempDir File tmpDir;
 
     /** Starts the BLOB server. */
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws IOException {
         Configuration config = new Configuration();
-        blobServer = new BlobServer(config, temporaryFolder.newFolder(), new VoidBlobStore());
+        blobServer = new BlobServer(config, Reference.borrowed(serverTmpDir), new VoidBlobStore());
         blobServer.start();
 
         clientConfig = new Configuration();
     }
 
     /** Shuts the BLOB server down. */
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws IOException {
         if (blobServer != null) {
             blobServer.close();
@@ -336,7 +337,7 @@ public class BlobClientTest extends TestLogger {
     private void testContentAddressableStream(BlobKey.BlobType blobType)
             throws IOException, InterruptedException {
 
-        File testFile = temporaryFolder.newFile();
+        File testFile = Files.createFile(tmpDir.toPath().resolve("file")).toFile();
         byte[] digest = prepareTestFile(testFile);
 
         InputStream is = null;
@@ -509,8 +510,7 @@ public class BlobClientTest extends TestLogger {
         clientConfig.setInteger(BlobServerOptions.SO_TIMEOUT, 50);
 
         try (final TestBlobServer testBlobServer =
-                new TestBlobServer(
-                        clientConfig, temporaryFolder.newFolder(), new VoidBlobStore(), 10_000L)) {
+                new TestBlobServer(clientConfig, tmpDir, new VoidBlobStore(), 10_000L)) {
             testBlobServer.start();
             InetSocketAddress serverAddress =
                     new InetSocketAddress("localhost", testBlobServer.getPort());

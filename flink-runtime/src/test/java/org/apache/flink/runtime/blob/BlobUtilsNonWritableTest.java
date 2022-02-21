@@ -22,78 +22,86 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.OperatingSystem;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /** Tests for {@link BlobUtils} working on non-writable directories. */
-public class BlobUtilsNonWritableTest extends TestLogger {
+public class BlobUtilsNonWritableTest {
 
     private static final String CANNOT_CREATE_THIS = "cannot-create-this";
 
-    private File blobUtilsTestDirectory;
+    @TempDir File blobUtilsTestDirectory;
 
-    @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Before
-    public void before() throws IOException {
+    @BeforeEach
+    public void before(@TempDir File tmpDir) throws IOException {
         assumeTrue(!OperatingSystem.isWindows()); // setWritable doesn't work on Windows.
 
         // Prepare test directory
-        blobUtilsTestDirectory = temporaryFolder.newFolder();
         assertTrue(blobUtilsTestDirectory.setExecutable(true, false));
         assertTrue(blobUtilsTestDirectory.setReadable(true, false));
         assertTrue(blobUtilsTestDirectory.setWritable(false, false));
     }
 
-    @After
+    @AfterEach
     public void after() {
         // Cleanup test directory, ensure it was empty
         assertTrue(blobUtilsTestDirectory.delete());
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void testExceptionOnCreateStorageDirectoryFailure() throws IOException {
         Configuration config = new Configuration();
         config.setString(
                 BlobServerOptions.STORAGE_DIRECTORY,
                 new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS).getAbsolutePath());
         // Should throw an Exception
-        BlobUtils.createBlobStorageDirectory(config, null);
+        assertThatThrownBy(() -> BlobUtils.createBlobStorageDirectory(config, null))
+                .isInstanceOf(IOException.class);
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void testExceptionOnCreateCacheDirectoryFailureNoJob() throws IOException {
         // Should throw an Exception
-        BlobUtils.getStorageLocation(
-                new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS), null, new TransientBlobKey());
+        assertThatThrownBy(
+                        () ->
+                                BlobUtils.getStorageLocation(
+                                        new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS),
+                                        null,
+                                        new TransientBlobKey()))
+                .isInstanceOf(IOException.class);
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void testExceptionOnCreateCacheDirectoryFailureForJobTransient() throws IOException {
         // Should throw an Exception
-        BlobUtils.getStorageLocation(
-                new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS),
-                new JobID(),
-                new TransientBlobKey());
+        assertThatThrownBy(
+                        () ->
+                                BlobUtils.getStorageLocation(
+                                        new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS),
+                                        new JobID(),
+                                        new TransientBlobKey()))
+                .isInstanceOf(IOException.class);
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void testExceptionOnCreateCacheDirectoryFailureForJobPermanent() throws IOException {
         // Should throw an Exception
-        BlobUtils.getStorageLocation(
-                new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS),
-                new JobID(),
-                new PermanentBlobKey());
+        assertThatThrownBy(
+                        () ->
+                                BlobUtils.getStorageLocation(
+                                        new File(blobUtilsTestDirectory, CANNOT_CREATE_THIS),
+                                        new JobID(),
+                                        new PermanentBlobKey()))
+                .isInstanceOf(IOException.class);
     }
 }

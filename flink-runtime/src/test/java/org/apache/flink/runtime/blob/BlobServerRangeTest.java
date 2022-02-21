@@ -20,25 +20,25 @@ package org.apache.flink.runtime.blob;
 
 import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.util.TestLogger;
 
 import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 /** Tests to ensure that the BlobServer properly starts on a specified range of available ports. */
-public class BlobServerRangeTest extends TestLogger {
+public class BlobServerRangeTest {
 
-    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir File serverTmpDir;
 
     /** Start blob server on 0 = pick an ephemeral port. */
     @Test
@@ -46,13 +46,13 @@ public class BlobServerRangeTest extends TestLogger {
         Configuration conf = new Configuration();
         conf.setString(BlobServerOptions.PORT, "0");
 
-        BlobServer server = new BlobServer(conf, temporaryFolder.newFolder(), new VoidBlobStore());
+        BlobServer server = new BlobServer(conf, serverTmpDir, new VoidBlobStore());
         server.start();
         server.close();
     }
 
     /** Try allocating on an unavailable port. */
-    @Test(expected = IOException.class)
+    @Test
     public void testPortUnavailable() throws IOException {
         // allocate on an ephemeral port
         ServerSocket socket = null;
@@ -66,11 +66,9 @@ public class BlobServerRangeTest extends TestLogger {
         Configuration conf = new Configuration();
         conf.setString(BlobServerOptions.PORT, String.valueOf(socket.getLocalPort()));
 
-        // this thing is going to throw an exception
         try {
-            BlobServer server =
-                    new BlobServer(conf, temporaryFolder.newFolder(), new VoidBlobStore());
-            server.start();
+            assertThatThrownBy(() -> new BlobServer(conf, serverTmpDir, new VoidBlobStore()))
+                    .isInstanceOf(IOException.class);
         } finally {
             socket.close();
         }
@@ -96,8 +94,7 @@ public class BlobServerRangeTest extends TestLogger {
 
         // this thing is going to throw an exception
         try {
-            BlobServer server =
-                    new BlobServer(conf, temporaryFolder.newFolder(), new VoidBlobStore());
+            BlobServer server = new BlobServer(conf, serverTmpDir, new VoidBlobStore());
             server.start();
             assertThat(
                     server.getPort(), allOf(greaterThanOrEqualTo(50000), lessThanOrEqualTo(50050)));
