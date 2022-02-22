@@ -184,12 +184,12 @@ jobs:
     stage_name: ${{parameters.stage_name}}
     e2e_pool_definition: ${{parameters.e2e_pool_definition}}
     environment: ${{parameters.environment}}
-    jdk: ${{parameters.jdk}}
+    jdk: 11
     group: 1
 - template: e2e-template.yml
   parameters:
     stage_name: ${{parameters.stage_name}}
     e2e_pool_definition: ${{parameters.e2e_pool_definition}}
     environment: ${{parameters.environment}}
-    jdk: ${{parameters.jdk}}
+    jdk: 11
     group: 2

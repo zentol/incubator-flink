@@ -11,7 +11,7 @@ And a lot of added stuff for making this an actual, properly configured, kerberi
 Versions
 --------
 
-* JDK8
+* JDK11
 * Hadoop 2.8.5
 
 Default Environment Variables
