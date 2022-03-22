@@ -18,7 +18,9 @@
 
 package org.apache.flink.configuration;
 
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.annotation.docs.Documentation;
 import org.apache.flink.configuration.description.Description;
 import org.apache.flink.configuration.description.TextElement;
 
@@ -30,6 +32,15 @@ import static org.apache.flink.configuration.description.TextElement.text;
 /** The {@link ConfigOption configuration options} relevant for all Executors. */
 @PublicEvolving
 public class DeploymentOptions {
+
+    @Experimental
+    @Documentation.ExcludeFromDocumentation("experimental")
+    public static final ConfigOption<Boolean> WAIT_FOR_INITIALIZED_JOB =
+            key("execution.wait-for-initialized-job")
+                    .booleanType()
+                    .defaultValue(true)
+                    .withDescription(
+                            "Controls whether the client waits after a job submission until the job has finished initialization.");
 
     public static final ConfigOption<String> TARGET =
             key("execution.target")

@@ -19,6 +19,7 @@
 package org.apache.flink.client.deployment.executors;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Pipeline;
 import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.deployment.ClusterClientFactory;
@@ -27,6 +28,7 @@ import org.apache.flink.client.deployment.ClusterDescriptor;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ClusterClientProvider;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -74,17 +76,26 @@ public class AbstractSessionClusterExecutor<
             final ClusterClientProvider<ClusterID> clusterClientProvider =
                     clusterDescriptor.retrieve(clusterID);
             ClusterClient<ClusterID> clusterClient = clusterClientProvider.getClusterClient();
-            return clusterClient
-                    .submitJob(jobGraph)
-                    .thenApplyAsync(
-                            FunctionUtils.uncheckedFunction(
-                                    jobId -> {
-                                        ClientUtils.waitUntilJobInitializationFinished(
-                                                () -> clusterClient.getJobStatus(jobId).get(),
-                                                () -> clusterClient.requestJobResult(jobId).get(),
-                                                userCodeClassloader);
-                                        return jobId;
-                                    }))
+
+            CompletableFuture<JobID> submissionFuture = clusterClient.submitJob(jobGraph);
+
+            if (configuration.get(DeploymentOptions.WAIT_FOR_INITIALIZED_JOB)) {
+                submissionFuture =
+                        submissionFuture.thenApplyAsync(
+                                FunctionUtils.uncheckedFunction(
+                                        jobId -> {
+                                            ClientUtils.waitUntilJobInitializationFinished(
+                                                    () -> clusterClient.getJobStatus(jobId).get(),
+                                                    () ->
+                                                            clusterClient
+                                                                    .requestJobResult(jobId)
+                                                                    .get(),
+                                                    userCodeClassloader);
+                                            return jobId;
+                                        }));
+            }
+
+            return submissionFuture
                     .thenApplyAsync(
                             jobID ->
                                     (JobClient)
