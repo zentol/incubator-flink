@@ -1575,7 +1575,7 @@ under the License.
 					<trimStackTrace>false</trimStackTrace>
 					<systemPropertyVariables combine.children="append">
 						<forkNumber>0${surefire.forkNumber}</forkNumber>
-						<mvn.forkNumber>${surefire.forkNumber}</mvn.forkNumber>
+						<mvn.forkNumber>$${surefire.forkNumber}</mvn.forkNumber>
 						<hadoop.version>${hadoop.version}</hadoop.version>
 						<checkpointing.randomization>true</checkpointing.randomization>
 						<buffer-debloat.randomization>true</buffer-debloat.randomization>
