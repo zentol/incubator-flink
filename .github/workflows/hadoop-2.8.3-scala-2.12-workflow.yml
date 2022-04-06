@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
+      options: --user flink
     steps:
       - name: "Checks out Flink"
         uses: actions/checkout@v2
