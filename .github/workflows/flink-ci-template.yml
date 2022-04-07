@@ -102,7 +102,7 @@ jobs:
 
       - name: "Flink Checkout"
         run: |
-          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} ${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
+          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} https://github.com/${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Compile Flink"
         working-directory: ${{ env.CHECKOUT_DIR }}
@@ -136,7 +136,7 @@ jobs:
 
       - name: "Flink Checkout"
         run: |
-          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} ${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
+          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} https://github.com/${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v2
@@ -190,7 +190,7 @@ jobs:
 
       - name: "Flink Checkout"
         run: |
-          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} ${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
+          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} https://github.com/${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Set coredump pattern"
         working-directory: ${{ env.CHECKOUT_DIR }}
@@ -265,7 +265,7 @@ jobs:
     steps:
       - name: "Flink Checkout"
         run: |
-          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} ${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
+          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} https://github.com/${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
 
       # Skip e2e test execution if this is a documentation only pull request (master / release builds will still be checked regularly)
       - name: "Check if it's a docs-only PR (i.e. e2e tests can be skipped)"
@@ -306,7 +306,7 @@ jobs:
 
       - name: "Flink Checkout"
         run: |
-          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} ${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
+          git clone --single-branch --branch ${{github.event.pull_request.head.ref}} https://github.com/${{github.event.pull_request.head.repo.full_name}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v2
