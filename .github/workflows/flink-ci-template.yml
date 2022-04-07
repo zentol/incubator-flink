@@ -61,13 +61,7 @@ jobs:
     container:
       image: chesnay/flink-ci:java_8_11_xenial
       options: --init --user flink
-
     steps:
-    - name: "Set JDK version"
-      run: |
-        echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
-        echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
-
     - name: "Checkout branch"
       run: |
         git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
@@ -99,11 +93,6 @@ jobs:
           stringified_workflow_name=$(echo "${{ github.workflow }}" | tr -C '[:alnum:]._' '-' |  tr '[:upper:]' '[:lower:]' | sed -e 's/--*/-/g' -e 's/^-*//g' -e 's/-*$//g')
           echo "::set-output name=stringified-workflow-name::${stringified_workflow_name}"
 
-      - name: "Set JDK version"
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
-          echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
-
       - name: "Checkout branch"
         run: |
           git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
@@ -131,13 +120,7 @@ jobs:
     container:
       image: chesnay/flink-ci:java_8_11_xenial
       options: --init --user flink
-
     steps:
-      - name: "Set JDK version"
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
-          echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
-
       - name: "Checkout branch"
         run: |
           git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
@@ -185,13 +168,7 @@ jobs:
             stringified-module-name: misc
           - module: finegrained_resource_management
             stringified-module-name: finegrained_resource_management
-
     steps:
-      - name: "Set JDK version"
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
-          echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
-
       - name: "Checkout branch"
         run: |
           git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
@@ -299,11 +276,6 @@ jobs:
         group: [1, 2]
 
     steps:
-      - name: "Set JDK version"
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
-          echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
-
       - name: "Checkout branch"
         run: |
           git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
