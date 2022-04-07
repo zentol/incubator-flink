@@ -26,6 +26,12 @@ on:
         description: "the jdk version to use"
         required: true
         type: number
+      repo:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
     secrets:
       s3_bucket:
         required: false
@@ -44,9 +50,6 @@ env:
   FLINK_ARTIFACT_DIR: /root/
   FLINK_ARTIFACT_FILENAME: flink_artifacts.tar.gz
   DOCKER_IMAGES_CACHE_FOLDER: /root/.docker-cache
-  # The checkout directory needs to be changed for the Composite Github action usages below as
-  # well, if this env variable is modified
-  CHECKOUT_MOUNT_DIR: ${{ github.workspace }}/flink-checkout
   CHECKOUT_DIR: /root/flink
 
 jobs:
@@ -63,15 +66,17 @@ jobs:
         echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
         echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
 
-    - name: "Flink Checkout"
-      uses: actions/checkout@v2
-      with:
-        persist-credentials: false
+    - name: "Checkout branch"
+      run: |
+        git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
+
     - name: "Codestyle"
+      working-directory: ${{ env.CHECKOUT_DIR }}
       run: |
         ${{ inputs.environment }} ./tools/ci/validate.sh "checkstyle:check spotless:check -T2" || exit $?
 
     - name: "License Headers"
+      working-directory: ${{ env.CHECKOUT_DIR }}
       if: (success() || failure())
       run: |
         ${{ inputs.environment }} ./tools/ci/validate.sh "org.apache.rat:apache-rat-plugin:check -N" || exit $?
@@ -97,17 +102,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
           echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
 
-      - name: "Flink Checkout"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          path: ${{ env.CHECKOUT_MOUNT_DIR }}
-
-      - name: "Copy"
-        working-directory: ${{ env.CHECKOUT_MOUNT_DIR }}
+      - name: "Checkout branch"
         run: |
-          mkdir -p ${{ env.CHECKOUT_DIR }}
-          mv ./* ${{ env.CHECKOUT_DIR }}/
+          git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Compile Flink"
         working-directory: ${{ env.CHECKOUT_DIR }}
@@ -139,17 +136,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
           echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
 
-      - name: "Flink Checkout"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          path: ${{ env.CHECKOUT_MOUNT_DIR }}
-
-      - name: "Copy"
-        working-directory: ${{ env.CHECKOUT_MOUNT_DIR }}
+      - name: "Checkout branch"
         run: |
-          mkdir -p ${{ env.CHECKOUT_DIR }}
-          mv ./* ${{ env.CHECKOUT_DIR }}/
+          git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v2
@@ -201,17 +190,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
           echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
 
-      - name: "Flink Checkout"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          path: ${{ env.CHECKOUT_MOUNT_DIR }}
-
-      - name: "Copy"
-        working-directory: ${{ env.CHECKOUT_MOUNT_DIR }}
+      - name: "Checkout branch"
         run: |
-          mkdir -p ${{ env.CHECKOUT_DIR }}
-          mv ./* ${{ env.CHECKOUT_DIR }}/
+          git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v2
@@ -280,16 +261,14 @@ jobs:
     outputs:
       skip-e2e: ${{ steps.docs-only-pr-check.skip-e2e }}
     steps:
-      - name: "Flink Checkout"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          path: ${{ env.CHECKOUT_MOUNT_DIR }}
+      - name: "Checkout branch"
+        run: |
+          git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
 
       # Skip e2e test execution if this is a documentation only pull request (master / release builds will still be checked regularly)
       - name: "Check if it's a docs-only PR (i.e. e2e tests can be skipped)"
         id: docs-only-pr-check
-        working-directory: ${{ env.CHECKOUT_MOUNT_DIR }}
+        working-directory: ${{ env.CHECKOUT_DIR }}
         run: |
           source ./tools/azure-pipelines/build_properties.sh
           if is_docs_only_pullrequest; then
@@ -323,17 +302,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_${{inputs.jdk-version}}_X64" >> ${GITHUB_ENV}
           echo "PATH=$JAVA_HOME_${{inputs.jdk-version}}_X64/bin:$PATH" >> ${GITHUB_ENV}
 
-      - name: "Flink Checkout"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          path: ${{ env.CHECKOUT_MOUNT_DIR }}
-
-      - name: "Copy"
-        working-directory: ${{ env.CHECKOUT_MOUNT_DIR }}
+      - name: "Checkout branch"
         run: |
-          mkdir -p ${{ env.CHECKOUT_DIR }}
-          mv ./* ${{ env.CHECKOUT_DIR }}/
+          git clone --single-branch --branch ${{inputs.branch}} https://github.com/${{inputs.repo}} ${{ env.CHECKOUT_DIR }}
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v2

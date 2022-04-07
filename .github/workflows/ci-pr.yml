@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: "Hadoop 2.8.3/Java 8/Scala 2.12"
+name: "PR"
 
-on: [workflow_dispatch]
+on: [pull_request_target]
 
 permissions: read-all
 
@@ -23,29 +23,7 @@ jobs:
   ci:
     uses: ./.github/workflows/flink-ci-template.yml
     with:
+      repo: ${{github.event.pull_request.head.repo.full_name}}
+      branch: ${{github.event.pull_request.head.ref}}
       environment: 'PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Djdk11 -Pjava11-target"'
       jdk-version: 11
-    secrets:
-      s3_bucket: ${{ secrets.IT_CASE_S3_BUCKET }}
-      s3_access_key: ${{ secrets.IT_CASE_S3_ACCESS_KEY }}
-      s3_secret_key: ${{ secrets.IT_CASE_S3_SECRET_KEY }}
-      glue_schema_access_key: ${{ secrets.IT_CASE_GLUE_SCHEMA_ACCESS_KEY }}
-      glue_schema_secret_key: ${{ secrets.IT_CASE_GLUE_SCHEMA_SECRET_KEY }}
-  docs-404-check:
-    runs-on: ubuntu-latest
-    container:
-      image: chesnay/flink-ci:java_8_11_xenial
-    steps:
-      - name: "Checks out Flink"
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-
-      - name: "Check if PR contains docs change"
-        run: |
-          source ./tools/azure-pipelines/build_properties.sh
-          pr_contains_docs_changes
-        shell: bash
-
-      - name: "Builds docs"
-        run: ./tools/ci/docs.sh
