@@ -57,7 +57,7 @@ env:
 
 jobs:
   qa:
-    name: "Basic QA"
+    name: "Basic Q"
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial_m2
