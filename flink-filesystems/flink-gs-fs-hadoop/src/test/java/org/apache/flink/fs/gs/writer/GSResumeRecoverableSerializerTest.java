@@ -20,9 +20,7 @@ package org.apache.flink.fs.gs.writer;
 
 import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;

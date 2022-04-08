@@ -27,7 +27,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.facebook.presto.hive.s3.PrestoS3FileSystem;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -39,10 +39,10 @@ import static org.junit.Assert.assertTrue;
  * Unit tests for the S3 file system support via Presto's PrestoS3FileSystem. These tests do not
  * actually read from or write to S3.
  */
-public class PrestoS3FileSystemTest {
+class PrestoS3FileSystemTest {
 
     @Test
-    public void testConfigPropagation() throws Exception {
+    void testConfigPropagation() throws Exception {
         final Configuration conf = new Configuration();
         conf.setString("s3.access-key", "test_access_key_id");
         conf.setString("s3.secret-key", "test_secret_access_key");
@@ -54,7 +54,7 @@ public class PrestoS3FileSystemTest {
     }
 
     @Test
-    public void testConfigPropagationWithPrestoPrefix() throws Exception {
+    void testConfigPropagationWithPrestoPrefix() throws Exception {
         final Configuration conf = new Configuration();
         conf.setString("presto.s3.access-key", "test_access_key_id");
         conf.setString("presto.s3.secret-key", "test_secret_access_key");
@@ -66,7 +66,7 @@ public class PrestoS3FileSystemTest {
     }
 
     @Test
-    public void testConfigPropagationAlternateStyle() throws Exception {
+    void testConfigPropagationAlternateStyle() throws Exception {
         final Configuration conf = new Configuration();
         conf.setString("s3.access.key", "test_access_key_id");
         conf.setString("s3.secret.key", "test_secret_access_key");
@@ -78,7 +78,7 @@ public class PrestoS3FileSystemTest {
     }
 
     @Test
-    public void testShadingOfAwsCredProviderConfig() {
+    void testShadingOfAwsCredProviderConfig() {
         final Configuration conf = new Configuration();
         conf.setString(
                 "presto.s3.credentials-provider",

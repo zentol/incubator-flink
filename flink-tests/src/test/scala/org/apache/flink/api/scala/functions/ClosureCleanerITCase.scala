@@ -47,7 +47,7 @@ class ClosureCleanerITCase(mode: TestExecutionMode) extends MultipleProgramsTest
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(result, resultPath)
   }

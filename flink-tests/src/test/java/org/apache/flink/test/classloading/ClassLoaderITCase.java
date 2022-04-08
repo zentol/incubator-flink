@@ -147,7 +147,7 @@ public class ClassLoaderITCase extends TestLogger {
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         TestStreamEnvironment.unsetAsContext();
         TestEnvironment.unsetAsContext();

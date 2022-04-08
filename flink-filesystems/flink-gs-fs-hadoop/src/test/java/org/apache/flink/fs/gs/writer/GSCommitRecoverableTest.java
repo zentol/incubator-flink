@@ -22,10 +22,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.fs.gs.GSFileSystemOptions;
 import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 /** Test {@link GSResumeRecoverable}. */
@@ -70,7 +69,7 @@ public class GSCommitRecoverableTest {
 
     private GSBlobIdentifier blobIdentifier;
 
-    @Before
+    @BeforeEach
     public void before() {
         blobIdentifier = new GSBlobIdentifier("foo", "bar");
     }
@@ -84,19 +83,23 @@ public class GSCommitRecoverableTest {
     }
 
     /** Ensure that the list of component object ids cannot be added to. */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldNotAddComponentId() {
         GSCommitRecoverable commitRecoverable =
                 new GSCommitRecoverable(blobIdentifier, componentObjectIds);
-        commitRecoverable.componentObjectIds.add(UUID.randomUUID());
+
+        assertThatThrownBy(() -> commitRecoverable.componentObjectIds.add(UUID.randomUUID()))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     /** Ensure that component object ids can't be updated. */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldNotModifyComponentId() {
         GSCommitRecoverable commitRecoverable =
                 new GSCommitRecoverable(blobIdentifier, componentObjectIds);
-        commitRecoverable.componentObjectIds.set(0, UUID.randomUUID());
+
+        assertThatThrownBy(() -> commitRecoverable.componentObjectIds.set(0, UUID.randomUUID()))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

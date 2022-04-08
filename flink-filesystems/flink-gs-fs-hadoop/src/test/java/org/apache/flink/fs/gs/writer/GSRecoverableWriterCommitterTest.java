@@ -25,11 +25,9 @@ import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 import org.apache.flink.fs.gs.storage.MockBlobStorage;
 import org.apache.flink.fs.gs.utils.BlobUtils;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -105,7 +103,7 @@ public class GSRecoverableWriterCommitterTest {
 
     private GSBlobIdentifier blobIdentifier;
 
-    @Before
+    @BeforeEach
     public void before() {
         Configuration flinkConfig = new Configuration();
         if (temporaryBucketName != null) {
@@ -122,7 +120,7 @@ public class GSRecoverableWriterCommitterTest {
         expectedBytes = new ByteArrayOutputStream();
     }
 
-    @After
+    @AfterEach
     public void after() throws IOException {
         expectedBytes.close();
     }

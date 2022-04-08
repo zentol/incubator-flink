@@ -22,10 +22,8 @@ import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 import org.apache.flink.fs.gs.storage.GSBlobStorage;
 import org.apache.flink.fs.gs.storage.MockBlobStorage;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -91,7 +89,7 @@ public class GSChecksumWriteChannelTest {
 
     private GSBlobIdentifier blobIdentifier;
 
-    @Before
+    @BeforeEach
     public void before() throws IOException {
         Random random = new Random();
         random.setSeed(RANDOM_SEED);

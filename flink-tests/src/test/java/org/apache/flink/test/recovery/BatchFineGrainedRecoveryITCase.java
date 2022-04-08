@@ -206,7 +206,7 @@ public class BatchFineGrainedRecoveryITCase extends TestLogger {
         failureTracker = new GlobalMapFailureTracker(MAP_NUMBER);
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception {
         if (client != null) {
             client.close();

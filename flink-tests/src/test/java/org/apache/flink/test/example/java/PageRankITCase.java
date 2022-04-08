@@ -66,7 +66,7 @@ public class PageRankITCase extends MultipleProgramsTestBase {
         edgesPath = edgesFile.toURI().toString();
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         compareKeyValuePairsWithDelta(expected, resultPath, " ", 0.01);
     }

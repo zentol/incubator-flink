@@ -22,9 +22,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.LimitedConnectionsFileSystem;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -36,12 +34,10 @@ import static org.junit.Assert.assertTrue;
  * Test that the Hadoop file system wrapper correctly picks up connection limiting settings for the
  * correct file systems.
  */
-public class LimitedConnectionsConfigurationTest {
-
-    @Rule public final TemporaryFolder tempDir = new TemporaryFolder();
+class LimitedConnectionsConfigurationTest {
 
     @Test
-    public void testConfiguration() throws Exception {
+    void testConfiguration() throws Exception {
 
         // nothing configured, we should get a regular file system
         FileSystem hdfs = FileSystem.get(URI.create("hdfs://localhost:12345/a/b/c"));

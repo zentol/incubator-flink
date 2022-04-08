@@ -24,10 +24,8 @@ import org.apache.flink.fs.gs.GSFileSystemOptions;
 import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 import org.apache.flink.fs.gs.storage.MockBlobStorage;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -81,7 +80,7 @@ public class GSRecoverableWriterTest {
 
     private GSBlobIdentifier blobIdentifier;
 
-    @Before
+    @BeforeEach
     public void before() {
         MockBlobStorage storage = new MockBlobStorage();
         blobIdentifier = new GSBlobIdentifier("foo", "bar");
@@ -118,22 +117,22 @@ public class GSRecoverableWriterTest {
         assertNotNull(stream);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testOpenWithEmptyBucketName() throws IOException {
         Path path = new Path("gs:///bar");
-        writer.open(path);
+        assertThatThrownBy(() -> writer.open(path)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testOpenWithEmptyObjectName() throws IOException {
         Path path = new Path("gs://foo/");
-        writer.open(path);
+        assertThatThrownBy(() -> writer.open(path)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testOpenWithMissingObjectName() throws IOException {
         Path path = new Path("gs://foo");
-        writer.open(path);
+        assertThatThrownBy(() -> writer.open(path)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

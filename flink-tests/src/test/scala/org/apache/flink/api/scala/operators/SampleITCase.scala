@@ -42,7 +42,7 @@ class SampleITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mod
     ExecutionEnvironment.getExecutionEnvironment.setParallelism(5)
   }
 
-  @After
+  @AfterEach
   def after() = {
     TestBaseUtils.containsResultAsText(result, getSourceStrings)
   }

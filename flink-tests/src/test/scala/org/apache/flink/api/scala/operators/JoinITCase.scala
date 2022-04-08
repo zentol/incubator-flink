@@ -46,7 +46,7 @@ class JoinITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode)
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(expected, resultPath)
   }

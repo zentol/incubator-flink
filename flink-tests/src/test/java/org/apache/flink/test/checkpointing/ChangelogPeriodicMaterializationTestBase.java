@@ -153,7 +153,7 @@ public abstract class ChangelogPeriodicMaterializationTestBase extends TestLogge
         cluster.getMiniCluster().overrideRestoreModeForChangelogStateBackend();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         cluster.after();
         // clear result in sink

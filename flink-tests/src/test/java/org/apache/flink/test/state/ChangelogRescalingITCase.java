@@ -138,7 +138,7 @@ public class ChangelogRescalingITCase extends TestLogger {
         cluster.before();
     }
 
-    @After
+    @AfterEach
     public void after() {
         if (cluster != null) {
             cluster.after();

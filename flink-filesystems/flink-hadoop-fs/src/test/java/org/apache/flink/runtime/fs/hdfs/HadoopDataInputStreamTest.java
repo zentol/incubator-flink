@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -36,13 +36,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 /** Tests for the {@link HadoopDataInputStream}. */
-public class HadoopDataInputStreamTest {
+class HadoopDataInputStreamTest {
 
     private FSDataInputStream verifyInputStream;
     private HadoopDataInputStream testInputStream;
 
     @Test
-    public void testSeekSkip() throws IOException {
+    void testSeekSkip() throws IOException {
         verifyInputStream =
                 spy(
                         new FSDataInputStream(

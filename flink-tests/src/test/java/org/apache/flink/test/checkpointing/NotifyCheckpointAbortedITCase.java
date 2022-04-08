@@ -133,7 +133,7 @@ public class NotifyCheckpointAbortedITCase extends TestLogger {
         TestingCompletedCheckpointStore.reset();
     }
 
-    @After
+    @AfterEach
     public void shutdown() {
         if (cluster != null) {
             cluster.after();

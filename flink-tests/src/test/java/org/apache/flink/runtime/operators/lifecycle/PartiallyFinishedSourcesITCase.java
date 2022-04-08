@@ -103,7 +103,7 @@ public class PartiallyFinishedSourcesITCase extends TestLogger {
         miniClusterResource.before();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (miniClusterResource != null) {
             miniClusterResource.after();

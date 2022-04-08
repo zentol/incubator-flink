@@ -19,9 +19,8 @@
 package org.apache.flink.runtime.fs.hdfs;
 
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,10 +30,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** Tests that validate the behavior of the Hadoop File System Factory. */
-public class HadoopFsFactoryTest extends TestLogger {
+class HadoopFsFactoryTest {
 
     @Test
-    public void testCreateHadoopFsWithoutConfig() throws Exception {
+    void testCreateHadoopFsWithoutConfig() throws Exception {
         final URI uri = URI.create("hdfs://localhost:12345/");
 
         HadoopFsFactory factory = new HadoopFsFactory();
@@ -46,7 +45,7 @@ public class HadoopFsFactoryTest extends TestLogger {
     }
 
     @Test
-    public void testCreateHadoopFsWithMissingAuthority() throws Exception {
+    void testCreateHadoopFsWithMissingAuthority() throws Exception {
         final URI uri = URI.create("hdfs:///my/path");
 
         HadoopFsFactory factory = new HadoopFsFactory();

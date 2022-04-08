@@ -161,7 +161,7 @@ public class IncrementalStateReuseAfterFailureITCase {
         miniClusterResource.before();
     }
 
-    @After
+    @AfterEach
     public void after() {
         miniClusterResource.after();
     }

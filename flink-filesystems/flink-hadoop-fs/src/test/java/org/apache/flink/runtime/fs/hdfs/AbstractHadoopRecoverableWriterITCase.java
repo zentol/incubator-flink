@@ -27,15 +27,12 @@ import org.apache.flink.core.fs.RecoverableWriter;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.util.MathUtils;
 import org.apache.flink.util.StringUtils;
-import org.apache.flink.util.TestLogger;
 
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -49,8 +46,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 /** Abstract integration test class for implementations of hadoop recoverable writer. */
-public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
+abstract class AbstractHadoopRecoverableWriterITCase {
     // ----------------------- Test Specific configuration -----------------------
 
     private static final Random RND = new Random();
@@ -59,7 +58,7 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
 
     private static FileSystem fileSystem;
 
-    // this is set for every test @Before
+    // this is set for every test @BeforeEach
     protected Path basePathForTest;
 
     // ----------------------- Test Data to be used -----------------------
@@ -75,18 +74,16 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
 
     protected static boolean skipped = true;
 
-    @ClassRule public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
-
-    @AfterClass
-    public static void cleanUp() throws Exception {
+    @AfterAll
+    static void cleanUp() throws Exception {
         if (!skipped) {
             getFileSystem().delete(basePath, true);
         }
         FileSystem.initialize(new Configuration());
     }
 
-    @Before
-    public void prepare() throws Exception {
+    @BeforeEach
+    void prepare() throws Exception {
         basePathForTest = new Path(basePath, StringUtils.getRandomString(RND, 16, 16, 'a', 'z'));
 
         cleanupLocalDir();
@@ -117,8 +114,8 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
         }
     }
 
-    @After
-    public void cleanupAndCheckTmpCleanup() throws Exception {
+    @AfterEach
+    void cleanupAndCheckTmpCleanup() throws Exception {
         final String defaultTmpDir = getLocalTmpDir();
         final java.nio.file.Path localTmpDir = Paths.get(defaultTmpDir);
 
@@ -143,7 +140,7 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
     // ----------------------- Test Normal Execution -----------------------
 
     @Test
-    public void testCloseWithNoData() throws Exception {
+    void testCloseWithNoData() throws Exception {
         final RecoverableWriter writer = getRecoverableWriter();
         final Path path = new Path(basePathForTest, "part-0");
 
@@ -153,7 +150,7 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
     }
 
     @Test
-    public void testCommitAfterNormalClose() throws Exception {
+    void testCommitAfterNormalClose() throws Exception {
         final RecoverableWriter writer = getRecoverableWriter();
         final Path path = new Path(basePathForTest, "part-0");
 
@@ -165,7 +162,7 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
     }
 
     @Test
-    public void testCommitAfterPersist() throws Exception {
+    void testCommitAfterPersist() throws Exception {
         final RecoverableWriter writer = getRecoverableWriter();
         final Path path = new Path(basePathForTest, "part-0");
 
@@ -179,8 +176,8 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
         Assert.assertEquals(testData1 + testData2, getContentsOfFile(path));
     }
 
-    @Test(expected = FileNotFoundException.class)
-    public void testCleanupRecoverableState() throws Exception {
+    @Test
+    void testCleanupRecoverableState() throws Exception {
         final RecoverableWriter writer = getRecoverableWriter();
         final Path path = new Path(basePathForTest, "part-0");
 
@@ -198,21 +195,27 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
         boolean successfullyDeletedState = writer.cleanupRecoverableState(recoverable);
         Assert.assertTrue(successfullyDeletedState);
 
-        int retryTimes = 10;
-        final long delayMs = 1000;
-        // Because the s3 is eventually consistency the s3 file might still be found after we delete
-        // it.
-        // So we try multi-times to verify that the file was deleted at last.
-        while (retryTimes > 0) {
-            // this should throw the exception as we deleted the file.
-            getContentsOfFile(new Path('/' + getIncompleteObjectName(recoverable)));
-            retryTimes--;
-            Thread.sleep(delayMs);
-        }
+        assertThatThrownBy(
+                        () -> {
+                            int retryTimes = 10;
+                            final long delayMs = 1000;
+                            // Because the s3 is eventually consistency the s3 file might still be
+                            // found after we delete
+                            // it.
+                            // So we try multi-times to verify that the file was deleted at last.
+                            while (retryTimes > 0) {
+                                // this should throw the exception as we deleted the file.
+                                getContentsOfFile(
+                                        new Path('/' + getIncompleteObjectName(recoverable)));
+                                retryTimes--;
+                                Thread.sleep(delayMs);
+                            }
+                        })
+                .isInstanceOf(FileNotFoundException.class);
     }
 
     @Test
-    public void testCallingDeleteObjectTwiceDoesNotThroughException() throws Exception {
+    void testCallingDeleteObjectTwiceDoesNotThroughException() throws Exception {
         final RecoverableWriter writer = getRecoverableWriter();
         final Path path = new Path(basePathForTest, "part-0");
 
@@ -237,7 +240,7 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
     // ----------------------- Test Recovery -----------------------
 
     @Test
-    public void testCommitAfterRecovery() throws Exception {
+    void testCommitAfterRecovery() throws Exception {
         final Path path = new Path(basePathForTest, "part-0");
 
         final RecoverableWriter initWriter = getRecoverableWriter();
@@ -279,42 +282,42 @@ public abstract class AbstractHadoopRecoverableWriterITCase extends TestLogger {
     private static final String FINAL_WITH_EXTRA_STATE = "FINAL";
 
     @Test
-    public void testRecoverWithEmptyState() throws Exception {
+    void testRecoverWithEmptyState() throws Exception {
         testResumeAfterMultiplePersistWithSmallData(INIT_EMPTY_PERSIST, testData3);
     }
 
     @Test
-    public void testRecoverWithState() throws Exception {
+    void testRecoverWithState() throws Exception {
         testResumeAfterMultiplePersistWithSmallData(
                 INTERM_WITH_STATE_PERSIST, testData1 + testData3);
     }
 
     @Test
-    public void testRecoverFromIntermWithoutAdditionalState() throws Exception {
+    void testRecoverFromIntermWithoutAdditionalState() throws Exception {
         testResumeAfterMultiplePersistWithSmallData(
                 INTERM_WITH_NO_ADDITIONAL_STATE_PERSIST, testData1 + testData3);
     }
 
     @Test
-    public void testRecoverAfterMultiplePersistsState() throws Exception {
+    void testRecoverAfterMultiplePersistsState() throws Exception {
         testResumeAfterMultiplePersistWithSmallData(
                 FINAL_WITH_EXTRA_STATE, testData1 + testData2 + testData3);
     }
 
     @Test
-    public void testRecoverWithStateWithMultiPart() throws Exception {
+    void testRecoverWithStateWithMultiPart() throws Exception {
         testResumeAfterMultiplePersistWithMultiPartUploads(
                 INTERM_WITH_STATE_PERSIST, bigDataChunk + bigDataChunk);
     }
 
     @Test
-    public void testRecoverFromIntermWithoutAdditionalStateWithMultiPart() throws Exception {
+    void testRecoverFromIntermWithoutAdditionalStateWithMultiPart() throws Exception {
         testResumeAfterMultiplePersistWithMultiPartUploads(
                 INTERM_WITH_NO_ADDITIONAL_STATE_PERSIST, bigDataChunk + bigDataChunk);
     }
 
     @Test
-    public void testRecoverAfterMultiplePersistsStateWithMultiPart() throws Exception {
+    void testRecoverAfterMultiplePersistsStateWithMultiPart() throws Exception {
         testResumeAfterMultiplePersistWithMultiPartUploads(
                 FINAL_WITH_EXTRA_STATE, bigDataChunk + bigDataChunk + bigDataChunk);
     }

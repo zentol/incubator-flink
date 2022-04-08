@@ -26,18 +26,17 @@ import org.apache.flink.util.OperatingSystem;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 
 /** Behavior tests for HDFS. */
-public class HdfsBehaviorTest extends FileSystemBehaviorTestSuite {
+class HdfsBehaviorTest extends FileSystemBehaviorTestSuite {
 
-    @ClassRule public static final TemporaryFolder TMP = new TemporaryFolder();
+    @TempDir static File TMP;
 
     private static MiniDFSCluster hdfsCluster;
 
@@ -47,16 +46,16 @@ public class HdfsBehaviorTest extends FileSystemBehaviorTestSuite {
 
     // ------------------------------------------------------------------------
 
-    @BeforeClass
-    public static void verifyOS() {
+    @BeforeAll
+    static void verifyOS() {
         Assume.assumeTrue(
                 "HDFS cluster cannot be started on Windows without extensions.",
                 !OperatingSystem.isWindows());
     }
 
-    @BeforeClass
-    public static void createHDFS() throws Exception {
-        final File baseDir = TMP.newFolder();
+    @BeforeAll
+    static void createHDFS() throws Exception {
+        final File baseDir = TMP;
 
         Configuration hdConf = new Configuration();
         hdConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
@@ -69,8 +68,8 @@ public class HdfsBehaviorTest extends FileSystemBehaviorTestSuite {
         basePath = new Path(hdfs.getUri().toString() + "/tests");
     }
 
-    @AfterClass
-    public static void destroyHDFS() throws Exception {
+    @AfterAll
+    static void destroyHDFS() throws Exception {
         if (hdfsCluster != null) {
             hdfsCluster
                     .getFileSystem()

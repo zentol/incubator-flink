@@ -44,7 +44,7 @@ class DistinctITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(m
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(expected, resultPath)
   }

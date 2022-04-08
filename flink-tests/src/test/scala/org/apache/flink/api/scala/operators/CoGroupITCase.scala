@@ -48,7 +48,7 @@ class CoGroupITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mo
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(expectedResult, resultPath)
   }

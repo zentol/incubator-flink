@@ -31,12 +31,12 @@ import org.apache.flink.util.StringUtils;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
-import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -55,10 +55,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** An implementation of the {@link FileSystemBehaviorTestSuite} for Azure based file system. */
-@RunWith(Parameterized.class)
-public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
+class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
 
-    @Parameterized.Parameter public String scheme;
+    private String scheme;
 
     private static final String CONTAINER = System.getenv("ARTIFACTS_AZURE_CONTAINER");
     private static final String ACCOUNT = System.getenv("ARTIFACTS_AZURE_STORAGE_ACCOUNT");
@@ -72,8 +71,8 @@ public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
 
     // Azure Blob Storage defaults to https only storage accounts. We check if http support has been
     // enabled on a best effort basis and test http if so.
-    @Parameterized.Parameters(name = "Scheme = {0}")
-    public static List<String> parameters() throws IOException {
+    // TODO: refactor; maybe as some overridden method that is used as a method source
+    static List<String> parameters() throws IOException {
         boolean httpsOnly = isHttpsTrafficOnly();
         return httpsOnly ? Arrays.asList("wasbs") : Arrays.asList("wasb", "wasbs");
     }
@@ -102,8 +101,8 @@ public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
                 .enableHttpsTrafficOnly();
     }
 
-    @BeforeClass
-    public static void checkCredentialsAndSetup() throws IOException {
+    @BeforeAll
+    static void checkCredentialsAndSetup() throws IOException {
         // check whether credentials and container details exist
         Assume.assumeTrue(
                 "Azure container not configured, skipping test...",
@@ -119,8 +118,14 @@ public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
         FileSystem.initialize(conf);
     }
 
-    @AfterClass
-    public static void clearFsConfig() throws IOException {
+    @BeforeEach
+    @MethodSource("parameters")
+    void setScheme(String scheme) {
+        this.scheme = scheme;
+    }
+
+    @AfterAll
+    static void clearFsConfig() throws IOException {
         FileSystem.initialize(new Configuration());
     }
 
@@ -144,7 +149,7 @@ public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
     }
 
     @Test
-    public void testSimpleFileWriteAndRead() throws Exception {
+    void testSimpleFileWriteAndRead() throws Exception {
         final long deadline = System.nanoTime() + 30_000_000_000L; // 30 secs
 
         final String testLine = "Hello Upload!";
@@ -177,7 +182,7 @@ public class AzureFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
     }
 
     @Test
-    public void testDirectoryListing() throws Exception {
+    void testDirectoryListing() throws Exception {
         final long deadline = System.nanoTime() + 30_000_000_000L; // 30 secs
 
         final Path directory = new Path(getBasePath() + "/testdir/");

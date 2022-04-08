@@ -24,9 +24,7 @@ import org.apache.flink.fs.gs.TestUtils;
 import org.apache.flink.shaded.guava30.com.google.common.collect.MapDifference;
 import org.apache.flink.shaded.guava30.com.google.common.collect.Maps;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -39,7 +37,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Test construction of Hadoop config in GSFileSystemFactory. */
-@RunWith(Parameterized.class)
 public class ConfigUtilsHadoopTest {
 
     /* The test case description. */

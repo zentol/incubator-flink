@@ -25,18 +25,18 @@ import org.apache.flink.core.fs.FileSystemKind;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.testutils.oss.OSSTestCredentials;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.IOException;
 import java.util.UUID;
 
 /** An implementation of the {@link FileSystemBehaviorTestSuite} for the OSS file system. */
-public class HadoopOSSFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
+class HadoopOSSFileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
     private static final String TEST_DATA_DIR = "tests-" + UUID.randomUUID();
 
-    @BeforeClass
-    public static void setup() throws IOException {
+    @BeforeAll
+    static void setup() throws IOException {
         OSSTestCredentials.assumeCredentialsAvailable();
 
         final Configuration conf = new Configuration();
@@ -61,8 +61,8 @@ public class HadoopOSSFileSystemBehaviorITCase extends FileSystemBehaviorTestSui
         return FileSystemKind.OBJECT_STORE;
     }
 
-    @AfterClass
-    public static void clearFsConfig() throws IOException {
+    @AfterAll
+    static void clearFsConfig() throws IOException {
         FileSystem.initialize(new Configuration());
     }
 }

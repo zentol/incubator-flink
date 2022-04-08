@@ -78,7 +78,7 @@ public class JsonJobGraphGenerationTest {
         System.setErr(new PrintStream(discards));
     }
 
-    @After
+    @AfterEach
     public void restoreStreams() {
         if (out != null) {
             System.setOut(out);

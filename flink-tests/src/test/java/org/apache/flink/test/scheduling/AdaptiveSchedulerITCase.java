@@ -110,7 +110,7 @@ public class AdaptiveSchedulerITCase extends TestLogger {
         assumeTrue(ClusterOptions.isAdaptiveSchedulerEnabled(configuration));
     }
 
-    @After
+    @AfterEach
     public void cancelRunningJobs() {
         MINI_CLUSTER_WITH_CLIENT_RESOURCE.cancelAllJobsAndWaitUntilSlotsAreFreed();
     }

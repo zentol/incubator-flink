@@ -298,7 +298,7 @@ public class ChangelogCompatibilityITCase {
         miniClusterResource.before();
     }
 
-    @After
+    @AfterEach
     public void after() {
         if (miniClusterResource != null) {
             miniClusterResource.after();

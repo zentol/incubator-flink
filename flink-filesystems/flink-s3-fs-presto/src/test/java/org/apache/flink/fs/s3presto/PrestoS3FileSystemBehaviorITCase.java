@@ -25,8 +25,8 @@ import org.apache.flink.core.fs.FileSystemKind;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.testutils.s3.S3TestCredentials;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -34,12 +34,12 @@ import java.util.UUID;
 /**
  * An implementation of the {@link FileSystemBehaviorTestSuite} for the s3a-based S3 file system.
  */
-public class PrestoS3FileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
+class PrestoS3FileSystemBehaviorITCase extends FileSystemBehaviorTestSuite {
 
     private static final String TEST_DATA_DIR = "tests-" + UUID.randomUUID();
 
-    @BeforeClass
-    public static void checkCredentialsAndSetup() throws IOException {
+    @BeforeAll
+    static void checkCredentialsAndSetup() throws IOException {
         // check whether credentials exist
         S3TestCredentials.assumeCredentialsAvailable();
 
@@ -50,8 +50,8 @@ public class PrestoS3FileSystemBehaviorITCase extends FileSystemBehaviorTestSuit
         FileSystem.initialize(conf);
     }
 
-    @AfterClass
-    public static void clearFsConfig() throws IOException {
+    @AfterAll
+    static void clearFsConfig() throws IOException {
         FileSystem.initialize(new Configuration());
     }
 

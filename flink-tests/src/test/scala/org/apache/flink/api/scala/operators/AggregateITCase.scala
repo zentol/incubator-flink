@@ -46,7 +46,7 @@ class AggregateITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(expectedResult, resultPath)
   }

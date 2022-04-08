@@ -23,9 +23,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.runtime.util.HadoopUtils;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,15 +41,15 @@ import static org.junit.Assert.assertTrue;
  * configuration and the environment variables.
  */
 @SuppressWarnings("deprecation")
-public class HadoopConfigLoadingTest {
+class HadoopConfigLoadingTest {
 
     private static final String IN_CP_CONFIG_KEY = "cp_conf_key";
     private static final String IN_CP_CONFIG_VALUE = "oompf!";
 
-    @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir File tempFolder;
 
     @Test
-    public void loadFromClasspathByDefault() {
+    void loadFromClasspathByDefault() {
         org.apache.hadoop.conf.Configuration hadoopConf =
                 HadoopUtils.getHadoopConfiguration(new Configuration());
 
@@ -58,15 +57,15 @@ public class HadoopConfigLoadingTest {
     }
 
     @Test
-    public void loadFromLegacyConfigEntries() throws Exception {
+    void loadFromLegacyConfigEntries() throws Exception {
         final String k1 = "shipmate";
         final String v1 = "smooth sailing";
 
         final String k2 = "pirate";
         final String v2 = "Arrg, yer scurvy dog!";
 
-        final File file1 = tempFolder.newFile("core-site.xml");
-        final File file2 = tempFolder.newFile("hdfs-site.xml");
+        final File file1 = new File(tempFolder, "core-site.xml");
+        final File file2 = new File(tempFolder, "hdfs-site.xml");
 
         printConfig(file1, k1, v1);
         printConfig(file2, k2, v2);
@@ -86,14 +85,14 @@ public class HadoopConfigLoadingTest {
     }
 
     @Test
-    public void loadFromHadoopConfEntry() throws Exception {
+    void loadFromHadoopConfEntry() throws Exception {
         final String k1 = "singing?";
         final String v1 = "rain!";
 
         final String k2 = "dancing?";
         final String v2 = "shower!";
 
-        final File confDir = tempFolder.newFolder();
+        final File confDir = tempFolder;
 
         final File file1 = new File(confDir, "core-site.xml");
         final File file2 = new File(confDir, "hdfs-site.xml");
@@ -115,7 +114,7 @@ public class HadoopConfigLoadingTest {
     }
 
     @Test
-    public void loadFromEnvVariables() throws Exception {
+    void loadFromEnvVariables() throws Exception {
         final String k1 = "where?";
         final String v1 = "I'm on a boat";
         final String k2 = "when?";
@@ -129,9 +128,9 @@ public class HadoopConfigLoadingTest {
         final String k6 = "for real?";
         final String v6 = "quite so...";
 
-        final File hadoopConfDir = tempFolder.newFolder();
+        final File hadoopConfDir = new File(tempFolder, "hadoopConfDir");
 
-        final File hadoopHome = tempFolder.newFolder();
+        final File hadoopHome = new File(tempFolder, "hadoopHome");
 
         final File hadoopHomeConf = new File(hadoopHome, "conf");
         final File hadoopHomeEtc = new File(hadoopHome, "etc/hadoop");
@@ -179,7 +178,7 @@ public class HadoopConfigLoadingTest {
     }
 
     @Test
-    public void loadOverlappingConfig() throws Exception {
+    void loadOverlappingConfig() throws Exception {
         final String k1 = "key1";
         final String k2 = "key2";
         final String k3 = "key3";
@@ -192,10 +191,10 @@ public class HadoopConfigLoadingTest {
         final String v4 = "from HADOOP_HOME/etc/hadoop";
         final String v5 = "from HADOOP_HOME/conf";
 
-        final File hadoopConfDir = tempFolder.newFolder("hadoopConfDir");
-        final File hadoopConfEntryDir = tempFolder.newFolder("hadoopConfEntryDir");
-        final File legacyConfDir = tempFolder.newFolder("legacyConfDir");
-        final File hadoopHome = tempFolder.newFolder("hadoopHome");
+        final File hadoopConfDir = new File(tempFolder, "hadoopConfDir");
+        final File hadoopConfEntryDir = new File(tempFolder, "hadoopConfEntryDir");
+        final File legacyConfDir = new File(tempFolder, "legacyConfDir");
+        final File hadoopHome = new File(tempFolder, "hadoopHome");
 
         final File hadoopHomeConf = new File(hadoopHome, "conf");
         final File hadoopHomeEtc = new File(hadoopHome, "etc/hadoop");
@@ -266,7 +265,7 @@ public class HadoopConfigLoadingTest {
     }
 
     @Test
-    public void loadFromFlinkConfEntry() throws Exception {
+    void loadFromFlinkConfEntry() throws Exception {
         final String prefix = "flink.hadoop.";
 
         final String k1 = "brooklyn";

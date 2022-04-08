@@ -28,10 +28,8 @@ import org.apache.flink.fs.gs.storage.MockBlobStorage;
 import org.apache.flink.fs.gs.writer.GSRecoverableWriter;
 import org.apache.flink.util.StringUtils;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -92,7 +90,7 @@ public class GSFileSystemScenarioTest {
 
     private boolean writeChunkSizeIsValid;
 
-    @Before
+    @BeforeEach
     public void before() {
 
         random = new Random(TestUtils.RANDOM_SEED);

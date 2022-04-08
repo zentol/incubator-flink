@@ -91,7 +91,7 @@ public class ContinuousFileProcessingCheckpointITCase extends StreamFaultToleran
         localFs = new org.apache.hadoop.fs.Path(localFsURI).getFileSystem(hdConf);
     }
 
-    @After
+    @AfterEach
     public void destroyHDFS() {
         if (baseDir != null) {
             FileUtil.fullyDelete(baseDir);

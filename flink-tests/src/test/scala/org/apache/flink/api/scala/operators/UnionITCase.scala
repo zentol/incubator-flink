@@ -43,7 +43,7 @@ class UnionITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode
     "Comment#12)\n" + "(19,6,Comment#13)\n" + "(20,6,Comment#14)\n" + "(21,6,Comment#15)\n"
 
 
-  @After
+  @AfterEach
   def after(): Unit = {
     import collection.JavaConverters._
     TestBaseUtils.compareResultAsText(ArrayBuffer(result: _*).asJava, expected)

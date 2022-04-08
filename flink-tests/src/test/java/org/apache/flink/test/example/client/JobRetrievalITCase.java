@@ -71,7 +71,7 @@ public class JobRetrievalITCase extends TestLogger {
         client = new RestClusterClient<>(clientConfig, StandaloneClusterId.getInstance());
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (client != null) {
             client.close();

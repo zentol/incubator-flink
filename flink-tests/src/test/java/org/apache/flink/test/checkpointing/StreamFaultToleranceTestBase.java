@@ -98,7 +98,7 @@ public abstract class StreamFaultToleranceTestBase extends TestLogger {
         cluster.before();
     }
 
-    @After
+    @AfterEach
     public void shutDownExistingCluster() {
         if (cluster != null) {
             cluster.after();

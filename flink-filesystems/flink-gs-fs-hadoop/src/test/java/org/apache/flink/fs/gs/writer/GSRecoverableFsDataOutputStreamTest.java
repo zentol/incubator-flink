@@ -25,10 +25,8 @@ import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 import org.apache.flink.fs.gs.storage.MockBlobStorage;
 import org.apache.flink.util.function.ThrowingRunnable;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -101,7 +99,7 @@ public class GSRecoverableFsDataOutputStreamTest {
 
     private byte byteValue;
 
-    @Before
+    @BeforeEach
     public void before() {
 
         random = new Random(TestUtils.RANDOM_SEED);

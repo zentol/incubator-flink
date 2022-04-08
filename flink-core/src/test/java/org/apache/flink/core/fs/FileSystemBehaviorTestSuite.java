@@ -21,14 +21,14 @@ package org.apache.flink.core.fs;
 import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.util.StringUtils;
 
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Random;
 
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
@@ -63,15 +63,15 @@ public abstract class FileSystemBehaviorTestSuite {
     //  Init / Cleanup
     // ------------------------------------------------------------------------
 
-    @Before
-    public void prepare() throws Exception {
+    @BeforeEach
+    void prepare() throws Exception {
         fs = getFileSystem();
         basePath = new Path(getBasePath(), randomName());
         fs.mkdirs(basePath);
     }
 
-    @After
-    public void cleanup() throws Exception {
+    @AfterEach
+    void cleanup() throws Exception {
         fs.delete(basePath, true);
     }
 
@@ -286,8 +286,8 @@ public abstract class FileSystemBehaviorTestSuite {
     }
 
     private void assumeNotObjectStore() {
-        Assume.assumeTrue(
-                "Test does not apply to object stores",
-                getFileSystemKind() != FileSystemKind.OBJECT_STORE);
+        assumeThat(getFileSystemKind())
+                .as("Test does not apply to object stores")
+                .isNotEqualTo(FileSystemKind.OBJECT_STORE);
     }
 }

@@ -251,7 +251,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
         miniClusterResource.before();
     }
 
-    @After
+    @AfterEach
     public void stopTestCluster() throws IOException {
         if (miniClusterResource != null) {
             miniClusterResource.after();

@@ -46,7 +46,7 @@ class FilterITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mod
     resultPath = tempFolder.newFile().toURI.toString
   }
 
-  @After
+  @AfterEach
   def after(): Unit = {
     TestBaseUtils.compareResultsByLinesInMemory(expected, resultPath)
   }

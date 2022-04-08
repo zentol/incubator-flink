@@ -28,12 +28,11 @@ import org.apache.flink.util.OperatingSystem;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 import java.io.BufferedReader;
@@ -52,9 +51,9 @@ import static org.mockito.Mockito.when;
  * that show that the user can use the writer with pre-2.7 versions as long as he/she does not use
  * the {@code truncate()} functionality of the underlying FS.
  */
-public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
+class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
 
-    @ClassRule public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
+    @TempDir static File TEMP_FOLDER;
 
     private static MiniDFSCluster hdfsCluster;
 
@@ -63,21 +62,21 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
 
     private static Path basePath;
 
-    @BeforeClass
-    public static void testHadoopVersion() {
+    @BeforeAll
+    static void testHadoopVersion() {
         Assume.assumeTrue(HadoopUtils.isMaxHadoopVersion(2, 7));
     }
 
-    @BeforeClass
-    public static void verifyOS() {
+    @BeforeAll
+    static void verifyOS() {
         Assume.assumeTrue(
                 "HDFS cluster cannot be started on Windows without extensions.",
                 !OperatingSystem.isWindows());
     }
 
-    @BeforeClass
-    public static void createHDFS() throws Exception {
-        final File baseDir = TEMP_FOLDER.newFolder();
+    @BeforeAll
+    static void createHDFS() throws Exception {
+        final File baseDir = TEMP_FOLDER;
 
         final Configuration hdConf = new Configuration();
         hdConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
@@ -91,8 +90,8 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
         basePath = new Path(hdfs.getUri() + "/tests");
     }
 
-    @AfterClass
-    public static void destroyHDFS() throws Exception {
+    @AfterAll
+    static void destroyHDFS() throws Exception {
         if (hdfsCluster != null) {
             hdfsCluster
                     .getFileSystem()
@@ -102,7 +101,7 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
     }
 
     @Test
-    public void testWriteAndCommitWorks() throws IOException {
+    void testWriteAndCommitWorks() throws IOException {
         final Path testPath = new Path(basePath, "test-0");
         final String expectedContent = "test_line";
 
@@ -115,7 +114,7 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
     }
 
     @Test
-    public void testRecoveryAfterClosingForCommitWorks() throws IOException {
+    void testRecoveryAfterClosingForCommitWorks() throws IOException {
         final Path testPath = new Path(basePath, "test-1");
         final String expectedContent = "test_line";
 
@@ -132,7 +131,7 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
     }
 
     @Test
-    public void testExceptionThrownWhenRecoveringWithInProgressFile() throws IOException {
+    void testExceptionThrownWhenRecoveringWithInProgressFile() throws IOException {
         final RecoverableWriter writerUnderTest = fileSystem.createRecoverableWriter();
         final RecoverableFsDataOutputStream stream =
                 writerUnderTest.open(new Path(basePath, "test-2"));
@@ -149,7 +148,7 @@ public class HadoopRecoverableWriterOldHadoopWithNoTruncateSupportTest {
     }
 
     @Test
-    public void testRecoverableWriterWithViewfsScheme() {
+    void testRecoverableWriterWithViewfsScheme() {
         final org.apache.hadoop.fs.FileSystem mockViewfs =
                 Mockito.mock(org.apache.hadoop.fs.FileSystem.class);
         when(mockViewfs.getScheme()).thenReturn("viewfs");

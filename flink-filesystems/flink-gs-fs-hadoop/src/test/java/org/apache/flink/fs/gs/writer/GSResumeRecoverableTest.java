@@ -20,10 +20,8 @@ package org.apache.flink.fs.gs.writer;
 
 import org.apache.flink.fs.gs.storage.GSBlobIdentifier;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 /** Test {@link GSResumeRecoverable}. */
@@ -83,7 +82,7 @@ public class GSResumeRecoverableTest {
 
     private GSBlobIdentifier blobIdentifier;
 
-    @Before
+    @BeforeEach
     public void before() {
         blobIdentifier = new GSBlobIdentifier("foo", "bar");
     }
@@ -99,18 +98,22 @@ public class GSResumeRecoverableTest {
     }
 
     /** Ensure that the list of component object ids cannot be added to. */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldNotAddComponentId() {
         GSResumeRecoverable resumeRecoverable =
                 new GSResumeRecoverable(blobIdentifier, componentObjectIds, position, closed);
-        resumeRecoverable.componentObjectIds.add(UUID.randomUUID());
+
+        assertThatThrownBy(() -> resumeRecoverable.componentObjectIds.add(UUID.randomUUID()))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     /** Ensure that component object ids can't be updated. */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldNotModifyComponentId() {
         GSResumeRecoverable resumeRecoverable =
                 new GSResumeRecoverable(blobIdentifier, componentObjectIds, position, closed);
-        resumeRecoverable.componentObjectIds.set(0, UUID.randomUUID());
+
+        assertThatThrownBy(() -> resumeRecoverable.componentObjectIds.set(0, UUID.randomUUID()))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }

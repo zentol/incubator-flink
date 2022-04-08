@@ -21,9 +21,7 @@ package org.apache.flink.fs.gs.utils;
 import org.apache.flink.fs.gs.TestUtils;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 

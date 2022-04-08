@@ -28,13 +28,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.util.VersionInfo;
 import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
 
 /** Behavior tests for HDFS. */
-public class HadoopLocalFileSystemBehaviorTest extends FileSystemBehaviorTestSuite {
+class HadoopLocalFileSystemBehaviorTest extends FileSystemBehaviorTestSuite {
 
-    @Rule public final TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir File tmp;
 
     @Override
     public FileSystem getFileSystem() throws Exception {
@@ -45,7 +46,7 @@ public class HadoopLocalFileSystemBehaviorTest extends FileSystemBehaviorTestSui
 
     @Override
     public Path getBasePath() throws Exception {
-        return new Path(tmp.newFolder().toURI());
+        return new Path(tmp.toURI());
     }
 
     @Override

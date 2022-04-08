@@ -102,7 +102,7 @@ public class RescaleCheckpointManuallyITCase extends TestLogger {
         cluster.before();
     }
 
-    @After
+    @AfterEach
     public void shutDownExistingCluster() {
         if (cluster != null) {
             cluster.after();
