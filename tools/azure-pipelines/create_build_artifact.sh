@@ -30,7 +30,7 @@ shift $((OPTIND-1))
 
 echo "Minimizing artifact files"
 
-# reduces the size of the artifact directory to speed up
+# reduces the size of the artifact directory to speed up2
 # the packing&upload / download&unpacking process
 # by removing files not required for subsequent stages
 
