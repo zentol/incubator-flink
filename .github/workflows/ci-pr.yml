@@ -20,16 +20,10 @@ on: [pull_request_target]
 permissions: read-all
 
 jobs:
-  safety:
-    runs-on: ubuntu-latest
-    steps:
-      - name: "check"
-        run: |
-          echo ${{github.event.pull_request.author_association}}
-
   ci:
     uses: ./.github/workflows/flink-ci-template.yml
     needs: safety
+    if: ${{github.event.pull_request.author_association}} != 'NONE'
     with:
       repo: ${{github.event.pull_request.head.repo.full_name}}
       branch: ${{github.event.pull_request.head.ref}}
