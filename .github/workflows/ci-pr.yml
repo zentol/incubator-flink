@@ -20,7 +20,17 @@ on: [pull_request_target]
 permissions: read-all
 
 jobs:
+  pre-flight:
+    runs-on: ubuntu-latest
+    steps:
+    - name: check
+      run: |
+        if [ "${{github.event.pull_request.author_association}}" = "NONE" ]; then
+          echo "CI is not run automatically for first-time contributors."
+          exit 1
+        fi
   ci:
+    needs: pre-flight
     uses: ./.github/workflows/flink-ci-template.yml
     if: github.event.pull_request.author_association != 'NONE'
     with:
