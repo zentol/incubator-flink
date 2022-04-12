@@ -20,8 +20,15 @@ on: [pull_request_target]
 permissions: read-all
 
 jobs:
+  safety:
+    steps:
+      - name: "check"
+        run: |
+          echo ${{github.event.number}}
+
   ci:
     uses: ./.github/workflows/flink-ci-template.yml
+    needs: safety
     with:
       repo: ${{github.event.pull_request.head.repo.full_name}}
       branch: ${{github.event.pull_request.head.ref}}
