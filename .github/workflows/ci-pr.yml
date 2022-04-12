@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: "check"
         run: |
-          echo ${{github.event.number}}
+          echo ${{github.event.pull_request.author_association}}
 
   ci:
     uses: ./.github/workflows/flink-ci-template.yml
