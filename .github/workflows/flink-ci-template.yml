@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     steps:
     - name: "Checkout branch"
       run: |
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     timeout-minutes: 240
     outputs:
       stringified-workflow-name: ${{ steps.workflow-prep-step.outputs.stringified-workflow-name }}
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: "Checkout branch"
         run: |
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     strategy:
       fail-fast: false
       matrix:
@@ -236,7 +236,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     outputs:
       skip-e2e: ${{ steps.docs-only-pr-check.skip-e2e }}
     steps:
@@ -264,7 +264,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_xenial
-      options: --init --user flink
+      options: --init --user flink -v /var/run/docker.sock:/var/run/docker.sock
     if: ${{ needs.e2e-prereq-check.outputs.skip-e2e != 'true' }}
     timeout-minutes: 310
     env:

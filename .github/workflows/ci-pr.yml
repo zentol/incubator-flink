@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: "PR"
+name: "PR222"
 
-on: [pull_request_target]
+on: [pull_request]
 
-permissions: read-all
+permissions: write-all
 
 jobs:
   pre-flight:

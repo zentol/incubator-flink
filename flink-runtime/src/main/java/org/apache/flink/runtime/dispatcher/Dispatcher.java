@@ -633,6 +633,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
     @Nullable
     private Void logCleanupErrorWarning(JobID jobId, Throwable cleanupError) {
+        // we want to have some loogg2ing here
         log.warn(
                 "The cleanup of job {} failed. The job's artifacts in the different directories ('{}', '{}', '{}') and its JobResultStore entry in '{}' (in HA mode) should be checked for manual cleanup.",
                 jobId,
