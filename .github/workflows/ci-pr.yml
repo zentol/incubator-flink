@@ -17,7 +17,7 @@ name: "PR222"
 
 on: [pull_request]
 
-permissions: read-all
+permissions: write-all
 
 jobs:
   ci:
