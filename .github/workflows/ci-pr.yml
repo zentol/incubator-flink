@@ -20,6 +20,12 @@ on: [pull_request]
 permissions: write-all
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test
+        run: |
+          echo "hello"
   ci:
     uses: ./.github/workflows/flink-ci-template.yml
     with:
