@@ -156,7 +156,6 @@ under the License.
 		<japicmp.outputDir>tools/japicmp-output</japicmp.outputDir>
 		<spotless.version>2.13.0</spotless.version>
 		<spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
-		<spotless.delimiter>package</spotless.delimiter>
 		<spotless.license.header>
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -1973,6 +1972,10 @@ under the License.
 
 							<removeUnusedImports />
 						</java>
+
+						<licenseHeader>
+							<content>${spotless.license.header}</content>
+						</licenseHeader>
 					</configuration>
 					<executions>
 						<execution>

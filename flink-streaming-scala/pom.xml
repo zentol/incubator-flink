@@ -144,10 +144,6 @@ under the License.
 							<version>${spotless.scalafmt.version}</version>
 							<file>${project.basedir}/../.scalafmt.conf</file>
 						</scalafmt>
-						<licenseHeader>
-							<content>${spotless.license.header}</content>
-							<delimiter>${spotless.delimiter}</delimiter>
-						</licenseHeader>
 					</scala>
 				</configuration>
 			</plugin>
