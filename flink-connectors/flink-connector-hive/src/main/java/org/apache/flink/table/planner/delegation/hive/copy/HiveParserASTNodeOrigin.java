@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.table.planner.delegation.hive.copy;
 
 /** Counterpart of hive's org.apache.hadoop.hive.ql.parse.ASTNodeOrigin. */

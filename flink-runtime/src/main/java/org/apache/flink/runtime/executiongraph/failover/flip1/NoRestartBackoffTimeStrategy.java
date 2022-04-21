@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.executiongraph.failover.flip1;
 
 /** Restart strategy which does not restart tasks when tasks fail. */

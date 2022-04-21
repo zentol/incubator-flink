@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.operators;
 
 public class BuildFirstCachedJoinDriver<IT1, IT2, OT>

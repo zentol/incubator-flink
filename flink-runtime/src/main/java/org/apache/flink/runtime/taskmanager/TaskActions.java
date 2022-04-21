@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.taskmanager;
 
 /** Actions which can be performed on a {@link Task}. */

@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.util;
 
 /** This class is just used to pass diagnostic message of some excepted procedure. */

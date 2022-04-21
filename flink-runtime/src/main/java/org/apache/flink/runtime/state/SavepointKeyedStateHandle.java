@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.state;
 
 /** A {@link KeyedStateHandle} that points to a savepoint taken in the unified format. */

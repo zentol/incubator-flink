@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.streaming.runtime.io.benchmark;
 
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;

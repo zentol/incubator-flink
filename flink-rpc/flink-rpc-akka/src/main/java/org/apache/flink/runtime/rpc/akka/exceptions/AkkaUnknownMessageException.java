@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.rpc.akka.exceptions;
 
 /** Exception which indicates that the AkkaRpcActor has received an unknown message type. */

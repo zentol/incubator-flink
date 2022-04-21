@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.formats.parquet.protobuf;
 
 import org.apache.flink.formats.parquet.ParquetBuilder;

@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.configuration;
 
 /** A key with FallbackKeys will fall back to the FallbackKeys if it itself is not configured. */

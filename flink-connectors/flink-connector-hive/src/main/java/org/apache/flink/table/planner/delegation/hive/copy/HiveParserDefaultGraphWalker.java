@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.table.planner.delegation.hive.copy;
 
 import org.apache.hadoop.hive.ql.lib.Dispatcher;

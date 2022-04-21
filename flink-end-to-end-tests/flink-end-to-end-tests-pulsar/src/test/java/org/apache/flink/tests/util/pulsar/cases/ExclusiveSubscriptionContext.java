@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.tests.util.pulsar.cases;
 
 import org.apache.flink.connector.pulsar.testutils.PulsarTestEnvironment;

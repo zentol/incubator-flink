@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.util.jartestprogram;
 
 /** anonymous inner class in non static method accessing a field of its enclosing class. */

@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.table.runtime.operators.rank;
 
 /** An enumeration of rank type, usable to show how exactly generate rank number. */

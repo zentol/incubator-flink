@@ -15,12 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// --------------------------------------------------------------
-//  THIS IS A GENERATED SOURCE FILE. DO NOT EDIT!
-//  GENERATED FROM org.apache.flink.api.java.tuple.TupleGenerator.
-// --------------------------------------------------------------
-
 package org.apache.flink.api.java.tuple;
 
 import org.apache.flink.annotation.Public;

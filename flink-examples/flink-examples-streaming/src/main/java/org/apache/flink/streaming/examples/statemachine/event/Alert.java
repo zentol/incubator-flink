@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.streaming.examples.statemachine.event;
 
 import org.apache.flink.streaming.examples.statemachine.dfa.State;

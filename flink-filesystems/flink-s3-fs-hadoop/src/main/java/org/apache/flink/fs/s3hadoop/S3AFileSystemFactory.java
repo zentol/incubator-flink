@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.fs.s3hadoop;
 
 /** Simple factory for the S3 file system, registered for the <tt>s3a://</tt> scheme. */

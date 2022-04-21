@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.state.heap.space;
 
 import static org.apache.flink.runtime.state.heap.space.Constants.FOUR_BYTES_BITS;

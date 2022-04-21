@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.openjdk.jol.info;
 
 /** Mock class avoid a dependency on OpenJDK JOL, which is incompatible with the Apache License. */

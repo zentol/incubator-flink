@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.io.compression;
 
 import net.jpountz.lz4.LZ4Exception;

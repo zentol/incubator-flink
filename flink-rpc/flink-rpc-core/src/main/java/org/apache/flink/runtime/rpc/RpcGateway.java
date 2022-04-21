@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.rpc;
 
 /** Rpc gateway interface which has to be implemented by Rpc gateways. */

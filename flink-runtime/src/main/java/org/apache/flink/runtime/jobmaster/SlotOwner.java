@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.jobmaster;
 
 /** Interface for components that hold slots and to which slots get released / recycled. */

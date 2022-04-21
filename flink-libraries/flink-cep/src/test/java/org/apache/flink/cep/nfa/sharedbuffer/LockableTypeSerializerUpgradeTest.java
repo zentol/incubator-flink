@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.cep.nfa.sharedbuffer;
 
 import org.apache.flink.FlinkVersion;

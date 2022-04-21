@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.architecture;
 
 import org.apache.flink.architecture.rules.ApiAnnotationRules;

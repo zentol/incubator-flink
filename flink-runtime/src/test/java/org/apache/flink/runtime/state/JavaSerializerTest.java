@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.state;
 
 import org.apache.flink.api.common.typeutils.SerializerTestBase;

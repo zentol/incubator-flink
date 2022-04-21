@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.connector.pulsar.testutils.runtime.mock;
 
 import io.netty.channel.EventLoopGroup;

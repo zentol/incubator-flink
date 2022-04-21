@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.kubernetes.taskmanager;
 
 import org.apache.flink.runtime.taskexecutor.TaskManagerRunner;

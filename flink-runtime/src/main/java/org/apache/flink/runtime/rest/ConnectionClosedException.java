@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.runtime.rest;
 
 /** Exception which is thrown if the {@link RestClient} detects that a connection was closed. */

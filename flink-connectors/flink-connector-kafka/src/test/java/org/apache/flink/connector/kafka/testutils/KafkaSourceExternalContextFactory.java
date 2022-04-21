@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.connector.kafka.testutils;
 
 import org.apache.flink.connector.testframe.external.ExternalContextFactory;
