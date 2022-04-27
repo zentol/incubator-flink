@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.rpc;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.runtime.messages.Acknowledge;
@@ -308,8 +307,7 @@ public class AsyncCallsTest extends TestLogger {
             fencedTestEndpoint.start();
 
             CompletableFuture<Acknowledge> newFencingTokenFuture =
-                    fencedTestGateway.setNewFencingToken(
-                            newFencingToken, Time.fromDuration(timeout));
+                    fencedTestGateway.setNewFencingToken(newFencingToken, timeout);
 
             assertFalse(newFencingTokenFuture.isDone());
 
@@ -375,7 +373,7 @@ public class AsyncCallsTest extends TestLogger {
 
     public interface FencedTestGateway extends FencedRpcGateway<UUID>, TestGateway {
         CompletableFuture<Acknowledge> setNewFencingToken(
-                UUID fencingToken, @RpcTimeout Time timeout);
+                UUID fencingToken, @RpcTimeout Duration timeout);
     }
 
     public static class FencedTestEndpoint extends FencedRpcEndpoint<UUID>
@@ -429,7 +427,8 @@ public class AsyncCallsTest extends TestLogger {
         }
 
         @Override
-        public CompletableFuture<Acknowledge> setNewFencingToken(UUID fencingToken, Time timeout) {
+        public CompletableFuture<Acknowledge> setNewFencingToken(
+                UUID fencingToken, Duration timeout) {
             enteringSetNewFencingToken.trigger();
             try {
                 triggerSetNewFencingToken.await();
