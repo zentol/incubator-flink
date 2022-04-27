@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.taskexecutor;
 
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.blob.TransientBlobKey;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
@@ -81,7 +80,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
             ResourceProfile resourceProfile,
             String targetAddress,
             ResourceManagerId resourceManagerId,
-            Time timeout) {
+            Duration timeout) {
         return originalGateway.requestSlot(
                 slotId,
                 jobId,
@@ -94,7 +93,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> submitTask(
-            TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
+            TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Duration timeout) {
         return originalGateway.submitTask(tdd, jobMasterId, timeout);
     }
 
@@ -102,7 +101,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
     public CompletableFuture<Acknowledge> updatePartitions(
             ExecutionAttemptID executionAttemptID,
             Iterable<PartitionInfo> partitionInfos,
-            Time timeout) {
+            Duration timeout) {
         return originalGateway.updatePartitions(executionAttemptID, partitionInfos, timeout);
     }
 
@@ -116,7 +115,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> releaseClusterPartitions(
-            Collection<IntermediateDataSetID> dataSetsToRelease, Time timeout) {
+            Collection<IntermediateDataSetID> dataSetsToRelease, Duration timeout) {
         return originalGateway.releaseClusterPartitions(dataSetsToRelease, timeout);
     }
 
@@ -155,7 +154,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> cancelTask(
-            ExecutionAttemptID executionAttemptID, Time timeout) {
+            ExecutionAttemptID executionAttemptID, Duration timeout) {
         return originalGateway.cancelTask(executionAttemptID, timeout);
     }
 
@@ -182,30 +181,30 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> freeSlot(
-            AllocationID allocationId, Throwable cause, Time timeout) {
+            AllocationID allocationId, Throwable cause, Duration timeout) {
         return originalGateway.freeSlot(allocationId, cause, timeout);
     }
 
     @Override
-    public void freeInactiveSlots(JobID jobId, Time timeout) {
+    public void freeInactiveSlots(JobID jobId, Duration timeout) {
         originalGateway.freeInactiveSlots(jobId, timeout);
     }
 
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByType(
-            FileType fileType, Time timeout) {
+            FileType fileType, Duration timeout) {
         return originalGateway.requestFileUploadByType(fileType, timeout);
     }
 
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByName(
-            String fileName, Time timeout) {
+            String fileName, Duration timeout) {
         return originalGateway.requestFileUploadByName(fileName, timeout);
     }
 
     @Override
     public CompletableFuture<SerializableOptional<String>> requestMetricQueryServiceAddress(
-            Time timeout) {
+            Duration timeout) {
         return originalGateway.requestMetricQueryServiceAddress(timeout);
     }
 
@@ -215,7 +214,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
     }
 
     @Override
-    public CompletableFuture<Collection<LogInfo>> requestLogList(Time timeout) {
+    public CompletableFuture<Collection<LogInfo>> requestLogList(Duration timeout) {
         return originalGateway.requestLogList(timeout);
     }
 
@@ -226,7 +225,7 @@ public class TaskExecutorGatewayDecoratorBase implements TaskExecutorGateway {
     }
 
     @Override
-    public CompletableFuture<ThreadDumpInfo> requestThreadDump(Time timeout) {
+    public CompletableFuture<ThreadDumpInfo> requestThreadDump(Duration timeout) {
         return originalGateway.requestThreadDump(timeout);
     }
 

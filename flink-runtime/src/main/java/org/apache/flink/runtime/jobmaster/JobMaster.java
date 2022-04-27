@@ -91,6 +91,7 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
@@ -266,7 +267,9 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
                             if (taskManagerRegistration != null) {
                                 taskManagerRegistration
                                         .getTaskExecutorGateway()
-                                        .cancelTask(executionAttemptId, rpcTimeout);
+                                        .cancelTask(
+                                                executionAttemptId,
+                                                TimeUtils.toDuration(rpcTimeout));
                             }
                         }
                     }

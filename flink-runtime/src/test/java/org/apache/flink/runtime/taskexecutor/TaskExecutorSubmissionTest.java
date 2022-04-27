@@ -75,6 +75,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -99,7 +100,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
 
     @Rule public final TestName testName = new TestName();
 
-    private static final Time timeout = Time.milliseconds(10000L);
+    private static final Duration timeout = Duration.ofMillis(10000L);
 
     private JobID jobId = new JobID();
 

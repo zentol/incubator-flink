@@ -167,7 +167,7 @@ public class TaskExecutorSlotLifetimeTest extends TestLogger {
                             ResourceProfile.ZERO,
                             jobMasterGateway.getAddress(),
                             resourceManagerGateway.getFencingToken(),
-                            RpcUtils.INF_TIMEOUT)
+                            RpcUtils.INF_DURATION)
                     .join();
 
             final TaskDeploymentDescriptor tdd =
@@ -179,7 +179,7 @@ public class TaskExecutorSlotLifetimeTest extends TestLogger {
             slotsOfferedLatch.await();
 
             taskExecutorGateway
-                    .submitTask(tdd, jobMasterGateway.getFencingToken(), RpcUtils.INF_TIMEOUT)
+                    .submitTask(tdd, jobMasterGateway.getFencingToken(), RpcUtils.INF_DURATION)
                     .join();
 
             final ClassLoader firstClassLoader = UserClassLoaderExtractingInvokable.take();
@@ -192,7 +192,7 @@ public class TaskExecutorSlotLifetimeTest extends TestLogger {
 
             // check that a second task will re-use the same class loader
             taskExecutorGateway
-                    .submitTask(tdd, jobMasterGateway.getFencingToken(), RpcUtils.INF_TIMEOUT)
+                    .submitTask(tdd, jobMasterGateway.getFencingToken(), RpcUtils.INF_DURATION)
                     .join();
 
             final ClassLoader secondClassLoader = UserClassLoaderExtractingInvokable.take();

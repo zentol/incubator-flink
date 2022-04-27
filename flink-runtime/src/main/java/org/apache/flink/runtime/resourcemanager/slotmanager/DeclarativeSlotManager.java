@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.resourcemanager.slotmanager;
 
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.clusterframework.types.SlotID;
@@ -39,6 +38,7 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.exceptions.SlotOccupiedException;
 import org.apache.flink.runtime.util.ResourceCounter;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class DeclarativeSlotManager implements SlotManager {
     @Nullable private TaskExecutorManager taskExecutorManager;
 
     /** Timeout for slot requests to the task manager. */
-    private final Time taskManagerRequestTimeout;
+    private final Duration taskManagerRequestTimeout;
 
     private final SlotMatchingStrategy slotMatchingStrategy;
 
@@ -101,7 +102,8 @@ public class DeclarativeSlotManager implements SlotManager {
             SlotTracker slotTracker) {
 
         Preconditions.checkNotNull(slotManagerConfiguration);
-        this.taskManagerRequestTimeout = slotManagerConfiguration.getTaskManagerRequestTimeout();
+        this.taskManagerRequestTimeout =
+                TimeUtils.toDuration(slotManagerConfiguration.getTaskManagerRequestTimeout());
         this.slotManagerMetricGroup = Preconditions.checkNotNull(slotManagerMetricGroup);
         this.resourceTracker = Preconditions.checkNotNull(resourceTracker);
 

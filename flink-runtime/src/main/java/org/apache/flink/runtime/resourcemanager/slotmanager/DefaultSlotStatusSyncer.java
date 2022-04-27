@@ -32,6 +32,7 @@ import org.apache.flink.runtime.taskexecutor.SlotStatus;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.exceptions.SlotOccupiedException;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -51,7 +53,7 @@ public class DefaultSlotStatusSyncer implements SlotStatusSyncer {
 
     private final Set<AllocationID> pendingSlotAllocations = new HashSet<>();
     /** Timeout for slot requests to the task manager. */
-    private final Time taskManagerRequestTimeout;
+    private final Duration taskManagerRequestTimeout;
 
     @Nullable private TaskManagerTracker taskManagerTracker;
     @Nullable private ResourceTracker resourceTracker;
@@ -61,7 +63,8 @@ public class DefaultSlotStatusSyncer implements SlotStatusSyncer {
     private boolean started = false;
 
     public DefaultSlotStatusSyncer(Time taskManagerRequestTimeout) {
-        this.taskManagerRequestTimeout = Preconditions.checkNotNull(taskManagerRequestTimeout);
+        this.taskManagerRequestTimeout =
+                TimeUtils.toDuration(Preconditions.checkNotNull(taskManagerRequestTimeout));
     }
 
     @Override

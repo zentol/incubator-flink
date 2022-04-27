@@ -182,7 +182,7 @@ public class TaskExecutorOperatorEventHandlingTest extends TestLogger {
         env.getTaskSlotTable().allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
 
         final TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
-        tmGateway.submitTask(tdd, env.getJobMasterId(), Time.seconds(10)).get();
+        tmGateway.submitTask(tdd, env.getJobMasterId(), Duration.ofSeconds(10)).get();
         taskRunningFuture.get();
 
         return env;

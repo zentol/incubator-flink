@@ -18,7 +18,6 @@
 package org.apache.flink.runtime.taskexecutor;
 
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.testutils.BlockerSync;
 import org.apache.flink.core.testutils.OneShotLatch;
@@ -68,6 +67,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -86,7 +86,7 @@ import static org.junit.Assert.assertTrue;
 /** Tests for the execution deployment-reconciliation logic in the {@link TaskExecutor}. */
 public class TaskExecutorExecutionDeploymentReconciliationTest extends TestLogger {
 
-    private static final Time timeout = Time.seconds(10L);
+    private static final Duration timeout = Duration.ofSeconds(10L);
 
     private final TestingHighAvailabilityServices haServices =
             new TestingHighAvailabilityServices();

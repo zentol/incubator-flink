@@ -20,7 +20,6 @@ package org.apache.flink.runtime.taskexecutor;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.ClusterOptions;
 import org.apache.flink.management.jmx.JMXService;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
@@ -366,7 +365,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     }
 
     @Override
-    public CompletableFuture<Collection<LogInfo>> requestLogList(Time timeout) {
+    public CompletableFuture<Collection<LogInfo>> requestLogList(Duration timeout) {
         return CompletableFuture.supplyAsync(
                 () -> {
                     final String logDir = taskManagerConfiguration.getTaskManagerLogDir();
@@ -575,7 +574,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> submitTask(
-            TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Time timeout) {
+            TaskDeploymentDescriptor tdd, JobMasterId jobMasterId, Duration timeout) {
 
         try {
             final JobID jobId = tdd.getJobId();
@@ -836,7 +835,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> cancelTask(
-            ExecutionAttemptID executionAttemptID, Time timeout) {
+            ExecutionAttemptID executionAttemptID, Duration timeout) {
         final Task task = taskSlotTable.getTask(executionAttemptID);
 
         if (task != null) {
@@ -865,7 +864,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     public CompletableFuture<Acknowledge> updatePartitions(
             final ExecutionAttemptID executionAttemptID,
             Iterable<PartitionInfo> partitionInfos,
-            Time timeout) {
+            Duration timeout) {
         final Task task = taskSlotTable.getTask(executionAttemptID);
 
         if (task != null) {
@@ -926,7 +925,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> releaseClusterPartitions(
-            Collection<IntermediateDataSetID> dataSetsToRelease, Time timeout) {
+            Collection<IntermediateDataSetID> dataSetsToRelease, Duration timeout) {
         partitionTracker.stopTrackingAndReleaseClusterPartitions(dataSetsToRelease);
         return CompletableFuture.completedFuture(Acknowledge.get());
     }
@@ -1059,7 +1058,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             final ResourceProfile resourceProfile,
             final String targetAddress,
             final ResourceManagerId resourceManagerId,
-            final Time timeout) {
+            final Duration timeout) {
         // TODO: Filter invalid requests from the resource manager by using the
         // instance/registration Id
 
@@ -1178,13 +1177,13 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<Acknowledge> freeSlot(
-            AllocationID allocationId, Throwable cause, Time timeout) {
+            AllocationID allocationId, Throwable cause, Duration timeout) {
         freeSlotInternal(allocationId, cause);
         return CompletableFuture.completedFuture(Acknowledge.get());
     }
 
     @Override
-    public void freeInactiveSlots(JobID jobId, Time timeout) {
+    public void freeInactiveSlots(JobID jobId, Duration timeout) {
         log.debug("Freeing inactive slots for job {}.", jobId);
 
         // need a copy to prevent ConcurrentModificationExceptions
@@ -1199,7 +1198,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByType(
-            FileType fileType, Time timeout) {
+            FileType fileType, Duration timeout) {
         final String filePath;
         switch (fileType) {
             case LOG:
@@ -1216,7 +1215,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<TransientBlobKey> requestFileUploadByName(
-            String fileName, Time timeout) {
+            String fileName, Duration timeout) {
         final String filePath;
         final String logDir = taskManagerConfiguration.getTaskManagerLogDir();
         if (StringUtils.isNullOrWhitespaceOnly(logDir)
@@ -1230,7 +1229,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public CompletableFuture<SerializableOptional<String>> requestMetricQueryServiceAddress(
-            Time timeout) {
+            Duration timeout) {
         return CompletableFuture.completedFuture(
                 SerializableOptional.ofNullable(metricQueryServiceAddress));
     }
@@ -1289,7 +1288,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     }
 
     @Override
-    public CompletableFuture<ThreadDumpInfo> requestThreadDump(Time timeout) {
+    public CompletableFuture<ThreadDumpInfo> requestThreadDump(Duration timeout) {
         int stacktraceMaxDepth =
                 taskManagerConfiguration
                         .getConfiguration()

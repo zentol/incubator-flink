@@ -74,6 +74,7 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationSuccess;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import javax.annotation.Nullable;
@@ -196,7 +197,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                                         taskExecutors
                                                 .get(taskExecutorResourceId)
                                                 .getTaskExecutorGateway()
-                                                .releaseClusterPartitions(dataSetIds, rpcTimeout)
+                                                .releaseClusterPartitions(
+                                                        dataSetIds,
+                                                        TimeUtils.toDuration(rpcTimeout))
                                                 .exceptionally(
                                                         throwable -> {
                                                             log.debug(
@@ -691,7 +694,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             final CompletableFuture<Optional<Tuple2<ResourceID, String>>>
                     metricQueryServiceAddressFuture =
                             taskExecutorGateway
-                                    .requestMetricQueryServiceAddress(timeout)
+                                    .requestMetricQueryServiceAddress(TimeUtils.toDuration(timeout))
                                     .thenApply(
                                             o ->
                                                     o.toOptional()
@@ -731,7 +734,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             return FutureUtils.completedExceptionally(
                     new UnknownTaskExecutorException(taskManagerId));
         } else {
-            return taskExecutor.getTaskExecutorGateway().requestFileUploadByType(fileType, timeout);
+            return taskExecutor
+                    .getTaskExecutorGateway()
+                    .requestFileUploadByType(fileType, TimeUtils.toDuration(timeout));
         }
     }
 
@@ -753,7 +758,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             return FutureUtils.completedExceptionally(
                     new UnknownTaskExecutorException(taskManagerId));
         } else {
-            return taskExecutor.getTaskExecutorGateway().requestFileUploadByName(fileName, timeout);
+            return taskExecutor
+                    .getTaskExecutorGateway()
+                    .requestFileUploadByName(fileName, TimeUtils.toDuration(timeout));
         }
     }
 
@@ -768,7 +775,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             return FutureUtils.completedExceptionally(
                     new UnknownTaskExecutorException(taskManagerId));
         } else {
-            return taskExecutor.getTaskExecutorGateway().requestLogList(timeout);
+            return taskExecutor
+                    .getTaskExecutorGateway()
+                    .requestLogList(TimeUtils.toDuration(timeout));
         }
     }
 
@@ -794,7 +803,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             return FutureUtils.completedExceptionally(
                     new UnknownTaskExecutorException(taskManagerId));
         } else {
-            return taskExecutor.getTaskExecutorGateway().requestThreadDump(timeout);
+            return taskExecutor
+                    .getTaskExecutorGateway()
+                    .requestThreadDump(TimeUtils.toDuration(timeout));
         }
     }
 

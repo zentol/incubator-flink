@@ -86,6 +86,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -106,7 +107,7 @@ import static org.junit.Assert.assertTrue;
 /** Tests for the partition-lifecycle logic in the {@link TaskExecutor}. */
 public class TaskExecutorPartitionLifecycleTest extends TestLogger {
 
-    private static final Time timeout = Time.seconds(10L);
+    private static final Duration timeout = Duration.ofSeconds(10L);
 
     private static TestingRpcService rpc;
 
@@ -218,7 +219,7 @@ public class TaskExecutorPartitionLifecycleTest extends TestLogger {
                     rpc,
                     jobMasterGateway,
                     new NoOpTaskManagerActions(),
-                    timeout,
+                    Time.fromDuration(timeout),
                     taskExecutor.getMainThreadExecutableForTesting());
 
             final TaskExecutorGateway taskExecutorGateway =
@@ -562,7 +563,7 @@ public class TaskExecutorPartitionLifecycleTest extends TestLogger {
                                     .getResultPartitionID()));
 
             TestingInvokable.sync.releaseBlocker();
-            taskFinishedFuture.get(timeout.getSize(), timeout.getUnit());
+            taskFinishedFuture.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
             testAction.accept(
                     jobId, taskResultPartitionDescriptor, taskExecutor, taskExecutorGateway);
