@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.webmonitor.retriever.impl;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.dispatcher.cleanup.TestingRetryStrategies;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
@@ -34,10 +33,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
@@ -47,7 +46,7 @@ import static org.junit.Assert.assertFalse;
 /** Tests for the {@link RpcGatewayRetriever}. */
 public class RpcGatewayRetrieverTest extends TestLogger {
 
-    private static final Time TIMEOUT = Time.seconds(10L);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10L);
     private static TestingRpcService rpcService;
 
     @BeforeClass
@@ -105,30 +104,20 @@ public class RpcGatewayRetrieverTest extends TestLogger {
             settableLeaderRetrievalService.notifyListener(
                     dummyRpcEndpoint.getAddress(), leaderSessionId);
 
-            final DummyGateway dummyGateway =
-                    gatewayFuture.get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+            final DummyGateway dummyGateway = gatewayFuture.get();
 
             assertEquals(dummyRpcEndpoint.getAddress(), dummyGateway.getAddress());
-            assertEquals(
-                    expectedValue,
-                    dummyGateway
-                            .foobar(TIMEOUT)
-                            .get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS));
+            assertEquals(expectedValue, dummyGateway.foobar(TIMEOUT).get());
 
             // elect a new leader
             settableLeaderRetrievalService.notifyListener(
                     dummyRpcEndpoint2.getAddress(), leaderSessionId);
 
             final CompletableFuture<DummyGateway> gatewayFuture2 = gatewayRetriever.getFuture();
-            final DummyGateway dummyGateway2 =
-                    gatewayFuture2.get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+            final DummyGateway dummyGateway2 = gatewayFuture2.get();
 
             assertEquals(dummyRpcEndpoint2.getAddress(), dummyGateway2.getAddress());
-            assertEquals(
-                    expectedValue2,
-                    dummyGateway2
-                            .foobar(TIMEOUT)
-                            .get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS));
+            assertEquals(expectedValue2, dummyGateway2.foobar(TIMEOUT).get());
         } finally {
             RpcUtils.terminateRpcEndpoints(dummyRpcEndpoint, dummyRpcEndpoint2);
         }
@@ -136,7 +125,7 @@ public class RpcGatewayRetrieverTest extends TestLogger {
 
     /** Testing RpcGateway. */
     public interface DummyGateway extends FencedRpcGateway<UUID> {
-        CompletableFuture<String> foobar(@RpcTimeout Time timeout);
+        CompletableFuture<String> foobar(@RpcTimeout Duration timeout);
     }
 
     static class DummyRpcEndpoint extends RpcEndpoint implements DummyGateway {
@@ -149,7 +138,7 @@ public class RpcGatewayRetrieverTest extends TestLogger {
         }
 
         @Override
-        public CompletableFuture<String> foobar(Time timeout) {
+        public CompletableFuture<String> foobar(Duration timeout) {
             return CompletableFuture.completedFuture(value);
         }
 
