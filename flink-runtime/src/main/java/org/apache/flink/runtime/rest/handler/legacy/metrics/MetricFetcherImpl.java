@@ -32,6 +32,7 @@ import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.MetricQueryServiceGateway;
 import org.apache.flink.runtime.webmonitor.retriever.MetricQueryServiceRetriever;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,7 +236,7 @@ public class MetricFetcherImpl<T extends RestfulGateway> implements MetricFetche
         LOG.debug("Query metrics for {}.", queryServiceGateway.getAddress());
 
         queryServiceGateway
-                .queryMetrics(timeout)
+                .queryMetrics(TimeUtils.toDuration(timeout))
                 .whenCompleteAsync(
                         (MetricDumpSerialization.MetricSerializationResult result, Throwable t) -> {
                             if (t != null) {
