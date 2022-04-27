@@ -32,6 +32,7 @@ import org.apache.flink.runtime.rest.messages.taskmanager.TaskManagerFileMessage
 import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.util.TimeUtils;
 
 import javax.annotation.Nonnull;
 
@@ -68,7 +69,9 @@ public class TaskManagerCustomLogHandler
             ResourceManagerGateway resourceManagerGateway,
             Tuple2<ResourceID, String> taskManagerIdAndFileName) {
         return resourceManagerGateway.requestTaskManagerFileUploadByName(
-                taskManagerIdAndFileName.f0, taskManagerIdAndFileName.f1, timeout);
+                taskManagerIdAndFileName.f0,
+                taskManagerIdAndFileName.f1,
+                TimeUtils.toDuration(timeout));
     }
 
     @Override

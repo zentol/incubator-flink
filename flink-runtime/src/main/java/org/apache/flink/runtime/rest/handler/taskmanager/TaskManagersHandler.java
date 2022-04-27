@@ -29,6 +29,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.runtime.rest.messages.taskmanager.TaskManagersInfo;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.util.TimeUtils;
 
 import javax.annotation.Nonnull;
 
@@ -60,6 +61,7 @@ public class TaskManagersHandler
             @Nonnull HandlerRequest<EmptyRequestBody> request,
             @Nonnull ResourceManagerGateway gateway)
             throws RestHandlerException {
-        return gateway.requestTaskManagerInfo(timeout).thenApply(TaskManagersInfo::new);
+        return gateway.requestTaskManagerInfo(TimeUtils.toDuration(timeout))
+                .thenApply(TaskManagersInfo::new);
     }
 }

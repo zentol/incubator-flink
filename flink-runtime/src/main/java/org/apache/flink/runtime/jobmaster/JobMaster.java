@@ -1310,7 +1310,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
                             jobManagerResourceID,
                             jobManagerRpcAddress,
                             jobID,
-                            timeout);
+                            TimeUtils.toDuration(timeout));
                 }
             };
         }

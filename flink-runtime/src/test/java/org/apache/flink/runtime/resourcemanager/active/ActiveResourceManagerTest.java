@@ -44,6 +44,7 @@ import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.function.RunnableWithException;
 
 import org.junit.ClassRule;
@@ -953,7 +954,8 @@ public class ActiveResourceManagerTest extends TestLogger {
 
             return resourceManager
                     .getSelfGateway(ResourceManagerGateway.class)
-                    .registerTaskExecutor(taskExecutorRegistration, TIMEOUT_TIME);
+                    .registerTaskExecutor(
+                            taskExecutorRegistration, TimeUtils.toDuration(TIMEOUT_TIME));
         }
     }
 }

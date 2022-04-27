@@ -32,6 +32,7 @@ import org.apache.flink.runtime.rest.messages.taskmanager.TaskManagerMessagePara
 import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.util.TimeUtils;
 
 import javax.annotation.Nonnull;
 
@@ -64,6 +65,6 @@ public class TaskManagerThreadDumpHandler
             @Nonnull ResourceManagerGateway gateway)
             throws RestHandlerException {
         final ResourceID taskManagerId = request.getPathParameter(TaskManagerIdPathParameter.class);
-        return gateway.requestThreadDump(taskManagerId, timeout);
+        return gateway.requestThreadDump(taskManagerId, TimeUtils.toDuration(timeout));
     }
 }

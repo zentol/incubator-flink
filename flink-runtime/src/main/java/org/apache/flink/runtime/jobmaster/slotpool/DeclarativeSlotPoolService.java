@@ -36,6 +36,7 @@ import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.runtime.util.ResourceCounter;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.clock.Clock;
 
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +57,7 @@ public class DeclarativeSlotPoolService implements SlotPoolService {
 
     private final JobID jobId;
 
-    private final Time rpcTimeout;
+    private final Duration rpcTimeout;
 
     private final DeclarativeSlotPool declarativeSlotPool;
 
@@ -83,7 +85,7 @@ public class DeclarativeSlotPoolService implements SlotPoolService {
             Time rpcTimeout) {
         this.jobId = jobId;
         this.clock = clock;
-        this.rpcTimeout = rpcTimeout;
+        this.rpcTimeout = TimeUtils.toDuration(rpcTimeout);
         this.registeredTaskManagers = new HashSet<>();
 
         this.declarativeSlotPool =

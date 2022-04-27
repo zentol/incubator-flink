@@ -136,6 +136,7 @@ import org.apache.flink.util.OptionalConsumer;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.StringUtils;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 
@@ -1376,7 +1377,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                         getResourceID(),
                         taskExecutorRegistrationId,
                         taskSlotTable.createSlotReport(getResourceID()),
-                        taskManagerConfiguration.getRpcTimeout());
+                        TimeUtils.toDuration(taskManagerConfiguration.getRpcTimeout()));
 
         slotReportResponseFuture.whenCompleteAsync(
                 (acknowledge, throwable) -> {

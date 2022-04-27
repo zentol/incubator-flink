@@ -20,7 +20,6 @@ package org.apache.flink.runtime.resourcemanager;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
@@ -63,6 +62,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -84,7 +84,7 @@ import static org.junit.Assert.fail;
 /** Tests for the {@link ResourceManager}. */
 public class ResourceManagerTest extends TestLogger {
 
-    private static final Time TIMEOUT = Time.minutes(2L);
+    private static final Duration TIMEOUT = Duration.ofMinutes(2L);
 
     private static final HeartbeatServices heartbeatServices = new HeartbeatServices(1000L, 10000L);
 
@@ -173,8 +173,7 @@ public class ResourceManagerTest extends TestLogger {
                 resourceManagerGateway, taskManagerId, taskExecutorGateway.getAddress());
 
         CompletableFuture<TaskManagerInfoWithSlots> taskManagerInfoFuture =
-                resourceManagerGateway.requestTaskManagerDetailsInfo(
-                        taskManagerId, TestingUtils.TIMEOUT);
+                resourceManagerGateway.requestTaskManagerDetailsInfo(taskManagerId, TIMEOUT);
 
         TaskManagerInfoWithSlots taskManagerInfoWithSlots = taskManagerInfoFuture.get();
         TaskManagerInfo taskManagerInfo = taskManagerInfoWithSlots.getTaskManagerInfo();
@@ -210,8 +209,7 @@ public class ResourceManagerTest extends TestLogger {
                 resourceManagerGateway, taskManagerId, taskExecutorGateway.getAddress());
 
         CompletableFuture<TaskExecutorThreadInfoGateway> taskExecutorGatewayFuture =
-                resourceManagerGateway.requestTaskExecutorThreadInfoGateway(
-                        taskManagerId, TestingUtils.TIMEOUT);
+                resourceManagerGateway.requestTaskExecutorThreadInfoGateway(taskManagerId, TIMEOUT);
 
         TaskExecutorThreadInfoGateway taskExecutorGatewayResult = taskExecutorGatewayFuture.get();
 
@@ -235,8 +233,7 @@ public class ResourceManagerTest extends TestLogger {
                         ResourceProfile.ZERO,
                         ResourceProfile.ZERO);
         final CompletableFuture<RegistrationResponse> registrationFuture =
-                resourceManagerGateway.registerTaskExecutor(
-                        taskExecutorRegistration, TestingUtils.TIMEOUT);
+                resourceManagerGateway.registerTaskExecutor(taskExecutorRegistration, TIMEOUT);
 
         assertThat(registrationFuture.get(), instanceOf(RegistrationResponse.Success.class));
     }
@@ -664,7 +661,7 @@ public class ResourceManagerTest extends TestLogger {
                             stopWorkerFunction);
 
             resourceManager.start();
-            resourceManager.getStartedFuture().get(TIMEOUT.getSize(), TIMEOUT.getUnit());
+            resourceManager.getStartedFuture().get();
 
             return resourceManager;
         }

@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.resourcemanager;
 
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.jobmaster.JobMaster;
@@ -42,6 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +53,7 @@ import static org.junit.Assert.fail;
 /** Tests for the interaction between the {@link ResourceManager} and the {@link JobMaster}. */
 public class ResourceManagerJobMasterTest extends TestLogger {
 
-    private static final Time TIMEOUT = Time.seconds(10L);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10L);
 
     private TestingRpcService rpcService;
 
@@ -122,7 +122,7 @@ public class ResourceManagerJobMasterTest extends TestLogger {
                                                             new AssertionError(
                                                                     "RM not available after confirming leadership."));
                         })
-                .get(TIMEOUT.getSize(), TIMEOUT.getUnit());
+                .get();
     }
 
     @After
@@ -151,8 +151,7 @@ public class ResourceManagerJobMasterTest extends TestLogger {
                         jobMasterGateway.getAddress(),
                         jobId,
                         TIMEOUT);
-        RegistrationResponse response =
-                successfulFuture.get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+        RegistrationResponse response = successfulFuture.get();
         assertTrue(response instanceof JobMasterRegistrationSuccess);
     }
 
@@ -165,7 +164,7 @@ public class ResourceManagerJobMasterTest extends TestLogger {
                                 resourceManagerGateway.getAddress(),
                                 ResourceManagerId.generate(),
                                 ResourceManagerGateway.class)
-                        .get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+                        .get();
 
         // test throw exception when receive a registration from job master which takes unmatched
         // leaderSessionId
@@ -237,7 +236,7 @@ public class ResourceManagerJobMasterTest extends TestLogger {
                         TIMEOUT);
 
         try {
-            registrationFuture.get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+            registrationFuture.get();
             fail("Expected to fail with a ResourceManagerException.");
         } catch (ExecutionException e) {
             assertTrue(

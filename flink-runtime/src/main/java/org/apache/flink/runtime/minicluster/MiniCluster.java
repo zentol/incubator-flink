@@ -105,6 +105,7 @@ import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.Reference;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.ExponentialBackoffRetryStrategy;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -909,7 +910,8 @@ public class MiniCluster implements AutoCloseableAsync {
     public CompletableFuture<ResourceOverview> getResourceOverview() {
         return runResourceManagerCommand(
                 resourceManagerGateway ->
-                        resourceManagerGateway.requestResourceOverview(rpcTimeout));
+                        resourceManagerGateway.requestResourceOverview(
+                                TimeUtils.toDuration(rpcTimeout)));
     }
 
     private <T> CompletableFuture<T> runDispatcherCommand(

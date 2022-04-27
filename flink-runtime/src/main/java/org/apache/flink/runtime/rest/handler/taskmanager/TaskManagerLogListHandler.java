@@ -35,6 +35,7 @@ import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
@@ -79,7 +80,8 @@ public class TaskManagerLogListHandler
         final ResourceManagerGateway resourceManagerGateway =
                 getResourceManagerGateway(resourceManagerGatewayRetriever);
         final CompletableFuture<Collection<LogInfo>> logsWithLengthFuture =
-                resourceManagerGateway.requestTaskManagerLogList(taskManagerId, timeout);
+                resourceManagerGateway.requestTaskManagerLogList(
+                        taskManagerId, TimeUtils.toDuration(timeout));
 
         return logsWithLengthFuture
                 .thenApply(LogListInfo::new)

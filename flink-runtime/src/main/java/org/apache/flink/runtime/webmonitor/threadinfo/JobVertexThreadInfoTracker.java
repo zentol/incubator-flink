@@ -33,6 +33,7 @@ import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.runtime.webmonitor.stats.JobVertexStatsTracker;
 import org.apache.flink.runtime.webmonitor.stats.Statistics;
+import org.apache.flink.util.TimeUtils;
 
 import org.apache.flink.shaded.guava30.com.google.common.cache.Cache;
 
@@ -100,7 +101,7 @@ public class JobVertexThreadInfoTracker<T extends Statistics> implements JobVert
     /** Flag indicating whether the stats tracker has been shut down. */
     private boolean shutDown;
 
-    private final Time rpcTimeout;
+    private final Duration rpcTimeout;
 
     JobVertexThreadInfoTracker(
             ThreadInfoRequestCoordinator coordinator,
@@ -122,7 +123,7 @@ public class JobVertexThreadInfoTracker<T extends Statistics> implements JobVert
         this.executor = checkNotNull(executor, "Scheduled executor");
         this.statsRefreshInterval =
                 checkNotNull(statsRefreshInterval, "Statistics refresh interval");
-        this.rpcTimeout = rpcTimeout;
+        this.rpcTimeout = TimeUtils.toDuration(rpcTimeout);
 
         checkArgument(cleanUpInterval.toMillis() > 0, "Clean up interval must be greater than 0");
 

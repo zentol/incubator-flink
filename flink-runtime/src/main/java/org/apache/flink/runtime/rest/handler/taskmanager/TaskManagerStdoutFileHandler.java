@@ -31,6 +31,7 @@ import org.apache.flink.runtime.taskexecutor.FileType;
 import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.util.TimeUtils;
 
 import javax.annotation.Nonnull;
 
@@ -66,6 +67,6 @@ public class TaskManagerStdoutFileHandler
             ResourceManagerGateway resourceManagerGateway,
             Tuple2<ResourceID, String> taskManagerIdAndFileName) {
         return resourceManagerGateway.requestTaskManagerFileUploadByType(
-                taskManagerIdAndFileName.f0, FileType.STDOUT, timeout);
+                taskManagerIdAndFileName.f0, FileType.STDOUT, TimeUtils.toDuration(timeout));
     }
 }

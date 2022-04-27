@@ -84,6 +84,7 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.ThrowingConsumer;
@@ -727,7 +728,8 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         CompletableFuture<ResourceOverview> taskManagerOverviewFuture =
                 runResourceManagerCommand(
                         resourceManagerGateway ->
-                                resourceManagerGateway.requestResourceOverview(timeout));
+                                resourceManagerGateway.requestResourceOverview(
+                                        TimeUtils.toDuration(timeout)));
 
         final List<CompletableFuture<Optional<JobStatus>>> optionalJobInformation =
                 queryJobMastersForInformation(
@@ -855,7 +857,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
         return runResourceManagerCommand(
                 resourceManagerGateway ->
                         resourceManagerGateway.requestTaskManagerMetricQueryServiceAddresses(
-                                timeout));
+                                TimeUtils.toDuration(timeout)));
     }
 
     @Override

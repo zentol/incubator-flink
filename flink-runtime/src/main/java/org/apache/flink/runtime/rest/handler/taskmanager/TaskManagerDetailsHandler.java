@@ -38,6 +38,7 @@ import org.apache.flink.runtime.webmonitor.RestfulGateway;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
@@ -88,7 +89,8 @@ public class TaskManagerDetailsHandler
                 request.getPathParameter(TaskManagerIdPathParameter.class);
 
         CompletableFuture<TaskManagerInfoWithSlots> taskManagerInfoWithSlotsFuture =
-                gateway.requestTaskManagerDetailsInfo(taskManagerResourceId, timeout);
+                gateway.requestTaskManagerDetailsInfo(
+                        taskManagerResourceId, TimeUtils.toDuration(timeout));
 
         metricFetcher.update();
 
