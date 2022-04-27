@@ -44,7 +44,6 @@ import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.util.TestLogger;
-import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.function.RunnableWithException;
 
 import org.junit.ClassRule;
@@ -78,7 +77,7 @@ public class ActiveResourceManagerTest extends TestLogger {
             new TestingRpcServiceResource();
 
     private static final long TIMEOUT_SEC = 5L;
-    private static final Time TIMEOUT_TIME = Time.seconds(TIMEOUT_SEC);
+    private static final Duration TIMEOUT_TIME = Duration.ofSeconds(TIMEOUT_SEC);
     private static final Time TESTING_START_WORKER_INTERVAL = Time.milliseconds(50);
     private static final long TESTING_START_WORKER_TIMEOUT_MS = 50;
 
@@ -909,9 +908,7 @@ public class ActiveResourceManagerTest extends TestLogger {
                             ForkJoinPool.commonPool());
 
             activeResourceManager.start();
-            activeResourceManager
-                    .getStartedFuture()
-                    .get(TIMEOUT_TIME.getSize(), TIMEOUT_TIME.getUnit());
+            activeResourceManager.getStartedFuture().get();
 
             return activeResourceManager;
         }
@@ -954,8 +951,7 @@ public class ActiveResourceManagerTest extends TestLogger {
 
             return resourceManager
                     .getSelfGateway(ResourceManagerGateway.class)
-                    .registerTaskExecutor(
-                            taskExecutorRegistration, TimeUtils.toDuration(TIMEOUT_TIME));
+                    .registerTaskExecutor(taskExecutorRegistration, TIMEOUT_TIME);
         }
     }
 }

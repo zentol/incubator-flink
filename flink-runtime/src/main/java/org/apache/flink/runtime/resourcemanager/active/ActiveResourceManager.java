@@ -42,7 +42,6 @@ import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.security.token.DelegationTokenManager;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 
@@ -455,7 +454,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
     // ------------------------------------------------------------------------
 
     @VisibleForTesting
-    <T> CompletableFuture<T> runInMainThread(Callable<T> callable, Time timeout) {
-        return callAsync(callable, TimeUtils.toDuration(timeout));
+    <T> CompletableFuture<T> runInMainThread(Callable<T> callable, Duration timeout) {
+        return callAsync(callable, timeout);
     }
 }
