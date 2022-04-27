@@ -20,7 +20,6 @@ package org.apache.flink.runtime.taskexecutor;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.resources.CPUResource;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
@@ -2935,7 +2934,7 @@ public class TaskExecutorTest extends TestLogger {
 
         @Override
         public boolean allocateSlot(
-                int index, JobID jobId, AllocationID allocationId, Time slotTimeout) {
+                int index, JobID jobId, AllocationID allocationId, Duration slotTimeout) {
             final boolean result = super.allocateSlot(index, jobId, allocationId, slotTimeout);
             allocateSlotLatch.trigger();
 
@@ -2948,7 +2947,7 @@ public class TaskExecutorTest extends TestLogger {
                 JobID jobId,
                 AllocationID allocationId,
                 ResourceProfile resourceProfile,
-                Time slotTimeout) {
+                Duration slotTimeout) {
             final boolean result =
                     super.allocateSlot(index, jobId, allocationId, resourceProfile, slotTimeout);
             allocateSlotLatch.trigger();
