@@ -340,6 +340,8 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
                 if (isRpcTimeout(parameterAnnotations[i])) {
                     if (args[i] instanceof Time) {
                         return TimeUtils.toDuration((Time) args[i]);
+                    } else if (args[i] instanceof Duration) {
+                        return (Duration) args[i];
                     } else {
                         throw new RuntimeException(
                                 "The rpc timeout parameter must be of type "
