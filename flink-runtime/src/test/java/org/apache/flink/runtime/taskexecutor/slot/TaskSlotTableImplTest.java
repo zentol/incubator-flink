@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.taskexecutor.slot;
 
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
@@ -38,6 +37,7 @@ import org.apache.flink.shaded.guava30.com.google.common.collect.Sets;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -58,7 +58,7 @@ public class TaskSlotTableImplTest extends TestLogger {
     public static final TestExecutorResource<ScheduledExecutorService> EXECUTOR_RESOURCE =
             TestingUtils.defaultExecutorResource();
 
-    private static final Time SLOT_TIMEOUT = Time.seconds(100L);
+    private static final Duration SLOT_TIMEOUT = Duration.ofSeconds(100L);
 
     /** Tests that one can can mark allocated slots as active. */
     @Test
@@ -466,7 +466,7 @@ public class TaskSlotTableImplTest extends TestLogger {
                 createTaskSlotTableAndStart(1, testingSlotActions)) {
             final AllocationID allocationId = new AllocationID();
             assertThat(
-                    taskSlotTable.allocateSlot(0, new JobID(), allocationId, Time.milliseconds(1L)),
+                    taskSlotTable.allocateSlot(0, new JobID(), allocationId, Duration.ofMillis(1L)),
                     is(true));
             assertThat(timeoutFuture.join(), is(allocationId));
         }
@@ -505,7 +505,7 @@ public class TaskSlotTableImplTest extends TestLogger {
             final long timeout = 50L;
             final JobID jobId = new JobID();
             assertThat(
-                    taskSlotTable.allocateSlot(0, jobId, allocationId, Time.milliseconds(timeout)),
+                    taskSlotTable.allocateSlot(0, jobId, allocationId, Duration.ofMillis(timeout)),
                     is(true));
             assertThat(taskSlotTableAction.apply(taskSlotTable, jobId, allocationId), is(true));
 

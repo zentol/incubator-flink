@@ -20,7 +20,6 @@ package org.apache.flink.runtime.taskexecutor;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
@@ -126,7 +125,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd, env.getJobMasterId(), timeout).get();
 
             taskRunningFuture.get();
@@ -155,7 +154,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd, env.getJobMasterId(), timeout).get();
         } catch (Exception e) {
             assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
@@ -190,11 +189,11 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd1, env.getJobMasterId(), timeout).get();
             task1RunningFuture.get();
 
-            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd2, env.getJobMasterId(), timeout).get();
             task2RunningFuture.get();
 
@@ -245,11 +244,11 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd1, env.getJobMasterId(), timeout).get();
             task1RunningFuture.get();
 
-            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd2, env.getJobMasterId(), timeout).get();
             task2RunningFuture.get();
 
@@ -306,11 +305,11 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd1, jobMasterId, timeout).get();
             task1RunningFuture.get();
 
-            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd2, jobMasterId, timeout).get();
             task2RunningFuture.get();
 
@@ -383,11 +382,11 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd1.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd1, jobMasterId, timeout).get();
             task1RunningFuture.get();
 
-            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(1, jobId, tdd2.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd2, jobMasterId, timeout).get();
             task2RunningFuture.get();
 
@@ -437,7 +436,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
                 TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
                 TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-                taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+                taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
                 tmGateway.submitTask(tdd, env.getJobMasterId(), timeout).get();
                 taskRunningFuture.get();
 
@@ -473,7 +472,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd, env.getJobMasterId(), timeout).get();
             taskRunningFuture.get();
 
@@ -531,7 +530,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
             TaskExecutorGateway tmGateway = env.getTaskExecutorGateway();
             TaskSlotTable<Task> taskSlotTable = env.getTaskSlotTable();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd, env.getJobMasterId(), timeout).get();
             taskRunningFuture.get();
 
@@ -598,7 +597,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
 
             TestingAbstractInvokables.TestInvokableRecordCancel.resetGotCanceledFuture();
 
-            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Time.seconds(60));
+            taskSlotTable.allocateSlot(0, jobId, tdd.getAllocationId(), Duration.ofSeconds(60));
             tmGateway.submitTask(tdd, jobMasterId, timeout).get();
             taskRunningFuture.get();
 

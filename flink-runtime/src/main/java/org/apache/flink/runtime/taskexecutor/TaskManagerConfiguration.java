@@ -53,7 +53,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 
     private final Time rpcTimeout;
 
-    private final Time slotTimeout;
+    private final Duration slotTimeout;
 
     // null indicates an infinite duration
     @Nullable private final Duration maxRegistrationDuration;
@@ -80,7 +80,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
             ResourceProfile totalResourceProfile,
             String[] tmpDirectories,
             Time rpcTimeout,
-            Time slotTimeout,
+            Duration slotTimeout,
             @Nullable Duration maxRegistrationDuration,
             Configuration configuration,
             boolean exitJvmOnOutOfMemory,
@@ -125,7 +125,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
         return rpcTimeout;
     }
 
-    public Time getSlotTimeout() {
+    public Duration getSlotTimeout() {
         return slotTimeout;
     }
 
@@ -200,8 +200,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 
         LOG.debug("Messages have a max timeout of " + rpcTimeout);
 
-        final Time slotTimeout =
-                Time.milliseconds(configuration.get(TaskManagerOptions.SLOT_TIMEOUT).toMillis());
+        final Duration slotTimeout = configuration.get(TaskManagerOptions.SLOT_TIMEOUT);
 
         Duration finiteRegistrationDuration;
         try {
