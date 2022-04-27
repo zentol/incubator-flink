@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.rpc.akka;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.concurrent.akka.AkkaFutureUtils;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,7 +79,7 @@ class TimeoutCallStackTest {
     void testTimeoutException() throws Exception {
         final TestingGateway gateway = createTestingGateway();
 
-        final CompletableFuture<Void> future = gateway.callThatTimesOut(Time.milliseconds(1));
+        final CompletableFuture<Void> future = gateway.callThatTimesOut(Duration.ofMillis(1));
 
         assertThatThrownBy(future::get)
                 .hasCauseInstanceOf(TimeoutException.class)
@@ -107,7 +107,7 @@ class TimeoutCallStackTest {
 
     private interface TestingGateway extends RpcGateway {
 
-        CompletableFuture<Void> callThatTimesOut(@RpcTimeout Time timeout);
+        CompletableFuture<Void> callThatTimesOut(@RpcTimeout Duration timeout);
     }
 
     private static final class TestingRpcEndpoint extends RpcEndpoint implements TestingGateway {
@@ -117,7 +117,7 @@ class TimeoutCallStackTest {
         }
 
         @Override
-        public CompletableFuture<Void> callThatTimesOut(@RpcTimeout Time timeout) {
+        public CompletableFuture<Void> callThatTimesOut(@RpcTimeout Duration timeout) {
             // return a future that never completes, so the call is guaranteed to time out
             return new CompletableFuture<>();
         }
