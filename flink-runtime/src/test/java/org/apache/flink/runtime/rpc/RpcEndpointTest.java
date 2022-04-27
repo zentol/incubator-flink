@@ -181,7 +181,7 @@ public class RpcEndpointTest {
         assertFalse(gateway.queryIsRunningFlag().get());
 
         stopFuture.complete(null);
-        terminationFuture.get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
+        terminationFuture.get();
         endpoint.validateResourceClosed();
     }
 
@@ -289,7 +289,7 @@ public class RpcEndpointTest {
                                 endpoint.validateRunsInMainThread();
                                 asyncExecutionFuture.complete(null);
                             });
-            asyncExecutionFuture.get(TIMEOUT.getSize(), TIMEOUT.getUnit());
+            asyncExecutionFuture.get();
         } finally {
             RpcUtils.terminateRpcEndpoint(endpoint);
             endpoint.validateResourceClosed();
@@ -452,7 +452,7 @@ public class RpcEndpointTest {
                                 return expectedInteger;
                             },
                             TIMEOUT);
-            assertEquals(expectedInteger, integerFuture.get(TIMEOUT.getSize(), TIMEOUT.getUnit()));
+            assertEquals(expectedInteger, integerFuture.get());
         } finally {
             RpcUtils.terminateRpcEndpoint(endpoint);
             endpoint.validateResourceClosed();
