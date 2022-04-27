@@ -101,6 +101,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1303,14 +1304,12 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
                         ResourceManagerGateway gateway,
                         ResourceManagerId fencingToken,
                         long timeoutMillis) {
-                    Time timeout = Time.milliseconds(timeoutMillis);
-
                     return gateway.registerJobMaster(
                             jobMasterId,
                             jobManagerResourceID,
                             jobManagerRpcAddress,
                             jobID,
-                            TimeUtils.toDuration(timeout));
+                            Duration.ofMillis(timeoutMillis));
                 }
             };
         }
