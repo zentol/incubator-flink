@@ -25,8 +25,10 @@ import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.api.java.tuple.Tuple2
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.migration.CustomEnum.CustomEnum
+import org.apache.flink.client.program.ClusterClient
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend
+import org.apache.flink.runtime.minicluster.MiniCluster
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext, StateBackendLoader}
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend
 import org.apache.flink.runtime.state.memory.MemoryStateBackend
@@ -38,15 +40,13 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase.{ExecutionMode, SnapshotSpec, SnapshotType}
+import org.apache.flink.test.junit5.{InjectClusterClient, InjectMiniCluster}
 import org.apache.flink.util.Collector
-
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 import java.util
 import java.util.stream.Collectors
-
 import scala.util.{Failure, Try}
 
 object StatefulJobSavepointMigrationITCase {
@@ -59,8 +59,7 @@ object StatefulJobSavepointMigrationITCase {
   // master.
   val executionMode = ExecutionMode.VERIFY_SNAPSHOT
 
-  @Parameterized.Parameters(name = "Test snapshot: {0}")
-  def parameters: util.Collection[SnapshotSpec] = {
+  def parameters: java.util.stream.Stream[SnapshotSpec] = {
     // Note: It is not safe to restore savepoints created in a Scala applications with Flink
     // version 1.7 or below. The reason is that up to version 1.7 the underlying Scala serializer
     // used names of anonymous classes that depend on the relative position/order in code, e.g.,
@@ -110,7 +109,7 @@ object StatefulJobSavepointMigrationITCase {
         .filter(x => x.getFlinkVersion().equals(currentVersion))
         .collect(Collectors.toList())
     }
-    parameters
+    parameters.stream()
   }
 
   val NUM_ELEMENTS = 4
@@ -133,13 +132,13 @@ object StatefulJobSavepointMigrationITCase {
 }
 
 /** ITCase for migration Scala state types across different Flink versions. */
-@RunWith(classOf[Parameterized])
-class StatefulJobSavepointMigrationITCase(snapshotSpec: SnapshotSpec)
+class StatefulJobSavepointMigrationITCase
   extends SnapshotMigrationTestBase
   with Serializable {
 
-  @Test
-  def testSavepoint(): Unit = {
+  @ParameterizedTest(name = "Test snapshot: {0}")
+  @MethodSource(Array("parameters"))
+  def testSavepoint(snapshotSpec:SnapshotSpec, @InjectMiniCluster miniCluster:MiniCluster, @InjectClusterClient miniClusterClient:ClusterClient[_]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
@@ -172,6 +171,8 @@ class StatefulJobSavepointMigrationITCase(snapshotSpec: SnapshotSpec)
 
     if (StatefulJobSavepointMigrationITCase.executionMode == ExecutionMode.CREATE_SNAPSHOT) {
       executeAndSnapshot(
+        miniCluster,
+        miniClusterClient,
         env,
         s"src/test/resources/"
           + StatefulJobSavepointMigrationITCase.getSnapshotPath(snapshotSpec),
@@ -183,6 +184,7 @@ class StatefulJobSavepointMigrationITCase(snapshotSpec: SnapshotSpec)
       )
     } else if (StatefulJobSavepointMigrationITCase.executionMode == ExecutionMode.VERIFY_SNAPSHOT) {
       restoreAndExecute(
+        miniClusterClient,
         env,
         SnapshotMigrationTestBase.getResourceFilename(
           StatefulJobSavepointMigrationITCase.getSnapshotPath(snapshotSpec)),

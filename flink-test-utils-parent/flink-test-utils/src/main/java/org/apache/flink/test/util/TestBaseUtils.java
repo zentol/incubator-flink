@@ -22,13 +22,14 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.core.testutils.CommonTestUtils;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.TestLoggerExtension;
 
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +58,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Utility class containing various methods for testing purposes. */
-public class TestBaseUtils extends TestLogger {
+@ExtendWith(TestLoggerExtension.class)
+public class TestBaseUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestBaseUtils.class);
 
@@ -301,7 +302,7 @@ public class TestBaseUtils extends TestLogger {
 
     private static File[] getAllInvolvedFiles(String resultPath, final String[] excludePrefixes) {
         final File result = asFile(resultPath);
-        assertTrue("Result file was not written", result.exists());
+        assertThat(result.exists()).as("Result file was not written").isTrue();
 
         if (result.isDirectory()) {
             try {
@@ -399,11 +400,7 @@ public class TestBaseUtils extends TestLogger {
                         Arrays.toString(expectedStrings),
                         Arrays.toString(resultStrings));
 
-        assertEquals(msg, expectedStrings.length, resultStrings.length);
-
-        for (int i = 0; i < expectedStrings.length; i++) {
-            assertEquals(msg, expectedStrings[i], resultStrings[i]);
-        }
+        assertThat(resultStrings).as(msg).containsExactly(expectedStrings);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -427,11 +424,7 @@ public class TestBaseUtils extends TestLogger {
             resultStrings.add(str);
         }
 
-        List<String> expectedStringList = Arrays.asList(expectedStrings);
-
-        for (String element : resultStrings) {
-            assertTrue(expectedStringList.contains(element));
-        }
+        assertThat(resultStrings).containsExactlyInAnyOrder(expectedStrings);
     }
 
     // --------------------------------------------------------------------------------------------

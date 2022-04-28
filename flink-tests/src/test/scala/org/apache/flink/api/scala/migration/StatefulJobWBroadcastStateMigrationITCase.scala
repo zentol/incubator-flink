@@ -26,8 +26,10 @@ import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.api.java.tuple.Tuple2
 import org.apache.flink.api.scala.createTypeInformation
 import org.apache.flink.api.scala.migration.CustomEnum.CustomEnum
+import org.apache.flink.client.program.ClusterClient
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend
+import org.apache.flink.runtime.minicluster.MiniCluster
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext, StateBackendLoader}
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend
 import org.apache.flink.runtime.state.memory.MemoryStateBackend
@@ -40,15 +42,14 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase.{ExecutionMode, SnapshotSpec, SnapshotType}
+import org.apache.flink.test.junit5.{InjectClusterClient, InjectMiniCluster}
 import org.apache.flink.util.Collector
-
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 import java.util
 import java.util.stream.Collectors
-
 import scala.util.{Failure, Try}
 
 object StatefulJobWBroadcastStateMigrationITCase {
@@ -61,8 +62,7 @@ object StatefulJobWBroadcastStateMigrationITCase {
   // master.
   val executionMode = ExecutionMode.VERIFY_SNAPSHOT
 
-  @Parameterized.Parameters(name = "Test snapshot: {0}")
-  def parameters: util.Collection[SnapshotSpec] = {
+  def parameters: java.util.stream.Stream[SnapshotSpec] = {
     // Note: It is not safe to restore savepoints created in a Scala applications with Flink
     // version 1.7 or below. The reason is that up to version 1.7 the underlying Scala serializer
     // used names of anonymous classes that depend on the relative position/order in code, e.g.,
@@ -112,7 +112,7 @@ object StatefulJobWBroadcastStateMigrationITCase {
         .filter(x => x.getFlinkVersion().equals(currentVersion))
         .collect(Collectors.toList())
     }
-    parameters
+    parameters.stream
   }
 
   def getSnapshotPath(snapshotSpec: SnapshotSpec): String = {
@@ -135,13 +135,13 @@ object StatefulJobWBroadcastStateMigrationITCase {
 }
 
 /** ITCase for migration Scala state types across different Flink versions. */
-@RunWith(classOf[Parameterized])
-class StatefulJobWBroadcastStateMigrationITCase(snapshotSpec: SnapshotSpec)
+class StatefulJobWBroadcastStateMigrationITCase
   extends SnapshotMigrationTestBase
   with Serializable {
 
-  @Test
-  def testSavepointWithBroadcast(): Unit = {
+  @ParameterizedTest(name = "Test snapshot: {0}")
+  @MethodSource(Array("parameters"))
+  def testSavepointWithBroadcast(snapshotSpec:SnapshotSpec, @InjectMiniCluster miniCluster:MiniCluster, @InjectClusterClient miniClusterClient:ClusterClient[_]): Unit = {
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
@@ -199,7 +199,7 @@ class StatefulJobWBroadcastStateMigrationITCase(snapshotSpec: SnapshotSpec)
         .process(new TestBroadcastProcessFunction)
         .addSink(new AccumulatorCountingSink)
 
-      executeAndSnapshot(
+      executeAndSnapshot(miniCluster, miniClusterClient,
         env,
         s"src/test/resources/"
           + StatefulJobWBroadcastStateMigrationITCase.getSnapshotPath(snapshotSpec),
@@ -223,6 +223,7 @@ class StatefulJobWBroadcastStateMigrationITCase(snapshotSpec: SnapshotSpec)
         .addSink(new AccumulatorCountingSink)
 
       restoreAndExecute(
+        miniClusterClient,
         env,
         SnapshotMigrationTestBase.getResourceFilename(
           StatefulJobWBroadcastStateMigrationITCase.getSnapshotPath(snapshotSpec)),
@@ -448,22 +449,22 @@ class VerifyingBroadcastProcessFunction(
     import scala.collection.JavaConversions._
     for (entry <- ctx.getBroadcastState(firstBroadcastStateDesc).immutableEntries()) {
       val v = firstExpectedBroadcastState.get(entry.getKey).get
-      Assert.assertEquals(v, entry.getValue)
+      assertThat(entry.getValue).isEqualTo(v)
       actualFirstState += (entry.getKey -> entry.getValue)
     }
 
-    Assert.assertEquals(firstExpectedBroadcastState, actualFirstState)
+    assertThat(actualFirstState).isEqualTo(firstExpectedBroadcastState)
 
     var actualSecondState = Map[String, String]()
 
     import scala.collection.JavaConversions._
     for (entry <- ctx.getBroadcastState(secondBroadcastStateDesc).immutableEntries()) {
       val v = secondExpectedBroadcastState.get(entry.getKey).get
-      Assert.assertEquals(v, entry.getValue)
+      assertThat(entry.getValue).isEqualTo(v)
       actualSecondState += (entry.getKey -> entry.getValue)
     }
 
-    Assert.assertEquals(secondExpectedBroadcastState, actualSecondState)
+    assertThat(actualSecondState).isEqualTo(secondExpectedBroadcastState)
     out.collect(value)
   }
 

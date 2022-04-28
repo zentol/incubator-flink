@@ -29,9 +29,11 @@ import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
@@ -39,15 +41,17 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.test.checkpointing.utils.MigrationTestUtils;
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase;
+import org.apache.flink.test.junit5.InjectClusterClient;
+import org.apache.flink.test.junit5.InjectMiniCluster;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Migration IT cases for upgrading a legacy {@link TypeSerializerConfigSnapshot} that is written in
@@ -57,8 +61,7 @@ import java.util.stream.Collectors;
  * {@link TypeSerializerConfigSnapshot}, as can be seen in the commented out code at the end of this
  * class. On restore, we change the snapshot to implement directly a {@link TypeSerializerSnapshot}.
  */
-@RunWith(Parameterized.class)
-public class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTestBase {
+class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTestBase {
 
     private static final int NUM_SOURCE_ELEMENTS = 4;
 
@@ -70,8 +73,7 @@ public class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTest
     // master.
     private static final ExecutionMode executionMode = ExecutionMode.VERIFY_SNAPSHOT;
 
-    @Parameterized.Parameters(name = "Test snapshot: {0}")
-    public static Collection<SnapshotSpec> parameters() {
+    public static Stream<SnapshotSpec> parameters() {
         Collection<SnapshotSpec> parameters = new LinkedList<>();
         parameters.addAll(
                 SnapshotSpec.withVersions(
@@ -114,17 +116,16 @@ public class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTest
                             .filter(x -> x.getFlinkVersion().equals(currentVersion))
                             .collect(Collectors.toList());
         }
-        return parameters;
+        return parameters.stream();
     }
 
-    private final SnapshotSpec snapshotSpec;
-
-    public TypeSerializerSnapshotMigrationITCase(SnapshotSpec snapshotSpec) throws Exception {
-        this.snapshotSpec = snapshotSpec;
-    }
-
-    @Test
-    public void testSnapshot() throws Exception {
+    @ParameterizedTest(name = "Test snapshot: {0}")
+    @MethodSource("parameters")
+    public void testSnapshot(
+            SnapshotSpec snapshotSpec,
+            @InjectMiniCluster MiniCluster miniCluster,
+            @InjectClusterClient ClusterClient<?> miniClusterClient)
+            throws Exception {
         final int parallelism = 1;
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -162,6 +163,8 @@ public class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTest
 
         if (executionMode == ExecutionMode.CREATE_SNAPSHOT) {
             executeAndSnapshot(
+                    miniCluster,
+                    miniClusterClient,
                     env,
                     "src/test/resources/" + snapshotPath,
                     snapshotSpec.getSnapshotType(),
@@ -170,6 +173,7 @@ public class TypeSerializerSnapshotMigrationITCase extends SnapshotMigrationTest
                             NUM_SOURCE_ELEMENTS));
         } else if (executionMode == ExecutionMode.VERIFY_SNAPSHOT) {
             restoreAndExecute(
+                    miniClusterClient,
                     env,
                     getResourceFilename(snapshotPath),
                     Tuple2.of(

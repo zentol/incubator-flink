@@ -27,8 +27,10 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
+import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
@@ -43,24 +45,25 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.test.checkpointing.utils.MigrationTestUtils;
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase;
+import org.apache.flink.test.junit5.InjectClusterClient;
+import org.apache.flink.test.junit5.InjectMiniCluster;
 import org.apache.flink.util.Collector;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Migration ITCases for a stateful job. The tests are parameterized to cover migrating for multiple
  * previous Flink versions, as well as for different state backends.
  */
-@RunWith(Parameterized.class)
-public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBase {
+class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBase {
 
     private static final int NUM_SOURCE_ELEMENTS = 4;
 
@@ -72,8 +75,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
     // master.
     private static final ExecutionMode executionMode = ExecutionMode.VERIFY_SNAPSHOT;
 
-    @Parameterized.Parameters(name = "Test snapshot: {0}")
-    public static Collection<SnapshotSpec> parameters() {
+    public static Stream<SnapshotSpec> parameters() {
         Collection<SnapshotSpec> parameters = new LinkedList<>();
         parameters.addAll(
                 SnapshotSpec.withVersions(
@@ -116,17 +118,16 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                             .filter(x -> x.getFlinkVersion().equals(currentVersion))
                             .collect(Collectors.toList());
         }
-        return parameters;
+        return parameters.stream();
     }
 
-    private final SnapshotSpec snapshotSpec;
-
-    public StatefulJobSnapshotMigrationITCase(SnapshotSpec snapshotSpec) throws Exception {
-        this.snapshotSpec = snapshotSpec;
-    }
-
-    @Test
-    public void testSavepoint() throws Exception {
+    @ParameterizedTest(name = "Test snapshot: {0}")
+    @MethodSource("parameters")
+    void testSavepoint(
+            SnapshotSpec snapshotSpec,
+            @InjectMiniCluster MiniCluster miniCluster,
+            @InjectClusterClient ClusterClient<?> miniClusterClient)
+            throws Exception {
 
         final int parallelism = 4;
 
@@ -211,6 +212,8 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
 
         if (executionMode == ExecutionMode.CREATE_SNAPSHOT) {
             executeAndSnapshot(
+                    miniCluster,
+                    miniClusterClient,
                     env,
                     "src/test/resources/" + snapshotPath,
                     snapshotSpec.getSnapshotType(),
@@ -219,6 +222,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                             NUM_SOURCE_ELEMENTS * 2));
         } else {
             restoreAndExecute(
+                    miniClusterClient,
                     env,
                     getResourceFilename(snapshotPath),
                     new Tuple2<>(
@@ -298,7 +302,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                 throw new RuntimeException("Missing key value state for " + value);
             }
 
-            assertEquals(value.f1, state.value());
+            assertThat(state.value()).isEqualTo(value.f1);
             getRuntimeContext().getAccumulator(SUCCESSFUL_RESTORE_CHECK_ACCUMULATOR).add(1);
         }
     }
@@ -392,7 +396,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                                     LongSerializer.INSTANCE,
                                     stateDescriptor);
 
-            assertEquals(state.value(), element.getValue().f1);
+            assertThat(element.getValue().f1).isEqualTo(state.value());
             getRuntimeContext().getAccumulator(SUCCESSFUL_PROCESS_CHECK_ACCUMULATOR).add(1);
 
             output.collect(element);
@@ -405,7 +409,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                             .getPartitionedState(
                                     timer.getNamespace(), LongSerializer.INSTANCE, stateDescriptor);
 
-            assertEquals(state.value(), timer.getNamespace());
+            assertThat(timer.getNamespace()).isEqualTo(state.value());
             getRuntimeContext().getAccumulator(SUCCESSFUL_EVENT_TIME_CHECK_ACCUMULATOR).add(1);
         }
 
@@ -416,7 +420,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
                             .getPartitionedState(
                                     timer.getNamespace(), LongSerializer.INSTANCE, stateDescriptor);
 
-            assertEquals(state.value(), timer.getNamespace());
+            assertThat(timer.getNamespace()).isEqualTo(state.value());
             getRuntimeContext().getAccumulator(SUCCESSFUL_PROCESSING_TIME_CHECK_ACCUMULATOR).add(1);
         }
     }
