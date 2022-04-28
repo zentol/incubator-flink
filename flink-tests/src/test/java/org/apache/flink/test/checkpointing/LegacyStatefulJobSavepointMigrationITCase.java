@@ -28,8 +28,10 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.contrib.streaming.state.RocksDBStateBackend;
+import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -46,15 +48,17 @@ import org.apache.flink.streaming.api.operators.Triggerable;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase;
+import org.apache.flink.test.junit5.InjectClusterClient;
+import org.apache.flink.test.junit5.InjectMiniCluster;
 import org.apache.flink.util.Collector;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -62,16 +66,14 @@ import static org.junit.Assert.assertEquals;
  * Migration ITCases for a stateful job. The tests are parameterized to cover migrating for multiple
  * previous Flink versions, as well as for different state backends.
  */
-@RunWith(Parameterized.class)
-public class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigrationTestBase {
+class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigrationTestBase {
 
     private static final int NUM_SOURCE_ELEMENTS = 4;
 
-    @Parameterized.Parameters(name = "Migrate Savepoint / Backend: {0}")
-    public static Collection<Tuple2<FlinkVersion, String>> parameters() {
-        return Arrays.asList(
-                Tuple2.of(FlinkVersion.v1_4, StateBackendLoader.MEMORY_STATE_BACKEND_NAME),
-                Tuple2.of(FlinkVersion.v1_4, StateBackendLoader.ROCKSDB_STATE_BACKEND_NAME));
+    private static Stream<Arguments> parameters() {
+        return Stream.of(
+                Arguments.of(FlinkVersion.v1_4, StateBackendLoader.MEMORY_STATE_BACKEND_NAME),
+                Arguments.of(FlinkVersion.v1_4, StateBackendLoader.ROCKSDB_STATE_BACKEND_NAME));
     }
 
     /**
@@ -85,19 +87,13 @@ public class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigration
     private final String flinkGenerateSavepointBackendType =
             StateBackendLoader.ROCKSDB_STATE_BACKEND_NAME;
 
-    private final FlinkVersion testMigrateVersion;
-    private final String testStateBackend;
-
-    public LegacyStatefulJobSavepointMigrationITCase(
-            Tuple2<FlinkVersion, String> testMigrateVersionAndBackend) throws Exception {
-        this.testMigrateVersion = testMigrateVersionAndBackend.f0;
-        this.testStateBackend = testMigrateVersionAndBackend.f1;
-    }
-
     /** Manually run this to write binary snapshot data. */
     @Test
     @Ignore
-    public void writeSavepoint() throws Exception {
+    public void writeSavepoint(
+            @InjectMiniCluster MiniCluster miniCluster,
+            @InjectClusterClient ClusterClient<?> miniClusterClient)
+            throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
@@ -145,6 +141,8 @@ public class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigration
                 .addSink(new AccumulatorCountingSink<Tuple2<Long, Long>>());
 
         executeAndSnapshot(
+                miniCluster,
+                miniClusterClient,
                 env,
                 "src/test/resources/"
                         + getSavepointPath(
@@ -154,8 +152,13 @@ public class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigration
                         AccumulatorCountingSink.NUM_ELEMENTS_ACCUMULATOR, NUM_SOURCE_ELEMENTS));
     }
 
-    @Test
-    public void testSavepointRestore() throws Exception {
+    @ParameterizedTest(name = "Migrate Savepoint / Backend: {0}")
+    @MethodSource("parameters")
+    public void testSavepointRestore(
+            FlinkVersion testMigrateVersion,
+            String testStateBackend,
+            @InjectClusterClient ClusterClient<?> clusterClient)
+            throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setRestartStrategy(RestartStrategies.noRestart());
@@ -206,6 +209,7 @@ public class LegacyStatefulJobSavepointMigrationITCase extends SnapshotMigration
                 .addSink(new AccumulatorCountingSink<Tuple2<Long, Long>>());
 
         restoreAndExecute(
+                clusterClient,
                 env,
                 getResourceFilename(getSavepointPath(testMigrateVersion, testStateBackend)),
                 new Tuple2<>(CheckingRestoringSource.SUCCESSFUL_RESTORE_CHECK_ACCUMULATOR, 1),

@@ -34,16 +34,17 @@ import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.core.execution.SavepointFormatType;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.SavepointRestoreSettings;
+import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.test.util.MiniClusterWithClientResource;
-import org.apache.flink.util.TestLogger;
+import org.apache.flink.test.junit5.MiniClusterExtension;
+import org.apache.flink.util.TestLoggerExtension;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -60,8 +62,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Test savepoint migration. */
 
@@ -69,15 +71,24 @@ import static org.junit.Assert.fail;
  * Base for testing snapshot migration. The base test supports snapshots types as defined in {@link
  * SnapshotType}.
  */
-public abstract class SnapshotMigrationTestBase extends TestLogger {
-
-    @ClassRule public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
-
-    @Rule public final MiniClusterWithClientResource miniClusterResource;
+@ExtendWith(TestLoggerExtension.class)
+public abstract class SnapshotMigrationTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(SnapshotMigrationTestBase.class);
 
     protected static final int DEFAULT_PARALLELISM = 4;
+
+    @RegisterExtension
+    private static final MiniClusterExtension MINI_CLUSTER_EXTENSION =
+            new MiniClusterExtension(
+                    () ->
+                            new MiniClusterResourceConfiguration.Builder()
+                                    .setConfiguration(getConfiguration())
+                                    .setNumberTaskManagers(1)
+                                    .setNumberSlotsPerTaskManager(DEFAULT_PARALLELISM)
+                                    .build());
+
+    @TempDir private static Path temporaryFolder;
 
     /**
      * Modes for migration test execution. This enum is supposed to serve as a switch between two
@@ -219,17 +230,7 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
         return resource.getFile();
     }
 
-    protected SnapshotMigrationTestBase() throws Exception {
-        miniClusterResource =
-                new MiniClusterWithClientResource(
-                        new MiniClusterResourceConfiguration.Builder()
-                                .setConfiguration(getConfiguration())
-                                .setNumberTaskManagers(1)
-                                .setNumberSlotsPerTaskManager(DEFAULT_PARALLELISM)
-                                .build());
-    }
-
-    private Configuration getConfiguration() throws Exception {
+    private static Configuration getConfiguration() {
         // Flink configuration
         final Configuration config = new Configuration();
 
@@ -237,11 +238,14 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
         config.setInteger(TaskManagerOptions.NUM_TASK_SLOTS, DEFAULT_PARALLELISM);
 
         UUID id = UUID.randomUUID();
-        final File checkpointDir = TEMP_FOLDER.newFolder("checkpoints_" + id).getAbsoluteFile();
-        final File savepointDir = TEMP_FOLDER.newFolder("savepoints_" + id).getAbsoluteFile();
+        final File checkpointDir =
+                temporaryFolder.resolve("checkpoints_" + id).toAbsolutePath().toFile();
+        final File savepointDir =
+                temporaryFolder.resolve("savepoints_" + id).toAbsolutePath().toFile();
 
-        if (!checkpointDir.exists() || !savepointDir.exists()) {
-            throw new Exception("Test setup failed: failed to create (temporary) directories.");
+        if (!checkpointDir.mkdirs() || !savepointDir.mkdirs()) {
+            throw new RuntimeException(
+                    "Test setup failed: failed to create (temporary) directories.");
         }
 
         LOG.info("Created temporary checkpoint directory: " + checkpointDir + ".");
@@ -259,6 +263,8 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
 
     @SafeVarargs
     protected final void executeAndSnapshot(
+            MiniCluster miniCluster,
+            ClusterClient<?> client,
             StreamExecutionEnvironment env,
             String snapshotPath,
             SnapshotType snapshotType,
@@ -266,8 +272,6 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
             throws Exception {
 
         final Deadline deadLine = Deadline.fromNow(Duration.ofMinutes(5));
-
-        ClusterClient<?> client = miniClusterResource.getClusterClient();
 
         // Submit the job
         JobGraph jobGraph = env.getStreamGraph().getJobGraph();
@@ -318,7 +322,7 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
                         client.triggerSavepoint(jobID, null, SavepointFormatType.NATIVE);
                 break;
             case CHECKPOINT:
-                snapshotPathFuture = miniClusterResource.getMiniCluster().triggerCheckpoint(jobID);
+                snapshotPathFuture = miniCluster.triggerCheckpoint(jobID);
                 break;
             default:
                 throw new UnsupportedOperationException("Snapshot type not supported/implemented.");
@@ -338,14 +342,13 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
 
     @SafeVarargs
     protected final void restoreAndExecute(
+            ClusterClient<?> client,
             StreamExecutionEnvironment env,
             String snapshotPath,
             Tuple2<String, Integer>... expectedAccumulators)
             throws Exception {
 
         final Deadline deadLine = Deadline.fromNow(Duration.ofMinutes(5));
-
-        ClusterClient<?> client = miniClusterResource.getClusterClient();
 
         // Submit the job
         JobGraph jobGraph = env.getStreamGraph().getJobGraph();
@@ -374,7 +377,7 @@ public abstract class SnapshotMigrationTestBase extends TestLogger {
                                     .get()
                                     .deserializeError(ClassLoader.getSystemClassLoader()));
                 }
-                assertNotEquals(JobStatus.FAILED, jobStatus);
+                assertThat(jobStatus).isNotEqualTo(JobStatus.FAILED);
             } catch (Exception e) {
                 fail("Could not connect to job: " + e);
             }
