@@ -23,7 +23,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.hadoopcompatibility.mapred.HadoopMapFunction;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
+import org.apache.flink.test.util.AbstractTestBase;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -34,18 +34,11 @@ import org.apache.hadoop.mapred.Reporter;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 
 /** IT cases for the {@link HadoopMapFunction}. */
-@RunWith(Parameterized.class)
-public class HadoopMapFunctionITCase extends MultipleProgramsTestBase {
-
-    public HadoopMapFunctionITCase(TestExecutionMode mode) {
-        super(mode);
-    }
+public class HadoopMapFunctionITCase extends AbstractTestBase {
 
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 

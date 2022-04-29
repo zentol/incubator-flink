@@ -68,7 +68,7 @@ public class DebeziumJsonFileSystemITCase extends StreamingTestBase {
 
     private void prepareTables(boolean isPartition) throws IOException {
         byte[] bytes = readBytes("debezium-data-schema-exclude.txt");
-        source = TEMPORARY_FOLDER.newFolder();
+        source = temporaryfolder.newFolder();
         File file;
         if (isPartition) {
             File partition = new File(source, "p=1");
@@ -80,7 +80,7 @@ public class DebeziumJsonFileSystemITCase extends StreamingTestBase {
         file.createNewFile();
         Files.write(file.toPath(), bytes);
 
-        sink = TEMPORARY_FOLDER.newFolder();
+        sink = temporaryfolder.newFolder();
 
         env().setParallelism(1);
     }

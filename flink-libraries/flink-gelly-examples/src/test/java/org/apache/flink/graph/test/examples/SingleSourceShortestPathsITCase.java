@@ -22,7 +22,6 @@ import org.apache.flink.graph.examples.GSASingleSourceShortestPaths;
 import org.apache.flink.graph.examples.PregelSSSP;
 import org.apache.flink.graph.examples.SingleSourceShortestPaths;
 import org.apache.flink.graph.examples.data.SingleSourceShortestPathsData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.util.FileUtils;
 
@@ -38,7 +37,7 @@ import java.io.File;
 
 /** Tests for {@link SingleSourceShortestPaths}. */
 @RunWith(Parameterized.class)
-public class SingleSourceShortestPathsITCase extends MultipleProgramsTestBase {
+public class SingleSourceShortestPathsITCase extends AbstractTestBase {
 
     private String edgesPath;
 
@@ -49,7 +48,7 @@ public class SingleSourceShortestPathsITCase extends MultipleProgramsTestBase {
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public SingleSourceShortestPathsITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Before

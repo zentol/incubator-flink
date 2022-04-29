@@ -70,7 +70,7 @@ public class ManualCheckpointITCase extends AbstractTestBase {
 
     @Test
     public void testTriggeringWhenPeriodicDisabled() throws Exception {
-        int parallelism = MINI_CLUSTER_RESOURCE.getNumberSlots();
+        int parallelism = MINI_CLUSTER_EXTENSION.getNumberSlots();
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
         env.getCheckpointConfig()
@@ -87,7 +87,7 @@ public class ManualCheckpointITCase extends AbstractTestBase {
 
         final JobClient jobClient = env.executeAsync();
         final JobID jobID = jobClient.getJobID();
-        final MiniCluster miniCluster = MINI_CLUSTER_RESOURCE.getMiniCluster();
+        final MiniCluster miniCluster = MINI_CLUSTER_EXTENSION.getMiniCluster();
 
         CommonTestUtils.waitForJobStatus(jobClient, Collections.singletonList(JobStatus.RUNNING));
         CommonTestUtils.waitForAllTaskRunning(miniCluster, jobID, false);
@@ -100,7 +100,7 @@ public class ManualCheckpointITCase extends AbstractTestBase {
 
     @Test
     public void testTriggeringWhenPeriodicEnabled() throws Exception {
-        int parallelism = MINI_CLUSTER_RESOURCE.getNumberSlots();
+        int parallelism = MINI_CLUSTER_EXTENSION.getNumberSlots();
         final int checkpointingInterval = 500;
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
@@ -119,7 +119,7 @@ public class ManualCheckpointITCase extends AbstractTestBase {
 
         final JobClient jobClient = env.executeAsync();
         final JobID jobID = jobClient.getJobID();
-        final MiniCluster miniCluster = MINI_CLUSTER_RESOURCE.getMiniCluster();
+        final MiniCluster miniCluster = MINI_CLUSTER_EXTENSION.getMiniCluster();
 
         CommonTestUtils.waitForJobStatus(jobClient, Collections.singletonList(JobStatus.RUNNING));
         CommonTestUtils.waitForAllTaskRunning(miniCluster, jobID, false);

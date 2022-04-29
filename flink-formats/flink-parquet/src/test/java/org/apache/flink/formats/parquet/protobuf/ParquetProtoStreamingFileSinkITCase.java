@@ -57,7 +57,7 @@ public class ParquetProtoStreamingFileSinkITCase extends AbstractTestBase {
 
     @Test
     public void testParquetProtoWriters() throws Exception {
-        File folder = TEMPORARY_FOLDER.newFolder();
+        File folder = temporaryfolder.newFolder();
 
         List<SimpleProtoRecord> data =
                 Arrays.asList(

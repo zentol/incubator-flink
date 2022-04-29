@@ -26,7 +26,6 @@ import org.apache.flink.api.java.operators.MapPartitionOperator;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.test.operators.util.CollectionDataSets;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Before;
@@ -42,12 +41,12 @@ import static org.junit.Assert.assertEquals;
 /** Integration tests for {@link DataSetUtils#sample}. */
 @SuppressWarnings("serial")
 @RunWith(Parameterized.class)
-public class SampleITCase extends MultipleProgramsTestBase {
+public class SampleITCase extends AbstractTestBase {
 
     private static final Random RNG = new Random();
 
     public SampleITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Before

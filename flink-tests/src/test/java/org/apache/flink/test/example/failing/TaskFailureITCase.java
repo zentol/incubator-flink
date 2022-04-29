@@ -25,7 +25,6 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.test.util.JavaProgramTestBase;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Assert;
 

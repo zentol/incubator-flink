@@ -22,7 +22,6 @@ import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala.util.CollectionDataSets
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 
 import org.junit.{After, Before, Rule, Test}
 import org.junit.rules.TemporaryFolder
@@ -30,7 +29,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(classOf[Parameterized])
-class DistinctITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class DistinctITCase extends AbstractTestBase {
 
   private var resultPath: String = null
   private var expected: String = null

@@ -22,7 +22,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.examples.data.TriangleCountData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Assert;
@@ -34,10 +33,10 @@ import java.util.List;
 
 /** Tests for {@link TriangleEnumerator}. */
 @RunWith(Parameterized.class)
-public class TriangleEnumeratorITCase extends MultipleProgramsTestBase {
+public class TriangleEnumeratorITCase extends AbstractTestBase {
 
     public TriangleEnumeratorITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

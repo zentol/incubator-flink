@@ -29,7 +29,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.test.TestGraphUtils;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomParameterizedType;
 import org.apache.flink.graph.utils.EdgeToTuple3Map;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,10 +41,10 @@ import java.util.List;
  * Graph#joinWithEdgesOnTarget}.
  */
 @RunWith(Parameterized.class)
-public class JoinWithEdgesITCase extends MultipleProgramsTestBase {
+public class JoinWithEdgesITCase extends AbstractTestBase {
 
     public JoinWithEdgesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

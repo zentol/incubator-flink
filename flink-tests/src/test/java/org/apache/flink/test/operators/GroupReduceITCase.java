@@ -39,7 +39,6 @@ import org.apache.flink.test.operators.util.CollectionDataSets.CustomType;
 import org.apache.flink.test.operators.util.CollectionDataSets.FromTupleWithCTor;
 import org.apache.flink.test.operators.util.CollectionDataSets.POJO;
 import org.apache.flink.test.operators.util.CollectionDataSets.PojoContainingTupleAndWritable;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.joda.time.DateTime;
@@ -61,10 +60,10 @@ import scala.math.BigInt;
  */
 @SuppressWarnings({"serial", "unchecked", "UnusedDeclaration"})
 @RunWith(Parameterized.class)
-public class GroupReduceITCase extends MultipleProgramsTestBase {
+public class GroupReduceITCase extends AbstractTestBase {
 
     public GroupReduceITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

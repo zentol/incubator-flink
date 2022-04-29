@@ -44,7 +44,7 @@ public class FileSystemTableSinkStreamingITCase extends StreamingTestBase {
     @Test
     public void testMonitorContinuously() throws Exception {
         // Create temp dir
-        File testPath = TEMPORARY_FOLDER.newFolder();
+        File testPath = temporaryfolder.newFolder();
 
         // Write first csv file out
         Files.write(

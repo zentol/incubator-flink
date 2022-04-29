@@ -18,18 +18,22 @@
 
 package org.apache.flink.test.util;
 
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
+import org.apache.flink.test.junit5.InjectClusterClient;
+import org.apache.flink.test.junit5.MiniClusterExtension;
 import org.apache.flink.util.FileUtils;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Base class for unit tests that run multiple tests and want to reuse the same Flink cluster. This
@@ -62,28 +66,23 @@ public abstract class AbstractTestBase extends TestBaseUtils {
 
     private static final int DEFAULT_PARALLELISM = 4;
 
-    @ClassRule
-    public static final MiniClusterWithClientResource MINI_CLUSTER_RESOURCE =
-            new MiniClusterWithClientResource(
+    @RegisterExtension
+    protected static final MiniClusterExtension MINI_CLUSTER_EXTENSION =
+            new MiniClusterExtension(
                     new MiniClusterResourceConfiguration.Builder()
                             .setNumberTaskManagers(1)
                             .setNumberSlotsPerTaskManager(DEFAULT_PARALLELISM)
                             .build());
 
-    @ClassRule public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
+    @TempDir protected static Path temporaryfolder;
 
-    @After
-    public final void cleanupRunningJobs() throws Exception {
-        if (!MINI_CLUSTER_RESOURCE.getMiniCluster().isRunning()) {
-            // do nothing if the MiniCluster is not running
-            LOG.warn("Mini cluster is not running after the test!");
-            return;
-        }
-
-        for (JobStatusMessage path : MINI_CLUSTER_RESOURCE.getClusterClient().listJobs().get()) {
+    @AfterEach
+    final void cleanupRunningJobs(@InjectClusterClient ClusterClient<?> miniClusterClient)
+            throws Exception {
+        for (JobStatusMessage path : miniClusterClient.listJobs().get()) {
             if (!path.getJobState().isTerminalState()) {
                 try {
-                    MINI_CLUSTER_RESOURCE.getClusterClient().cancel(path.getJobId()).get();
+                    miniClusterClient.cancel(path.getJobId()).get();
                 } catch (Exception ignored) {
                     // ignore exceptions when cancelling dangling jobs
                 }
@@ -116,6 +115,6 @@ public abstract class AbstractTestBase extends TestBaseUtils {
     }
 
     public File createAndRegisterTempFile(String fileName) throws IOException {
-        return new File(TEMPORARY_FOLDER.newFolder(), fileName);
+        return temporaryfolder.resolve(fileName).toFile();
     }
 }

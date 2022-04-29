@@ -23,7 +23,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.hadoopcompatibility.mapred.HadoopReduceFunction;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
+import org.apache.flink.test.util.AbstractTestBase;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -34,19 +34,12 @@ import org.apache.hadoop.mapred.Reporter;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Iterator;
 
 /** IT cases for the {@link HadoopReduceFunction}. */
-@RunWith(Parameterized.class)
-public class HadoopReduceFunctionITCase extends MultipleProgramsTestBase {
-
-    public HadoopReduceFunctionITCase(TestExecutionMode mode) {
-        super(mode);
-    }
+public class HadoopReduceFunctionITCase extends AbstractTestBase {
 
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 

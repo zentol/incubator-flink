@@ -27,7 +27,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomParameterizedType;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomType;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,10 +36,10 @@ import java.util.List;
 
 /** Tests for {@link Graph#mapVertices}. */
 @RunWith(Parameterized.class)
-public class MapVerticesITCase extends MultipleProgramsTestBase {
+public class MapVerticesITCase extends AbstractTestBase {
 
     public MapVerticesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

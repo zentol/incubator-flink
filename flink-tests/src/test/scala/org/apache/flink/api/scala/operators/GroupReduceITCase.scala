@@ -24,8 +24,7 @@ import org.apache.flink.api.scala.util.CollectionDataSets
 import org.apache.flink.api.scala.util.CollectionDataSets.{CustomType, MutableTuple3}
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.optimizer.Optimizer
-import org.apache.flink.test.util.MultipleProgramsTestBase
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
+import org.apache.flink.test.util.AbstractTestBase
 import org.apache.flink.util.Collector
 
 import org.junit.Assert._
@@ -39,7 +38,7 @@ import java.lang.Iterable
 import scala.collection.JavaConverters._
 
 @RunWith(classOf[Parameterized])
-class GroupReduceITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class GroupReduceITCase extends AbstractTestBase {
 
   /** check correctness of groupReduce on tuples with key field selector */
   @Test

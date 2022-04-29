@@ -22,7 +22,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.examples.data.LabelPropagationData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Test;
@@ -33,10 +32,10 @@ import java.util.List;
 
 /** Tests for {@link LabelPropagation}. */
 @RunWith(Parameterized.class)
-public class LabelPropagationITCase extends MultipleProgramsTestBase {
+public class LabelPropagationITCase extends AbstractTestBase {
 
     public LabelPropagationITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

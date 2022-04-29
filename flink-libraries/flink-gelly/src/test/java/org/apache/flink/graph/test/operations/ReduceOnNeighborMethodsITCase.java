@@ -30,7 +30,6 @@ import org.apache.flink.graph.NeighborsFunctionWithVertexValue;
 import org.apache.flink.graph.ReduceNeighborsFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Test;
@@ -41,10 +40,10 @@ import java.util.List;
 
 /** Tests for {@link Graph#groupReduceOnNeighbors} and {@link Graph#reduceOnNeighbors}. */
 @RunWith(Parameterized.class)
-public class ReduceOnNeighborMethodsITCase extends MultipleProgramsTestBase {
+public class ReduceOnNeighborMethodsITCase extends AbstractTestBase {
 
     public ReduceOnNeighborMethodsITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

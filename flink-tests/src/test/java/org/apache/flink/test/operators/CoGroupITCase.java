@@ -39,7 +39,6 @@ import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.test.operators.util.CollectionDataSets;
 import org.apache.flink.test.operators.util.CollectionDataSets.CustomType;
 import org.apache.flink.test.operators.util.CollectionDataSets.POJO;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Assert;
@@ -54,10 +53,10 @@ import java.util.List;
 
 /** Integration tests for {@link CoGroupFunction} and {@link RichCoGroupFunction}. */
 @RunWith(Parameterized.class)
-public class CoGroupITCase extends MultipleProgramsTestBase {
+public class CoGroupITCase extends AbstractTestBase {
 
     public CoGroupITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     /*

@@ -20,8 +20,7 @@ package org.apache.flink.graph.drivers;
 
 import org.apache.flink.graph.Runner;
 import org.apache.flink.graph.asm.dataset.ChecksumHashCode.Checksum;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
-import org.apache.flink.util.FlinkRuntimeException;
+import org.apache.flink.test.util.AbstractTestBase;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.hamcrest.Description;
@@ -33,55 +32,43 @@ import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.Arrays;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Base class for driver integration tests providing utility methods for verifying program output.
  */
-public abstract class DriverBaseITCase extends MultipleProgramsTestBase {
+public abstract class DriverBaseITCase extends AbstractTestBase {
 
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
     protected final String idType;
 
-    protected DriverBaseITCase(String idType, TestExecutionMode mode) {
-        super(mode);
-
+    protected DriverBaseITCase(String idType) {
         this.idType = idType;
     }
 
     @Parameterized.Parameters(name = "ID type = {0}, Execution mode = {1}")
-    public static Collection<Object[]> executionModes() {
-        List<Object[]> executionModes = new ArrayList<>();
-
-        for (String idType :
-                new String[] {
-                    "byte",
-                    "nativeByte",
-                    "short",
-                    "nativeShort",
-                    "char",
-                    "nativeChar",
-                    "integer",
-                    "nativeInteger",
-                    "long",
-                    "nativeLong",
-                    "float",
-                    "nativeFloat",
-                    "double",
-                    "nativeDouble",
-                    "string",
-                    "nativeString"
-                }) {
-            for (TestExecutionMode executionMode : TestExecutionMode.values()) {
-                executionModes.add(new Object[] {idType, executionMode});
-            }
-        }
-
-        return executionModes;
+    public static Stream<String> executionModes() {
+        return Arrays.asList(
+                "byte",
+                "nativeByte",
+                "short",
+                "nativeShort",
+                "char",
+                "nativeChar",
+                "integer",
+                "nativeInteger",
+                "long",
+                "nativeLong",
+                "float",
+                "nativeFloat",
+                "double",
+                "nativeDouble",
+                "string",
+                "nativeString")
+                .stream();
     }
 
     /**
@@ -200,19 +187,7 @@ public abstract class DriverBaseITCase extends MultipleProgramsTestBase {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         // Configure object reuse mode
-        switch (mode) {
-            case CLUSTER:
-            case COLLECTION:
-                args = ArrayUtils.add(args, "--__disable_object_reuse");
-                break;
-
-            case CLUSTER_OBJECT_REUSE:
-                // object reuse is enabled by default when executing drivers
-                break;
-
-            default:
-                throw new FlinkRuntimeException("Unknown execution mode " + mode);
-        }
+        args = ArrayUtils.add(args, "--__disable_object_reuse");
 
         // Redirect stdout
         PrintStream stdout = System.out;

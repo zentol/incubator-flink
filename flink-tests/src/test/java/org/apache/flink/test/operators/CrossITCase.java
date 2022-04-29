@@ -29,7 +29,6 @@ import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.operators.util.CollectionDataSets;
 import org.apache.flink.test.operators.util.CollectionDataSets.CustomType;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,10 +39,10 @@ import java.util.List;
 
 /** Integration tests for {@link CrossFunction} and {@link RichCrossFunction}. */
 @RunWith(Parameterized.class)
-public class CrossITCase extends MultipleProgramsTestBase {
+public class CrossITCase extends AbstractTestBase {
 
     public CrossITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

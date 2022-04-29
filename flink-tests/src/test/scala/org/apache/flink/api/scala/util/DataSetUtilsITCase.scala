@@ -20,15 +20,11 @@ package org.apache.flink.api.scala.util
 import org.apache.flink.api.java.Utils.ChecksumHashCode
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.utils._
-import org.apache.flink.test.util.MultipleProgramsTestBase
-
+import org.apache.flink.test.util.AbstractTestBase
 import org.junit._
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
-@RunWith(classOf[Parameterized])
-class DataSetUtilsITCase(mode: MultipleProgramsTestBase.TestExecutionMode)
-  extends MultipleProgramsTestBase(mode) {
+class DataSetUtilsITCase
+  extends AbstractTestBase {
 
   @Test
   @throws(classOf[Exception])

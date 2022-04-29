@@ -29,7 +29,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.ReduceEdgesFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Test;
@@ -41,10 +40,10 @@ import java.util.Objects;
 
 /** Tests for {@link Graph#groupReduceOnEdges} and {@link Graph#reduceOnEdges}. */
 @RunWith(Parameterized.class)
-public class ReduceOnEdgesMethodsITCase extends MultipleProgramsTestBase {
+public class ReduceOnEdgesMethodsITCase extends AbstractTestBase {
 
     public ReduceOnEdgesMethodsITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

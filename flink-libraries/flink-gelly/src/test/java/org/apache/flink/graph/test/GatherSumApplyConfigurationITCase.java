@@ -32,7 +32,6 @@ import org.apache.flink.graph.gsa.GatherFunction;
 import org.apache.flink.graph.gsa.GatherSumApplyIteration;
 import org.apache.flink.graph.gsa.Neighbor;
 import org.apache.flink.graph.gsa.SumFunction;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.LongValue;
 
 import org.junit.Assert;
@@ -45,10 +44,10 @@ import java.util.List;
 
 /** Tests for {@link GSAConfiguration}. */
 @RunWith(Parameterized.class)
-public class GatherSumApplyConfigurationITCase extends MultipleProgramsTestBase {
+public class GatherSumApplyConfigurationITCase extends AbstractTestBase {
 
     public GatherSumApplyConfigurationITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

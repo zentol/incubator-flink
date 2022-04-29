@@ -20,7 +20,6 @@ package org.apache.flink.graph.test.examples;
 
 import org.apache.flink.graph.examples.EuclideanGraphWeighing;
 import org.apache.flink.graph.examples.data.EuclideanGraphData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.util.FileUtils;
 
@@ -36,7 +35,7 @@ import java.io.File;
 
 /** Tests for {@link EuclideanGraphWeighing}. */
 @RunWith(Parameterized.class)
-public class EuclideanGraphWeighingITCase extends MultipleProgramsTestBase {
+public class EuclideanGraphWeighingITCase extends AbstractTestBase {
 
     private String verticesPath;
 
@@ -49,7 +48,7 @@ public class EuclideanGraphWeighingITCase extends MultipleProgramsTestBase {
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public EuclideanGraphWeighingITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Before

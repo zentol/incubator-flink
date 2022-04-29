@@ -56,12 +56,12 @@ public abstract class SavepointTestBase extends AbstractTestBase {
 
         JobID jobId = jobGraph.getJobID();
 
-        ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
+        ClusterClient<?> client = MINI_CLUSTER_EXTENSION.getClusterClient();
 
         try {
             JobID jobID = client.submitJob(jobGraph).get();
 
-            waitForAllRunningOrSomeTerminal(jobID, MINI_CLUSTER_RESOURCE);
+            waitForAllRunningOrSomeTerminal(jobID, MINI_CLUSTER_EXTENSION);
 
             return triggerSavepoint(client, jobID).get(5, TimeUnit.MINUTES);
         } catch (Exception e) {

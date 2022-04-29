@@ -24,7 +24,6 @@ import org.apache.flink.core.fs.FileInputSplit;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Test;
@@ -40,10 +39,10 @@ import java.util.List;
 
 /** Test graph creation from CSV. */
 @RunWith(Parameterized.class)
-public class GraphCreationWithCsvITCase extends MultipleProgramsTestBase {
+public class GraphCreationWithCsvITCase extends AbstractTestBase {
 
     public GraphCreationWithCsvITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

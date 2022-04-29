@@ -26,7 +26,6 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.operators.util.CollectionDataSets;
 import org.apache.flink.test.operators.util.CollectionDataSets.CustomType;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,9 +36,9 @@ import java.util.List;
 
 /** Integration tests for {@link FilterFunction} and {@link RichFilterFunction}. */
 @RunWith(Parameterized.class)
-public class FilterITCase extends MultipleProgramsTestBase {
+public class FilterITCase extends AbstractTestBase {
     public FilterITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

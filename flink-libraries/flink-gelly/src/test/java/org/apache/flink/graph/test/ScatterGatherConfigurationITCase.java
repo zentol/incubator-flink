@@ -33,7 +33,6 @@ import org.apache.flink.graph.spargel.ScatterFunction;
 import org.apache.flink.graph.spargel.ScatterGatherConfiguration;
 import org.apache.flink.graph.spargel.ScatterGatherIteration;
 import org.apache.flink.graph.utils.VertexToTuple2Map;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.LongValue;
 
 import org.junit.Assert;
@@ -46,10 +45,10 @@ import java.util.List;
 
 /** Tests for {@link ScatterGatherConfiguration}. */
 @RunWith(Parameterized.class)
-public class ScatterGatherConfigurationITCase extends MultipleProgramsTestBase {
+public class ScatterGatherConfigurationITCase extends AbstractTestBase {
 
     public ScatterGatherConfigurationITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

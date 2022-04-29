@@ -22,7 +22,6 @@ import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 
 import org.junit.{After, Before, Rule, Test}
 import org.junit.Assert.fail
@@ -33,7 +32,7 @@ import org.junit.runners.Parameterized
 /* The test cases are originally from the Apache Spark project. Like the ClosureCleaner itself. */
 
 @RunWith(classOf[Parameterized])
-class ClosureCleanerITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class ClosureCleanerITCase extends AbstractTestBase {
 
   val _tempFolder = new TemporaryFolder()
   var resultPath: String = _

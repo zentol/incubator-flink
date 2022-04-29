@@ -20,16 +20,14 @@ package org.apache.flink.api.scala.operators
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala.util.CollectionDataSets
-import org.apache.flink.test.util.MultipleProgramsTestBase
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
+import org.apache.flink.test.util.AbstractTestBase
 
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-@RunWith(classOf[Parameterized])
-class SumMinMaxITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class SumMinMaxITCase extends AbstractTestBase {
 
   @Test
   def testFullAggregate(): Unit = {

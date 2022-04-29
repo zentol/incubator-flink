@@ -63,7 +63,7 @@ public class AvroStreamingFileSinkITCase extends AbstractTestBase {
 
     @Test
     public void testWriteAvroSpecific() throws Exception {
-        File folder = TEMPORARY_FOLDER.newFolder();
+        File folder = temporaryfolder.newFolder();
 
         List<Address> data =
                 Arrays.asList(
@@ -89,7 +89,7 @@ public class AvroStreamingFileSinkITCase extends AbstractTestBase {
 
     @Test
     public void testWriteAvroGeneric() throws Exception {
-        File folder = TEMPORARY_FOLDER.newFolder();
+        File folder = temporaryfolder.newFolder();
 
         Schema schema = Address.getClassSchema();
         Collection<GenericRecord> data = new GenericTestDataCollection();
@@ -112,7 +112,7 @@ public class AvroStreamingFileSinkITCase extends AbstractTestBase {
 
     @Test
     public void testWriteAvroReflect() throws Exception {
-        File folder = TEMPORARY_FOLDER.newFolder();
+        File folder = temporaryfolder.newFolder();
 
         List<Datum> data = Arrays.asList(new Datum("a", 1), new Datum("b", 2), new Datum("c", 3));
 

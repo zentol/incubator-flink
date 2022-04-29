@@ -24,7 +24,6 @@ import org.apache.flink.api.scala.util.CollectionDataSets.CustomType
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 import org.apache.flink.util.Collector
 
 import org.junit._
@@ -35,7 +34,7 @@ import org.junit.runners.Parameterized
 import scala.collection.JavaConverters._
 
 @RunWith(classOf[Parameterized])
-class CoGroupITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class CoGroupITCase extends AbstractTestBase {
   val _tempFolder = new TemporaryFolder()
   var resultPath: String = _
   var expectedResult: String = _

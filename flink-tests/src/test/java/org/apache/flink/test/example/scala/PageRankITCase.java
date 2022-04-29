@@ -21,7 +21,6 @@ package org.apache.flink.test.example.scala;
 
 import org.apache.flink.examples.scala.graph.PageRankBasic;
 import org.apache.flink.test.testdata.PageRankData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.FileUtils;
 
 import org.junit.After;
@@ -36,10 +35,10 @@ import java.io.File;
 
 /** Test for {@link PageRankBasic}. */
 @RunWith(Parameterized.class)
-public class PageRankITCase extends MultipleProgramsTestBase {
+public class PageRankITCase extends AbstractTestBase {
 
     public PageRankITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String verticesPath;

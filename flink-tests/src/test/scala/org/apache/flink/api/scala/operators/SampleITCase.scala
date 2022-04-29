@@ -21,7 +21,6 @@ import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.util.CollectionDataSets
 import org.apache.flink.api.scala.utils._
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 
 import org.junit.{After, Before, Test}
 import org.junit.Assert._
@@ -33,7 +32,7 @@ import java.util.{List => JavaList, Random}
 import scala.collection.JavaConverters._
 
 @RunWith(classOf[Parameterized])
-class SampleITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class SampleITCase extends AbstractTestBase {
   private val RNG: Random = new Random
 
   private var result: JavaList[String] = null;

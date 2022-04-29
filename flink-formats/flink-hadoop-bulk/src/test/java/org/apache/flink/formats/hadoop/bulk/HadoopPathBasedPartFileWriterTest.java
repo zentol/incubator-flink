@@ -72,7 +72,7 @@ public class HadoopPathBasedPartFileWriterTest extends AbstractTestBase {
 
     @Test
     public void testWriteFile() throws Exception {
-        File file = TEMPORARY_FOLDER.newFolder();
+        File file = temporaryfolder.newFolder();
         Path basePath = new Path(file.toURI());
 
         List<String> data = Arrays.asList("first line", "second line", "third line");

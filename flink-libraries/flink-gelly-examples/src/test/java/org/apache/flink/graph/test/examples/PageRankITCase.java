@@ -25,7 +25,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.examples.GSAPageRank;
 import org.apache.flink.graph.examples.PageRank;
 import org.apache.flink.graph.examples.data.PageRankData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,10 +36,10 @@ import java.util.List;
 
 /** Tests for {@link PageRank}. */
 @RunWith(Parameterized.class)
-public class PageRankITCase extends MultipleProgramsTestBase {
+public class PageRankITCase extends AbstractTestBase {
 
     public PageRankITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

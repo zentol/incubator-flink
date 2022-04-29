@@ -25,7 +25,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Test;
@@ -36,10 +35,10 @@ import java.util.List;
 
 /** Test creating graphs from collections. */
 @RunWith(Parameterized.class)
-public class FromCollectionITCase extends MultipleProgramsTestBase {
+public class FromCollectionITCase extends AbstractTestBase {
 
     public FromCollectionITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

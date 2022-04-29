@@ -27,7 +27,6 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Test;
@@ -40,10 +39,10 @@ import java.util.List;
 /** Integration tests for {@link GroupCombineFunction}. */
 @SuppressWarnings("serial")
 @RunWith(Parameterized.class)
-public class ReduceWithCombinerITCase extends MultipleProgramsTestBase {
+public class ReduceWithCombinerITCase extends AbstractTestBase {
 
     public ReduceWithCombinerITCase(TestExecutionMode mode) {
-        super(TestExecutionMode.CLUSTER);
+        super();
     }
 
     @Test

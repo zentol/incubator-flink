@@ -24,7 +24,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Test;
@@ -41,10 +40,10 @@ import static org.junit.Assert.fail;
 /** Test for duplicate elimination in the solution set. */
 @SuppressWarnings("serial")
 @RunWith(Parameterized.class)
-public class SolutionSetDuplicatesITCase extends MultipleProgramsTestBase {
+public class SolutionSetDuplicatesITCase extends AbstractTestBase {
 
     public SolutionSetDuplicatesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

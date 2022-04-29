@@ -26,7 +26,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.test.operators.util.CollectionDataSets;
 import org.apache.flink.test.operators.util.ValueCollectionDataSets;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.IntValue;
 import org.apache.flink.types.LongValue;
 import org.apache.flink.types.StringValue;
@@ -39,10 +38,10 @@ import java.util.List;
 
 /** Integration tests for aggregations. */
 @RunWith(Parameterized.class)
-public class AggregateITCase extends MultipleProgramsTestBase {
+public class AggregateITCase extends AbstractTestBase {
 
     public AggregateITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

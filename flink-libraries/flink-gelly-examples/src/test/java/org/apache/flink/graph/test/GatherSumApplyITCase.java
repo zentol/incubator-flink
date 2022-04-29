@@ -31,7 +31,6 @@ import org.apache.flink.graph.examples.data.SingleSourceShortestPathsData;
 import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.graph.library.GSASingleSourceShortestPaths;
 import org.apache.flink.graph.utils.GraphUtils.IdentityMapper;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.LongValue;
 import org.apache.flink.types.NullValue;
 
@@ -43,10 +42,10 @@ import java.util.List;
 
 /** Tests for gather-sum-apply. */
 @RunWith(Parameterized.class)
-public class GatherSumApplyITCase extends MultipleProgramsTestBase {
+public class GatherSumApplyITCase extends AbstractTestBase {
 
     public GatherSumApplyITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     // --------------------------------------------------------------------------------------------

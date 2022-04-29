@@ -25,7 +25,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.test.operators.util.CollectionDataSets;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,10 +43,10 @@ import static org.junit.Assert.assertTrue;
 /** Tests for data sinks. */
 @SuppressWarnings("serial")
 @RunWith(Parameterized.class)
-public class DataSinkITCase extends MultipleProgramsTestBase {
+public class DataSinkITCase extends AbstractTestBase {
 
     public DataSinkITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String resultPath;

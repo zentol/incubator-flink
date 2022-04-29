@@ -27,7 +27,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.examples.IncrementalSSSP;
 import org.apache.flink.graph.examples.data.IncrementalSSSPData;
 import org.apache.flink.graph.spargel.ScatterGatherConfiguration;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.util.FileUtils;
 
@@ -43,7 +42,7 @@ import java.io.File;
 
 /** Tests for {@link IncrementalSSSP}. */
 @RunWith(Parameterized.class)
-public class IncrementalSSSPITCase extends MultipleProgramsTestBase {
+public class IncrementalSSSPITCase extends AbstractTestBase {
 
     private String verticesPath;
 
@@ -58,7 +57,7 @@ public class IncrementalSSSPITCase extends MultipleProgramsTestBase {
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public IncrementalSSSPITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Before

@@ -35,7 +35,7 @@ public class HadoopRenameCommitterLocalFSTest extends AbstractFileCommitterTest 
 
     @Override
     protected Path getBasePath() throws IOException {
-        return new Path(TEMPORARY_FOLDER.newFolder().toURI());
+        return new Path(temporaryfolder.newFolder().toURI());
     }
 
     @Override

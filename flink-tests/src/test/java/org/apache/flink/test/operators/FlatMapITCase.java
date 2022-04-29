@@ -26,7 +26,6 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.operators.util.CollectionDataSets;
 import org.apache.flink.test.operators.util.CollectionDataSets.CustomType;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Test;
@@ -38,9 +37,9 @@ import java.util.List;
 
 /** Integration tests for {@link FlatMapFunction} and {@link RichFlatMapFunction}. */
 @RunWith(Parameterized.class)
-public class FlatMapITCase extends MultipleProgramsTestBase {
+public class FlatMapITCase extends AbstractTestBase {
     public FlatMapITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

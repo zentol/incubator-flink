@@ -81,14 +81,14 @@ public class AvroParquetFileReadITCase extends AbstractTestBase {
 
         createParquetFile(
                 AvroParquetWriters.forGenericRecord(schema),
-                Path.fromLocalFile(TEMPORARY_FOLDER.newFile(USER_PARQUET_FILE_1)),
+                Path.fromLocalFile(temporaryfolder.newFile(USER_PARQUET_FILE_1)),
                 userRecords.toArray(new GenericRecord[0]));
 
         GenericRecord user = createUser("Max", 4, "blue");
         userRecords.add(user);
         createParquetFile(
                 AvroParquetWriters.forGenericRecord(schema),
-                Path.fromLocalFile(TEMPORARY_FOLDER.newFile(USER_PARQUET_FILE_2)),
+                Path.fromLocalFile(temporaryfolder.newFile(USER_PARQUET_FILE_2)),
                 user);
 
         user = createUser("Alex", 5, "White");
@@ -98,7 +98,7 @@ public class AvroParquetFileReadITCase extends AbstractTestBase {
         userRecords.add(user1);
         createParquetFile(
                 AvroParquetWriters.forGenericRecord(schema),
-                Path.fromLocalFile(TEMPORARY_FOLDER.newFile(USER_PARQUET_FILE_3)),
+                Path.fromLocalFile(temporaryfolder.newFile(USER_PARQUET_FILE_3)),
                 user,
                 user1);
     }
@@ -108,7 +108,7 @@ public class AvroParquetFileReadITCase extends AbstractTestBase {
         final FileSource<GenericRecord> source =
                 FileSource.forRecordStreamFormat(
                                 AvroParquetReaders.forGenericRecord(schema),
-                                Path.fromLocalFile(TEMPORARY_FOLDER.getRoot()))
+                                Path.fromLocalFile(temporaryfolder.getRoot()))
                         .monitorContinuously(Duration.ofMillis(5))
                         .build();
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -135,7 +135,7 @@ public class AvroParquetFileReadITCase extends AbstractTestBase {
                 FileSource.forRecordStreamFormat(
                                 AvroParquetReaders.forReflectRecord(
                                         AvroParquetRecordFormatTest.User.class),
-                                Path.fromLocalFile(TEMPORARY_FOLDER.getRoot()))
+                                Path.fromLocalFile(temporaryfolder.getRoot()))
                         .monitorContinuously(Duration.ofMillis(5))
                         .build();
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

@@ -29,7 +29,6 @@ import org.apache.flink.graph.asm.translate.TranslateVertexValues;
 import org.apache.flink.graph.asm.translate.translators.ToNullValue;
 import org.apache.flink.graph.examples.data.SummarizationData;
 import org.apache.flink.graph.library.Summarization.EdgeValue;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Test;
@@ -48,14 +47,14 @@ import static org.junit.Assert.assertTrue;
 
 /** Tests for {@link Summarization}. */
 @RunWith(Parameterized.class)
-public class SummarizationITCase extends MultipleProgramsTestBase {
+public class SummarizationITCase extends AbstractTestBase {
 
     private static final Pattern TOKEN_SEPARATOR = Pattern.compile(";");
 
     private static final Pattern ID_SEPARATOR = Pattern.compile(",");
 
     public SummarizationITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Test

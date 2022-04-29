@@ -27,7 +27,6 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.core.fs.Path
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 
 import org.junit.{After, Before, Rule, Test}
 import org.junit.rules.TemporaryFolder
@@ -37,7 +36,7 @@ import org.junit.runners.Parameterized
 import scala.collection.JavaConverters._
 
 @RunWith(classOf[Parameterized])
-class OuterJoinITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class OuterJoinITCase extends AbstractTestBase {
   private var resultPath: String = null
   private var expected: String = null
   private val _tempFolder = new TemporaryFolder()

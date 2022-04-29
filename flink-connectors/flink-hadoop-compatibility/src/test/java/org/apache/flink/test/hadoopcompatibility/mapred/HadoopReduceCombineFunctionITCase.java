@@ -24,7 +24,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.hadoopcompatibility.mapred.HadoopReduceCombineFunction;
 import org.apache.flink.hadoopcompatibility.mapred.HadoopReduceFunction;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
+import org.apache.flink.test.util.AbstractTestBase;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -32,7 +32,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.hamcrest.core.IsEqual;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -44,11 +43,7 @@ import java.util.Iterator;
 
 /** IT case for the {@link HadoopReduceCombineFunction}. */
 @RunWith(Parameterized.class)
-public class HadoopReduceCombineFunctionITCase extends MultipleProgramsTestBase {
-
-    public HadoopReduceCombineFunctionITCase(TestExecutionMode mode) {
-        super(mode);
-    }
+public class HadoopReduceCombineFunctionITCase extends AbstractTestBase {
 
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -101,8 +96,6 @@ public class HadoopReduceCombineFunctionITCase extends MultipleProgramsTestBase 
 
     @Test
     public void testCombiner() throws Exception {
-        org.junit.Assume.assumeThat(
-                mode, new IsEqual<TestExecutionMode>(TestExecutionMode.CLUSTER));
         final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
         DataSet<Tuple2<IntWritable, IntWritable>> ds =

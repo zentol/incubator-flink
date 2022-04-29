@@ -24,7 +24,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,10 +34,10 @@ import java.util.List;
 
 /** Tests for adding and removing {@link Graph} vertices and edges. */
 @RunWith(Parameterized.class)
-public class GraphMutationsITCase extends MultipleProgramsTestBase {
+public class GraphMutationsITCase extends AbstractTestBase {
 
     public GraphMutationsITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

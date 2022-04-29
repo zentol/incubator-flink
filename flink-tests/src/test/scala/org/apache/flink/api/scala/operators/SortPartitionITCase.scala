@@ -23,7 +23,6 @@ import org.apache.flink.api.common.operators.Order
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.util.CollectionDataSets
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 import org.apache.flink.util.Collector
 
 import org.junit.Test
@@ -36,7 +35,7 @@ import java.lang
 import scala.collection.JavaConverters._
 
 @RunWith(classOf[Parameterized])
-class SortPartitionITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class SortPartitionITCase extends AbstractTestBase {
 
   @Test
   @throws(classOf[Exception])

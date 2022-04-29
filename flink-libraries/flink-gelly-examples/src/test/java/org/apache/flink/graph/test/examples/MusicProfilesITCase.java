@@ -20,7 +20,6 @@ package org.apache.flink.graph.test.examples;
 
 import org.apache.flink.graph.examples.MusicProfiles;
 import org.apache.flink.graph.examples.data.MusicProfilesData;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.util.FileUtils;
 
@@ -39,7 +38,7 @@ import java.util.Arrays;
 
 /** Tests for {@link MusicProfiles}. */
 @RunWith(Parameterized.class)
-public class MusicProfilesITCase extends MultipleProgramsTestBase {
+public class MusicProfilesITCase extends AbstractTestBase {
 
     private String tripletsPath;
 
@@ -54,7 +53,7 @@ public class MusicProfilesITCase extends MultipleProgramsTestBase {
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public MusicProfilesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @Before

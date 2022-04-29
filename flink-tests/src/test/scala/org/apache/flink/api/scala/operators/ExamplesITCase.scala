@@ -21,7 +21,6 @@ import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 
 import org.junit.{After, Before, Rule, Test}
 import org.junit.rules.TemporaryFolder
@@ -58,7 +57,7 @@ class PojoWithPojo(var myString: String, var myInt: Int, var nested: Nested) {
 }
 
 @RunWith(classOf[Parameterized])
-class ExamplesITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class ExamplesITCase extends AbstractTestBase {
   private var resultPath: String = null
   private var expected: String = null
   private val _tempFolder = new TemporaryFolder()

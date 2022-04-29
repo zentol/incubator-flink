@@ -69,7 +69,7 @@ public class AvroParquetStreamingFileSinkITCase extends AbstractTestBase {
     @Test
     public void testWriteParquetAvroSpecific() throws Exception {
 
-        final File folder = TEMPORARY_FOLDER.newFolder();
+        final File folder = temporaryfolder.newFolder();
 
         final List<Address> data =
                 Arrays.asList(
@@ -99,7 +99,7 @@ public class AvroParquetStreamingFileSinkITCase extends AbstractTestBase {
     @Test
     public void testWriteParquetAvroGeneric() throws Exception {
 
-        final File folder = TEMPORARY_FOLDER.newFolder();
+        final File folder = temporaryfolder.newFolder();
 
         final Schema schema = Address.getClassSchema();
 
@@ -132,7 +132,7 @@ public class AvroParquetStreamingFileSinkITCase extends AbstractTestBase {
     @Test
     public void testWriteParquetAvroReflect() throws Exception {
 
-        final File folder = TEMPORARY_FOLDER.newFolder();
+        final File folder = temporaryfolder.newFolder();
 
         final List<Datum> data =
                 Arrays.asList(new Datum("a", 1), new Datum("b", 2), new Datum("c", 3));

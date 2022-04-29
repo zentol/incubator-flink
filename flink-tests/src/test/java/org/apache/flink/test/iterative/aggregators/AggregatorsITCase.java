@@ -31,7 +31,6 @@ import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.operators.util.CollectionDataSets;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.LongValue;
 import org.apache.flink.util.Collector;
 
@@ -56,14 +55,14 @@ import static org.junit.Assert.assertEquals;
 
 /** Test the functionality of aggregators in bulk and delta iterative cases. */
 @RunWith(Parameterized.class)
-public class AggregatorsITCase extends MultipleProgramsTestBase {
+public class AggregatorsITCase extends AbstractTestBase {
 
     private static final int MAX_ITERATIONS = 20;
     private static final int parallelism = 2;
     private static final String NEGATIVE_ELEMENTS_AGGR = "count.negative.elements";
 
     public AggregatorsITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     @ClassRule public static TemporaryFolder tempFolder = new TemporaryFolder();

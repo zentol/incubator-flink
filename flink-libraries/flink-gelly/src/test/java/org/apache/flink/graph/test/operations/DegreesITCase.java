@@ -23,7 +23,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.test.TestGraphUtils;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.LongValue;
 import org.apache.flink.types.NullValue;
 
@@ -37,10 +36,10 @@ import java.util.List;
  * Tests for {@link Graph#inDegrees()}, {@link Graph#outDegrees()}, and {@link Graph#getDegrees()}.
  */
 @RunWith(Parameterized.class)
-public class DegreesITCase extends MultipleProgramsTestBase {
+public class DegreesITCase extends AbstractTestBase {
 
     public DegreesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

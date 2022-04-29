@@ -91,14 +91,14 @@ public class WritableSavepointITCase extends AbstractTestBase {
     @Test
     public void testFsStateBackend() throws Exception {
         testStateBootstrapAndModification(
-                new FsStateBackend(TEMPORARY_FOLDER.newFolder().toURI(), FILE_STATE_SIZE));
+                new FsStateBackend(temporaryfolder.newFolder().toURI(), FILE_STATE_SIZE));
     }
 
     @Test
     public void testRocksDBStateBackend() throws Exception {
         StateBackend backend =
                 new RocksDBStateBackend(
-                        new FsStateBackend(TEMPORARY_FOLDER.newFolder().toURI(), FILE_STATE_SIZE));
+                        new FsStateBackend(temporaryfolder.newFolder().toURI(), FILE_STATE_SIZE));
         testStateBootstrapAndModification(backend);
     }
 
@@ -173,7 +173,7 @@ public class WritableSavepointITCase extends AbstractTestBase {
         jobGraph.setSavepointRestoreSettings(
                 SavepointRestoreSettings.forPath(savepointPath, false));
 
-        ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
+        ClusterClient<?> client = MINI_CLUSTER_EXTENSION.getClusterClient();
         Optional<SerializedThrowable> serializedThrowable =
                 client.submitJob(jobGraph)
                         .thenCompose(client::requestJobResult)
@@ -225,7 +225,7 @@ public class WritableSavepointITCase extends AbstractTestBase {
         jobGraph.setSavepointRestoreSettings(
                 SavepointRestoreSettings.forPath(savepointPath, false));
 
-        ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
+        ClusterClient<?> client = MINI_CLUSTER_EXTENSION.getClusterClient();
         Optional<SerializedThrowable> serializedThrowable =
                 client.submitJob(jobGraph)
                         .thenCompose(client::requestJobResult)

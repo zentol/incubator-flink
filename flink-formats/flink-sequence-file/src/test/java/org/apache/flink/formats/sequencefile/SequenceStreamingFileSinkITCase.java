@@ -63,7 +63,7 @@ public class SequenceStreamingFileSinkITCase extends AbstractTestBase {
 
     @Test
     public void testWriteSequenceFile() throws Exception {
-        final File folder = TEMPORARY_FOLDER.newFolder();
+        final File folder = temporaryfolder.newFolder();
         final Path testPath = Path.fromLocalFile(folder);
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

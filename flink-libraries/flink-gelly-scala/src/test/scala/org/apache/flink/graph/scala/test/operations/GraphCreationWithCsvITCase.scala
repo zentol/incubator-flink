@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets
 
 @RunWith(classOf[Parameterized])
 class GraphCreationWithCsvITCase(mode: MultipleProgramsTestBase.TestExecutionMode)
-  extends MultipleProgramsTestBase(mode) {
+  extends AbstractTestBase {
 
   private var expectedResult: String = null
 

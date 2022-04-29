@@ -26,7 +26,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomType;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,10 +35,10 @@ import java.util.List;
 
 /** Test graph creation with a mapper. */
 @RunWith(Parameterized.class)
-public class GraphCreationWithMapperITCase extends MultipleProgramsTestBase {
+public class GraphCreationWithMapperITCase extends AbstractTestBase {
 
     public GraphCreationWithMapperITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

@@ -28,7 +28,6 @@ import org.apache.flink.graph.VertexJoinFunction;
 import org.apache.flink.graph.test.TestGraphUtils;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomParameterizedType;
 import org.apache.flink.graph.utils.VertexToTuple2Map;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,10 +37,10 @@ import java.util.List;
 
 /** Tests for {@link Graph#joinWithVertices}. */
 @RunWith(Parameterized.class)
-public class JoinWithVerticesITCase extends MultipleProgramsTestBase {
+public class JoinWithVerticesITCase extends AbstractTestBase {
 
     public JoinWithVerticesITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

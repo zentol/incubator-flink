@@ -30,7 +30,6 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.test.operators.util.CollectionDataSets;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 
 import org.junit.Assert;
@@ -50,10 +49,10 @@ import java.util.List;
  */
 @SuppressWarnings("serial")
 @RunWith(Parameterized.class)
-public class GroupCombineITCase extends MultipleProgramsTestBase {
+public class GroupCombineITCase extends AbstractTestBase {
 
     public GroupCombineITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private static String identityResult =

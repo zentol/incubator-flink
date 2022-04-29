@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized
 
 @RunWith(classOf[Parameterized])
 class JoinWithEdgesITCase(mode: MultipleProgramsTestBase.TestExecutionMode)
-  extends MultipleProgramsTestBase(mode) {
+  extends AbstractTestBase {
 
   private var expectedResult: String = null
 

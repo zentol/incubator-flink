@@ -20,7 +20,6 @@ package org.apache.flink.api.scala.io
 import org.apache.flink.api.scala._
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.test.util.{MultipleProgramsTestBase, TestBaseUtils}
-import org.apache.flink.test.util.MultipleProgramsTestBase.TestExecutionMode
 import org.apache.flink.util.FileUtils
 
 import org.junit.{After, Before, Rule, Test}
@@ -32,7 +31,7 @@ import org.junit.runners.Parameterized
 import java.util.Locale
 
 @RunWith(classOf[Parameterized])
-class ScalaCsvReaderWithPOJOITCase(mode: TestExecutionMode) extends MultipleProgramsTestBase(mode) {
+class ScalaCsvReaderWithPOJOITCase extends AbstractTestBase {
   private val _tempFolder = new TemporaryFolder()
   private var resultPath: String = null
   private var expected: String = null

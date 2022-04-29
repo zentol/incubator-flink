@@ -28,7 +28,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.test.TestGraphUtils;
 import org.apache.flink.graph.test.TestGraphUtils.DummyCustomParameterizedType;
 import org.apache.flink.graph.validation.InvalidVertexIdsValidator;
-import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.types.NullValue;
 
 import org.junit.Test;
@@ -40,10 +39,10 @@ import java.util.List;
 
 /** Test graph creation and validation from datasets and tuples. */
 @RunWith(Parameterized.class)
-public class GraphCreationITCase extends MultipleProgramsTestBase {
+public class GraphCreationITCase extends AbstractTestBase {
 
     public GraphCreationITCase(TestExecutionMode mode) {
-        super(mode);
+        super();
     }
 
     private String expectedResult;

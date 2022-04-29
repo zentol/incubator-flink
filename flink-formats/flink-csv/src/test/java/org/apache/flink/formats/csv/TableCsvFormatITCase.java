@@ -167,7 +167,7 @@ public class TableCsvFormatITCase extends JsonPlanTestBase {
 
     private void createSourceTable(String tableName, List<String> data, String... fieldNameAndTypes)
             throws IOException {
-        File sourceFile = TEMPORARY_FOLDER.newFile();
+        File sourceFile = temporaryfolder.newFile();
         Collections.shuffle(data);
         Files.write(sourceFile.toPath(), String.join("\n", data).getBytes());
 
@@ -180,7 +180,7 @@ public class TableCsvFormatITCase extends JsonPlanTestBase {
     }
 
     private File createSinkTable(String tableName, String... fieldNameAndTypes) throws IOException {
-        File sinkPath = TEMPORARY_FOLDER.newFolder();
+        File sinkPath = temporaryfolder.newFolder();
 
         Map<String, String> properties = new HashMap<>();
         properties.put("connector", "filesystem");

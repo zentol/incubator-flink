@@ -75,7 +75,7 @@ public class OggJsonFileSystemITCase extends StreamingTestBase {
 
     private void prepareTables(boolean isPartition) throws IOException {
         byte[] bytes = readBytes("ogg-data.txt");
-        source = TEMPORARY_FOLDER.newFolder();
+        source = temporaryfolder.newFolder();
         File file;
         if (isPartition) {
             File partition = new File(source, "p=1");
@@ -87,7 +87,7 @@ public class OggJsonFileSystemITCase extends StreamingTestBase {
         file.createNewFile();
         Files.write(file.toPath(), bytes);
 
-        sink = TEMPORARY_FOLDER.newFolder();
+        sink = temporaryfolder.newFolder();
 
         env().setParallelism(1);
     }

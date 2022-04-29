@@ -212,7 +212,7 @@ public abstract class JsonPlanTestBase extends AbstractTestBase {
     protected void createTestCsvSourceTable(
             String tableName, List<String> data, String... fieldNameAndTypes) throws IOException {
         checkArgument(fieldNameAndTypes.length > 0);
-        File sourceFile = TEMPORARY_FOLDER.newFile();
+        File sourceFile = temporaryfolder.newFile();
         Collections.shuffle(data);
         Files.write(sourceFile.toPath(), String.join("\n", data).getBytes());
         String ddl =
@@ -242,7 +242,7 @@ public abstract class JsonPlanTestBase extends AbstractTestBase {
                 StringUtils.isNullOrWhitespaceOnly(partitionFields)
                         ? ""
                         : "\n partitioned by (" + partitionFields + ") \n";
-        File sinkPath = TEMPORARY_FOLDER.newFolder();
+        File sinkPath = temporaryfolder.newFolder();
         String ddl =
                 String.format(
                         "CREATE TABLE %s (\n"
