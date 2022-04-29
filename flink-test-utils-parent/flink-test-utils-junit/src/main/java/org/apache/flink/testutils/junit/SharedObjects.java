@@ -17,6 +17,9 @@
 
 package org.apache.flink.testutils.junit;
 
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.ExternalResource;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -64,7 +67,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * thread-safe or accessed in a thread-safe manner.
  */
 @NotThreadSafe
-public class SharedObjects extends ExternalResource {
+public class SharedObjects extends ExternalResource
+        implements BeforeEachCallback, AfterEachCallback {
     /** Instance-cache used to make a SharedObjects accessible for multiple threads. */
     private static final Map<Integer, SharedObjects> INSTANCES = new ConcurrentHashMap<>();
 
@@ -114,6 +118,17 @@ public class SharedObjects extends ExternalResource {
 
     @Override
     protected void after() {
+        objects.clear();
+        INSTANCES.remove(id);
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+        INSTANCES.put(id, this);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
         objects.clear();
         INSTANCES.remove(id);
     }
