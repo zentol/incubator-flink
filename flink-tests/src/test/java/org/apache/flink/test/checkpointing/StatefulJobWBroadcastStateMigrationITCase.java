@@ -106,12 +106,6 @@ class StatefulJobWBroadcastStateMigrationITCase extends SnapshotMigrationTestBas
                                         || spec.getFlinkVersion().equals(currentVersion));
     }
 
-    private final SnapshotSpec snapshotSpec;
-
-    public StatefulJobWBroadcastStateMigrationITCase(SnapshotSpec snapshotSpec) throws Exception {
-        this.snapshotSpec = snapshotSpec;
-    }
-
     @ParameterizedTest(name = "Test snapshot: {0}")
     @MethodSource("parameters")
     void testSavepoint(
@@ -451,7 +445,7 @@ class StatefulJobWBroadcastStateMigrationITCase extends SnapshotMigrationTestBas
                     ctx.getBroadcastState(secondStateDesc).immutableEntries()) {
                 actualSecondState.put(entry.getKey(), entry.getValue());
             }
-            assertThat(actualSecondState).isEqualTo(expectedFirstState);
+            assertThat(actualSecondState).isEqualTo(expectedSecondState);
 
             out.collect(value);
         }
