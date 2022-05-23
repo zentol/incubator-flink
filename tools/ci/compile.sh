@@ -92,6 +92,10 @@ if [ $EXIT_CODE != 0 ] ; then
   exit $EXIT_CODE
 fi
 
+echo "============ Checking bundled dependencies marked as optional ============"
+
+${CI_DIR}/verify_bundled_optional.sh "$CI_DIR" "$(pwd)" || exit $?
+
 echo "============ Checking scala suffixes ============"
 
 ${CI_DIR}/verify_scala_suffixes.sh "$CI_DIR" "$(pwd)" || exit $?

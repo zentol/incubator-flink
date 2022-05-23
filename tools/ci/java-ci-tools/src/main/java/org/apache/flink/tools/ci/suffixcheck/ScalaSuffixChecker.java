@@ -116,7 +116,8 @@ public class ScalaSuffixChecker {
                     line = bufferedReader.readLine();
                     while (blockPattern.matcher(line).matches()) {
                         final boolean dependsOnScala = dependsOnScala(line);
-                        final boolean isTestDependency = line.endsWith(":test");
+                        final boolean isTestDependency =
+                                line.endsWith(":test") || line.endsWith(":test (optional)");
                         // we ignored flink-rpc-akka because it is loaded through a separate class
                         // loader
                         final boolean isExcluded = isExcluded(line);
