@@ -31,6 +31,8 @@ source "${HERE}/stage.sh"
 source "${HERE}/maven-utils.sh"
 source "${HERE}/controller_utils.sh"
 
+setup_maven
+
 STAGE=$1
 
 # =============================================================================

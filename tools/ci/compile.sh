@@ -38,6 +38,8 @@ source "${CI_DIR}/stage.sh"
 source "${CI_DIR}/shade.sh"
 source "${CI_DIR}/maven-utils.sh"
 
+setup_maven
+
 echo "Maven version:"
 run_mvn -version
 
