@@ -83,6 +83,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.beam</groupId>
 			<artifactId>beam-runners-java-fn-execution</artifactId>
+			<optional>${flink.markBundledAsOptional}</optional>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.beam</groupId>
@@ -98,6 +99,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.beam</groupId>
 			<artifactId>beam-runners-core-java</artifactId>
+			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 
 		<!-- PemJa dependencies -->
@@ -105,6 +107,7 @@ under the License.
 			<groupId>com.alibaba</groupId>
 			<artifactId>pemja</artifactId>
 			<version>0.1.5</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 
 		<!-- Protobuf dependencies -->
@@ -112,6 +115,7 @@ under the License.
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
+			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 
 		<!-- Python API dependencies -->
@@ -119,11 +123,13 @@ under the License.
 		<dependency>
 			<groupId>net.sf.py4j</groupId>
 			<artifactId>py4j</artifactId>
+			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 		<dependency>
 			<groupId>net.razorvine</groupId>
 			<artifactId>pyrolite</artifactId>
 			<version>4.13</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 			<exclusions>
 				<exclusion>
 					<groupId>net.razorvine</groupId>
@@ -138,6 +144,7 @@ under the License.
 			<groupId>org.apache.arrow</groupId>
 			<artifactId>arrow-vector</artifactId>
 			<version>${arrow.version}</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 			<exclusions>
 				<exclusion>
 					<groupId>commons-codec</groupId>

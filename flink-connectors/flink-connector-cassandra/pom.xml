@@ -103,6 +103,7 @@ under the License.
 			<artifactId>cassandra-driver-core</artifactId>
 			<classifier>shaded</classifier>
 			<version>${driver.version}</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 			<exclusions>
 				<!--Because the shaded JAR uses netty original POM, we still need to exclude netty explicitly-->
 				<exclusion>
@@ -136,6 +137,7 @@ under the License.
 			<groupId>com.datastax.cassandra</groupId>
 			<artifactId>cassandra-driver-mapping</artifactId>
 			<version>${driver.version}</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 			<exclusions>
 				<!--use the shaded driver above-->
 				<exclusion>
@@ -161,6 +163,7 @@ under the License.
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
+			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 
 		<!-- Table ecosystem -->
