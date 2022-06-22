@@ -94,7 +94,7 @@ fi
 
 echo "============ Checking bundled dependencies marked as optional ============"
 
-${CI_DIR}/verify_bundled_optional.sh "$CI_DIR" "$(pwd)" || exit $?
+${CI_DIR}/verify_bundled_optional.sh $MVN_CLEAN_COMPILE_OUT "$CI_DIR" "$(pwd)" || exit $?
 
 echo "============ Checking scala suffixes ============"
 
