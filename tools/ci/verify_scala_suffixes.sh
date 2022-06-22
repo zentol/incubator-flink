@@ -50,7 +50,9 @@ cd "$FLINK_ROOT" || exit
 
 dependency_plugin_output=${CI_DIR}/dep.txt
 
-run_mvn dependency:tree -Dincludes=org.scala-lang,:*_2.1*:: ${MAVEN_ARGUMENTS} >> "${dependency_plugin_output}"
+run_mvn dependency:tree -B -Dincludes=org.scala-lang,:*_2.1*:: ${MAVEN_ARGUMENTS} >> "${dependency_plugin_output}"
+
+cat dependency_plugin_output
 
 cd "${CI_DIR}/java-ci-tools/" || exit
 
@@ -64,7 +66,5 @@ fi
 echo "=============================================================================="
 echo "Suffix Check failed. See previous output for details."
 echo "=============================================================================="
-#TODO: fix check to take _any_ dependency with a suffix into account
-#TODO: optional stuff leads to scala not being visible in sql-connector-hive
-exit 0
+exit 1
 
