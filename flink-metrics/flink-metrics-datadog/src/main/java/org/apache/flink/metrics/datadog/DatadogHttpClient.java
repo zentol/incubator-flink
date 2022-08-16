@@ -41,7 +41,7 @@ public class DatadogHttpClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatadogHttpClient.class);
 
     private static final String SERIES_URL_FORMAT =
-            "https://app.datadoghq.%s/api/v1/series?api_key=%s";
+            "https://app.datadoghq.%s/api/v2/series?api_key=%s";
     private static final String VALIDATE_URL_FORMAT =
             "https://app.datadoghq.%s/api/v1/validate?api_key=%s";
     private static final MediaType MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");

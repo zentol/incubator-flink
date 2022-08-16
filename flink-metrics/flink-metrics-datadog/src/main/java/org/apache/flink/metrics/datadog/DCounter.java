@@ -40,7 +40,7 @@ public class DCounter extends DMetric {
      * @return the number of events since the last retrieval
      */
     @Override
-    public Number getMetricValue() {
+    public double getMetricValue() {
         long currentCount = counter.getCount();
         long difference = currentCount - lastReportCount;
         currentReportCount = currentCount;

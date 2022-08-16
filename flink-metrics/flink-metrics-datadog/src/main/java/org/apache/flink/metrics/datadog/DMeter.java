@@ -36,7 +36,7 @@ public class DMeter extends DMetric {
     }
 
     @Override
-    public Number getMetricValue() {
+    public double getMetricValue() {
         return meter.getRate();
     }
 }

@@ -21,6 +21,10 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.metrics.Histogram;
 import org.apache.flink.metrics.HistogramStatistics;
 
+import com.datadog.api.client.v2.model.MetricPoint;
+import com.datadog.api.client.v2.model.MetricSeries;
+
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,12 +42,12 @@ public class DHistogram {
 
     private final Histogram histogram;
 
-    private final MetricMetaData metaDataAvg;
-    private final MetricMetaData metaDataCount;
-    private final MetricMetaData metaDataMedian;
-    private final MetricMetaData metaData95Percentile;
-    private final MetricMetaData metaDataMin;
-    private final MetricMetaData metaDataMax;
+    private final MetricSeries metaDataAvg;
+    private final MetricSeries metaDataCount;
+    private final MetricSeries metaDataMedian;
+    private final MetricSeries metaData95Percentile;
+    private final MetricSeries metaDataMin;
+    private final MetricSeries metaDataMax;
 
     public DHistogram(
             Histogram histogram, String metricName, String host, List<String> tags, Clock clock) {
@@ -63,7 +67,7 @@ public class DHistogram {
                 new MetricMetaData(MetricType.gauge, metricName + SUFFIX_MAX, host, tags, clock);
     }
 
-    public void addTo(DSeries series) {
+    public void addTo(List<MetricSeries> series, long timestamp) {
         final HistogramStatistics statistics = histogram.getStatistics();
 
         // this selection is based on
@@ -71,11 +75,42 @@ public class DHistogram {
         // we only exclude 'sum' (which is optional), because we cannot compute it
         // the semantics for count are also slightly different, because we don't reset it after a
         // report
-        series.add(new StaticDMetric(statistics.getMean(), metaDataAvg));
-        series.add(new StaticDMetric(histogram.getCount(), metaDataCount));
-        series.add(new StaticDMetric(statistics.getQuantile(.5), metaDataMedian));
-        series.add(new StaticDMetric(statistics.getQuantile(.95), metaData95Percentile));
-        series.add(new StaticDMetric(statistics.getMin(), metaDataMin));
-        series.add(new StaticDMetric(statistics.getMax(), metaDataMax));
+
+        series.add(
+                metaDataAvg.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value(statistics.getMean())
+                                        .timestamp(timestamp))));
+        series.add(
+                metaDataCount.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value((double) histogram.getCount())
+                                        .timestamp(timestamp))));
+        series.add(
+                metaDataMedian.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value(statistics.getQuantile(.5))
+                                        .timestamp(timestamp))));
+        series.add(
+                metaData95Percentile.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value(statistics.getQuantile(.95))
+                                        .timestamp(timestamp))));
+        series.add(
+                metaDataMin.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value((double) statistics.getMin())
+                                        .timestamp(timestamp))));
+        series.add(
+                metaDataMax.points(
+                        Collections.singletonList(
+                                new MetricPoint()
+                                        .value((double) statistics.getMax())
+                                        .timestamp(timestamp))));
     }
 }

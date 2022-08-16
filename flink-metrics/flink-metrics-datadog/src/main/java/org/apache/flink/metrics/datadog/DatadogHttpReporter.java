@@ -28,12 +28,21 @@ import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.reporter.Scheduled;
 
+import com.datadog.api.client.ApiClient;
+import com.datadog.api.client.ApiException;
+import com.datadog.api.client.v2.api.MetricsApi;
+import com.datadog.api.client.v2.model.MetricIntakeType;
+import com.datadog.api.client.v2.model.MetricPayload;
+import com.datadog.api.client.v2.model.MetricPoint;
+import com.datadog.api.client.v2.model.MetricResource;
+import com.datadog.api.client.v2.model.MetricSeries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,6 +74,8 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
     public static final String DATA_CENTER = "dataCenter";
     public static final String TAGS = "tags";
     public static final String MAX_METRICS_PER_REQUEST = "maxMetricsPerRequest";
+    private String apiKey;
+    private DataCenter dataCenter;
 
     @Override
     public void notifyOfAddedMetric(Metric metric, String metricName, MetricGroup group) {
@@ -125,12 +136,12 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
 
     @Override
     public void open(MetricConfig config) {
-        String apiKey = config.getString(API_KEY, null);
+        apiKey = config.getString(API_KEY, null);
         String proxyHost = config.getString(PROXY_HOST, null);
         Integer proxyPort = config.getInteger(PROXY_PORT, 8080);
         String rawDataCenter = config.getString(DATA_CENTER, "US");
         maxMetricsPerRequestValue = config.getInteger(MAX_METRICS_PER_REQUEST, 2000);
-        DataCenter dataCenter = DataCenter.valueOf(rawDataCenter);
+        dataCenter = DataCenter.valueOf(rawDataCenter);
         String tags = config.getString(TAGS, "");
 
         client = new DatadogHttpClient(apiKey, proxyHost, proxyPort, dataCenter, true);
@@ -154,26 +165,83 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
 
     @Override
     public void report() {
-        DSeries request = new DSeries();
+        ApiClient defaultClient = ApiClient.getDefaultApiClient();
+        defaultClient.setApiKey(this.apiKey);
+        final Map<String, String> serverVariables = new HashMap<>();
+        serverVariables.put("site", "datadoghq." + dataCenter.getDomain());
+        defaultClient.setServerVariables(serverVariables);
+        MetricsApi apiInstance = new MetricsApi(defaultClient);
 
-        addGaugesAndUnregisterOnException(request);
-        counters.values().forEach(request::add);
-        meters.values().forEach(request::add);
-        histograms.values().forEach(histogram -> histogram.addTo(request));
+        final MetricPayload metricName =
+                new MetricPayload()
+                        .series(
+                                Collections.singletonList(
+                                        new MetricSeries()
+                                                .metric("metricName")
+                                                .type(MetricIntakeType.GAUGE)
+                                                .points(
+                                                        Collections.singletonList(
+                                                                new MetricPoint().value(0.0)))
+                                                .tags(Collections.emptyList())
+                                                .resources(
+                                                        Collections.singletonList(
+                                                                new MetricResource()
+                                                                        .type("host")
+                                                                        .name("localhost")))));
 
-        int totalMetrics = request.getSeries().size();
+        try {
+            apiInstance.submitMetrics(metricName);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+
+        final List<MetricSeries> request = new ArrayList<>();
+
+        final long timestamp = clock.getUnixEpochTimestamp();
+
+        addGaugesAndUnregisterOnException(request, timestamp);
+        counters.values().stream()
+                .map(
+                        counter ->
+                                counter.getBaseMetricSeries()
+                                        .points(
+                                                Collections.singletonList(
+                                                        new MetricPoint()
+                                                                .value(counter.getMetricValue())
+                                                                .timestamp(timestamp))))
+                .forEach(request::add);
+        counters.values().stream()
+                .map(
+                        counter ->
+                                counter.getBaseMetricSeries()
+                                        .points(
+                                                Collections.singletonList(
+                                                        new MetricPoint()
+                                                                .value(counter.getMetricValue())
+                                                                .timestamp(timestamp))))
+                .forEach(request::add);
+        meters.values().stream()
+                .map(
+                        counter ->
+                                counter.getBaseMetricSeries()
+                                        .points(
+                                                Collections.singletonList(
+                                                        new MetricPoint()
+                                                                .value(counter.getMetricValue())
+                                                                .timestamp(timestamp))))
+                .forEach(request::add);
+        histograms.values().forEach(histogram -> histogram.addTo(request, timestamp));
+
+        int totalMetrics = request.size();
         int fromIndex = 0;
         while (fromIndex < totalMetrics) {
             int toIndex = Math.min(fromIndex + maxMetricsPerRequestValue, totalMetrics);
             try {
-                DSeries chunk = new DSeries(request.getSeries().subList(fromIndex, toIndex));
-                client.send(chunk);
-                chunk.getSeries().forEach(DMetric::ackReport);
-                LOGGER.debug("Reported series with size {}.", chunk.getSeries().size());
-            } catch (SocketTimeoutException e) {
-                LOGGER.warn(
-                        "Failed reporting metrics to Datadog because of socket timeout: {}",
-                        e.getMessage());
+                final MetricPayload metricPayload = new MetricPayload();
+                metricPayload.series(request.subList(fromIndex, toIndex));
+                apiInstance.submitMetrics(metricName);
+                // TODO: fix ack chunk.getSeries().forEach(DMetric::ackReport);
+                LOGGER.debug("Reported series with size {}.", metricPayload.getSeries().size());
             } catch (Exception e) {
                 LOGGER.warn("Failed reporting metrics to Datadog.", e);
             }
@@ -181,30 +249,35 @@ public class DatadogHttpReporter implements MetricReporter, Scheduled {
         }
     }
 
-    private void addGaugesAndUnregisterOnException(DSeries request) {
+    private void addGaugesAndUnregisterOnException(List<MetricSeries> request, long timestamp) {
         List<Gauge> gaugesToRemove = new ArrayList<>();
         for (Map.Entry<Gauge, DGauge> entry : gauges.entrySet()) {
             DGauge g = entry.getValue();
             try {
                 // Will throw exception if the Gauge is not of Number type
                 // Flink uses Gauge to store many types other than Number
-                g.getMetricValue();
-                request.add(g);
+                request.add(
+                        g.getBaseMetricSeries()
+                                .points(
+                                        Collections.singletonList(
+                                                new MetricPoint()
+                                                        .value((double) g.getMetricValue())
+                                                        .timestamp(timestamp))));
             } catch (ClassCastException e) {
                 LOGGER.info(
                         "The metric {} will not be reported because only number types are supported by this reporter.",
-                        g.getMetricName());
+                        g.getBaseMetricSeries().getMetric());
                 gaugesToRemove.add(entry.getKey());
             } catch (Exception e) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
                             "The metric {} will not be reported because it threw an exception.",
-                            g.getMetricName(),
+                            g.getBaseMetricSeries().getMetric(),
                             e);
                 } else {
                     LOGGER.info(
                             "The metric {} will not be reported because it threw an exception.",
-                            g.getMetricName());
+                            g.getBaseMetricSeries().getMetric());
                 }
                 gaugesToRemove.add(entry.getKey());
             }
