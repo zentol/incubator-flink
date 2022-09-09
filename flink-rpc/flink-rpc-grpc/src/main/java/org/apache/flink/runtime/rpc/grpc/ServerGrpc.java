@@ -18,93 +18,120 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.util.IOUtils;
+
+import io.grpc.BindableService;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;
-import io.grpc.protobuf.ProtoUtils;
+import io.grpc.ServiceDescriptor;
+import io.grpc.Status;
+import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+
 import static io.grpc.MethodDescriptor.generateFullMethodName;
-import static io.grpc.stub.ClientCalls.asyncUnaryCall;
-import static io.grpc.stub.ClientCalls.blockingUnaryCall;
-import static io.grpc.stub.ClientCalls.futureUnaryCall;
 import static io.grpc.stub.ServerCalls.asyncUnaryCall;
-import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /** */
 public final class ServerGrpc {
 
     private ServerGrpc() {}
 
-    public static final String SERVICE_NAME = "Server";
+    private static final MethodDescriptor<byte[], Void> METHOD_TELL =
+            MethodDescriptor.<byte[], Void>newBuilder()
+                    .setType(MethodDescriptor.MethodType.UNARY)
+                    .setFullMethodName(generateFullMethodName("Server", "tell"))
+                    .setRequestMarshaller(new Serde())
+                    .setResponseMarshaller(new FailingSerde())
+                    .build();
 
-    // Static method descriptors that strictly reflect the proto.
-    @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
-    public static final io.grpc.MethodDescriptor<ServerOuterClass.Payload, ServerOuterClass.Empty>
-            METHOD_TELL =
-                    MethodDescriptor.<ServerOuterClass.Payload, ServerOuterClass.Empty>newBuilder()
-                            .setType(MethodDescriptor.MethodType.UNARY)
-                            .setFullMethodName(generateFullMethodName("Server", "tell"))
-                            .setRequestMarshaller(
-                                    ProtoUtils.marshaller(
-                                            ServerOuterClass.Payload.getDefaultInstance()))
-                            .setResponseMarshaller(
-                                    ProtoUtils.marshaller(
-                                            ServerOuterClass.Empty.getDefaultInstance()))
-                            .build();
+    private static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
+            MethodDescriptor.<byte[], byte[]>newBuilder()
+                    .setType(MethodDescriptor.MethodType.UNARY)
+                    .setFullMethodName(generateFullMethodName("Server", "ask"))
+                    .setRequestMarshaller(new Serde())
+                    .setResponseMarshaller(new Serde())
+                    .build();
 
-    @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
-    public static final io.grpc.MethodDescriptor<ServerOuterClass.Payload, ServerOuterClass.Payload>
-            METHOD_ASK =
-                    MethodDescriptor
-                            .<ServerOuterClass.Payload, ServerOuterClass.Payload>newBuilder()
-                            .setType(MethodDescriptor.MethodType.UNARY)
-                            .setFullMethodName(generateFullMethodName("Server", "ask"))
-                            .setRequestMarshaller(
-                                    ProtoUtils.marshaller(
-                                            ServerOuterClass.Payload.getDefaultInstance()))
-                            .setResponseMarshaller(
-                                    ProtoUtils.marshaller(
-                                            ServerOuterClass.Payload.getDefaultInstance()))
-                            .build();
+    private static final int METHODID_TELL = 0;
+    private static final int METHODID_ASK = 1;
 
-    /** Creates a new async stub that supports all call types for the service */
-    public static ServerStub newStub(io.grpc.Channel channel) {
-        return new ServerStub(channel);
+    private static final ServiceDescriptor SERVICE_DESCRIPTOR =
+            ServiceDescriptor.newBuilder("Server")
+                    .addMethod(METHOD_TELL)
+                    .addMethod(METHOD_ASK)
+                    .build();
+
+    private static class FailingSerde implements MethodDescriptor.Marshaller<Void> {
+
+        @Override
+        public InputStream stream(Void value) {
+            // should never be called
+            throw new RuntimeException();
+        }
+
+        @Override
+        public Void parse(InputStream stream) {
+            // should never be called
+            throw new RuntimeException();
+        }
     }
 
-    /**
-     * Creates a new blocking-style stub that supports unary and streaming output calls on the
-     * service
-     */
-    public static ServerBlockingStub newBlockingStub(io.grpc.Channel channel) {
-        return new ServerBlockingStub(channel);
+    private static class Serde implements MethodDescriptor.Marshaller<byte[]> {
+
+        @Override
+        public InputStream stream(byte[] value) {
+            return new ByteArrayInputStream(value);
+        }
+
+        @Override
+        public byte[] parse(InputStream stream) {
+            try {
+                byte[] bytes = new byte[stream.available()];
+                IOUtils.readFully(stream, bytes, 0, stream.available());
+                return bytes;
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
+        }
     }
 
-    /** Creates a new ListenableFuture-style stub that supports unary calls on the service */
-    public static ServerFutureStub newFutureStub(io.grpc.Channel channel) {
-        return new ServerFutureStub(channel);
+    public static ServerFutureStub newStub(Channel channel) {
+        return new ServerFutureStub(channel, CallOptions.DEFAULT);
     }
 
-    /** */
-    public abstract static class ServerImplBase implements io.grpc.BindableService {
+    /** TODO: replicate AkkaRpcActor behavior */
+    public static class ServerImplBase implements BindableService {
 
         /** */
-        public void tell(
-                ServerOuterClass.Payload request,
-                StreamObserver<ServerOuterClass.Empty> responseObserver) {
-            asyncUnimplementedUnaryCall(METHOD_TELL, responseObserver);
+        public void tell(byte[] request, StreamObserver<Void> responseObserver) {
+            // responseObserver.onCompleted();
+            // asyncUnimplementedUnaryCall(METHOD_TELL, responseObserver);
+
+            System.out.println("tell " + Arrays.toString(request));
+            responseObserver.onCompleted();
         }
 
         /** */
-        public void ask(
-                ServerOuterClass.Payload request,
-                io.grpc.stub.StreamObserver<ServerOuterClass.Payload> responseObserver) {
-            asyncUnimplementedUnaryCall(METHOD_ASK, responseObserver);
+        public void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
+            // asyncUnimplementedUnaryCall(METHOD_ASK, responseObserver);
+            System.out.println("ask " + Arrays.toString(request));
+            responseObserver.onNext(new byte[] {1, 2, 3, 4});
+            responseObserver.onCompleted();
         }
 
         @Override
         public final ServerServiceDefinition bindService() {
-            return ServerServiceDefinition.builder(getServiceDescriptor())
+            return ServerServiceDefinition.builder(SERVICE_DESCRIPTOR)
                     .addMethod(
                             METHOD_TELL, asyncUnaryCall(new MethodHandlers<>(this, METHODID_TELL)))
                     .addMethod(METHOD_ASK, asyncUnaryCall(new MethodHandlers<>(this, METHODID_ASK)))
@@ -112,102 +139,76 @@ public final class ServerGrpc {
         }
     }
 
-    /** */
-    public static final class ServerStub extends io.grpc.stub.AbstractStub<ServerStub> {
-        private ServerStub(io.grpc.Channel channel) {
-            super(channel);
+    public static final class ServerFutureStub {
+        private final Channel channel;
+        private final CallOptions callOptions;
+
+        private ServerFutureStub(Channel channel, CallOptions callOptions) {
+            this.channel = channel;
+            this.callOptions = callOptions;
         }
 
-        private ServerStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            super(channel, callOptions);
-        }
-
-        @Override
-        protected ServerStub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            return new ServerStub(channel, callOptions);
-        }
-
-        /** */
-        public void tell(
-                ServerOuterClass.Payload request,
-                StreamObserver<ServerOuterClass.Empty> responseObserver) {
-            asyncUnaryCall(
-                    getChannel().newCall(METHOD_TELL, getCallOptions()), request, responseObserver);
-        }
-
-        /** */
-        public void ask(
-                ServerOuterClass.Payload request,
-                io.grpc.stub.StreamObserver<ServerOuterClass.Payload> responseObserver) {
-            asyncUnaryCall(
-                    getChannel().newCall(METHOD_ASK, getCallOptions()), request, responseObserver);
-        }
-    }
-
-    /** */
-    public static final class ServerBlockingStub
-            extends io.grpc.stub.AbstractStub<ServerBlockingStub> {
-        private ServerBlockingStub(io.grpc.Channel channel) {
-            super(channel);
-        }
-
-        private ServerBlockingStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            super(channel, callOptions);
-        }
-
-        @Override
-        protected ServerBlockingStub build(
-                io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            return new ServerBlockingStub(channel, callOptions);
-        }
-
-        /** */
-        public ServerOuterClass.Empty tell(ServerOuterClass.Payload request) {
-            return blockingUnaryCall(getChannel(), METHOD_TELL, getCallOptions(), request);
-        }
-
-        /** */
-        public ServerOuterClass.Payload ask(ServerOuterClass.Payload request) {
-            return blockingUnaryCall(getChannel(), METHOD_ASK, getCallOptions(), request);
-        }
-    }
-
-    /** */
-    public static final class ServerFutureStub extends io.grpc.stub.AbstractStub<ServerFutureStub> {
-        private ServerFutureStub(io.grpc.Channel channel) {
-            super(channel);
-        }
-
-        private ServerFutureStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            super(channel, callOptions);
-        }
-
-        @Override
-        protected ServerFutureStub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+        protected ServerFutureStub build(Channel channel, CallOptions callOptions) {
             return new ServerFutureStub(channel, callOptions);
         }
 
-        /** */
-        public com.google.common.util.concurrent.ListenableFuture<ServerOuterClass.Empty> tell(
-                ServerOuterClass.Payload request) {
-            return futureUnaryCall(getChannel().newCall(METHOD_TELL, getCallOptions()), request);
+        public void tell(byte[] request) {
+            ClientCall<byte[], Void> call = channel.newCall(METHOD_TELL, callOptions);
+
+            call.start(
+                    new ClientCall.Listener<Void>() {
+                        @Override
+                        public void onClose(Status status, Metadata trailers) {
+                            // TODO: handle errors
+                        }
+                    },
+                    new Metadata());
+
+            call.sendMessage(request);
+            call.halfClose();
         }
 
-        /** */
-        public com.google.common.util.concurrent.ListenableFuture<ServerOuterClass.Payload> ask(
-                ServerOuterClass.Payload request) {
-            return futureUnaryCall(getChannel().newCall(METHOD_ASK, getCallOptions()), request);
+        public CompletableFuture<byte[]> ask(byte[] request) {
+            ClientCall<byte[], byte[]> call = channel.newCall(METHOD_ASK, callOptions);
+
+            CompletableFuture<byte[]> response = new CompletableFuture<>();
+            call.start(
+                    new ClientCall.Listener<byte[]>() {
+                        @Override
+                        public void onMessage(byte[] message) {
+                            System.out.println("onMessage");
+                            response.complete(message);
+                        }
+
+                        @Override
+                        public void onClose(Status status, Metadata trailers) {
+                            // TODO: handle errors
+                            System.out.println("onClose: " + status);
+                        }
+
+                        @Override
+                        public void onHeaders(Metadata headers) {
+                            System.out.println("headers");
+                        }
+
+                        @Override
+                        public void onReady() {
+                            System.out.println("ready");
+                        }
+                    },
+                    new Metadata());
+
+            call.request(1);
+            call.sendMessage(request);
+            call.halfClose();
+
+
+            return response;
         }
     }
 
-    private static final int METHODID_TELL = 0;
-    private static final int METHODID_ASK = 1;
-
     private static final class MethodHandlers<Req, Resp>
-            implements io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
-                    io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
-                    io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
-                    io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
+            implements ServerCalls.UnaryMethod<Req, Resp> {
         private final ServerImplBase serviceImpl;
         private final int methodId;
 
@@ -218,61 +219,17 @@ public final class ServerGrpc {
 
         @Override
         @SuppressWarnings("unchecked")
-        public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
+        public void invoke(Req request, StreamObserver<Resp> responseObserver) {
             switch (methodId) {
                 case METHODID_TELL:
-                    serviceImpl.tell(
-                            (ServerOuterClass.Payload) request,
-                            (StreamObserver<ServerOuterClass.Empty>) responseObserver);
+                    serviceImpl.tell((byte[]) request, (StreamObserver<Void>) responseObserver);
                     break;
                 case METHODID_ASK:
-                    serviceImpl.ask(
-                            (ServerOuterClass.Payload) request,
-                            (io.grpc.stub.StreamObserver<ServerOuterClass.Payload>)
-                                    responseObserver);
+                    serviceImpl.ask((byte[]) request, (StreamObserver<byte[]>) responseObserver);
                     break;
                 default:
                     throw new AssertionError();
             }
         }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public io.grpc.stub.StreamObserver<Req> invoke(
-                io.grpc.stub.StreamObserver<Resp> responseObserver) {
-            switch (methodId) {
-                default:
-                    throw new AssertionError();
-            }
-        }
-    }
-
-    private static final class ServerDescriptorSupplier
-            implements io.grpc.protobuf.ProtoFileDescriptorSupplier {
-        @Override
-        public com.google.protobuf.Descriptors.FileDescriptor getFileDescriptor() {
-            return ServerOuterClass.getDescriptor();
-        }
-    }
-
-    private static volatile io.grpc.ServiceDescriptor serviceDescriptor;
-
-    public static io.grpc.ServiceDescriptor getServiceDescriptor() {
-        io.grpc.ServiceDescriptor result = serviceDescriptor;
-        if (result == null) {
-            synchronized (ServerGrpc.class) {
-                result = serviceDescriptor;
-                if (result == null) {
-                    serviceDescriptor =
-                            result =
-                                    io.grpc.ServiceDescriptor.newBuilder(SERVICE_NAME)
-                                            .setSchemaDescriptor(new ServerDescriptorSupplier())
-                                            .addMethod(METHOD_TELL)
-                                            .addMethod(METHOD_ASK)
-                                            .build();
-                }
-            }
-        }
-        return result;
     }
 }

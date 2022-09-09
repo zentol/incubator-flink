@@ -45,12 +45,16 @@ under the License.
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-stub</artifactId>
-			<version>1.43.2</version>
+			<version>1.49.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
-			<artifactId>grpc-protobuf</artifactId>
-			<version>1.43.2</version>
+			<artifactId>grpc-netty</artifactId>
+			<version>1.49.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-test-utils-junit</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -74,7 +78,6 @@ under the License.
 				</configuration>
 				<executions>
 					<execution>
-						<phase>none</phase>
 						<goals>
 							<goal>compile</goal>
 							<goal>compile-custom</goal>
