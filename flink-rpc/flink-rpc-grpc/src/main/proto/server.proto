@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option java_package = "org.apache.flink.runtime.rpc.grpc";
+
+service Server {
+	rpc tell(Payload) returns (google.protobuf.Empty);
+	rpc ask(Payload) returns (Payload);
+}
+
+message Payload {
+	bytes data = 1;
+}
