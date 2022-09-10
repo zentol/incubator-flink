@@ -28,7 +28,10 @@ import org.apache.flink.util.concurrent.ScheduledExecutor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Proxy;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 public class GRpcService implements RpcService {
@@ -44,18 +47,30 @@ public class GRpcService implements RpcService {
 
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
-        ManagedChannel channel =
-                ManagedChannelBuilder.forTarget(address)
-                        // TODO: disable
-                        .usePlaintext()
-                        .build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
 
-        // MethodDescriptor.newBuilder()
-        //                .setFullMethodName("...tell")
-        //                        .setRequestMarshaller(new Re)
-        // channel.newCall()
+        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
 
-        return null;
+        GRpcGateway invocationHandler =
+                new GRpcGateway(
+                        address,
+                        "localhost",
+                        true,
+                        Duration.ofSeconds(5),
+                        false,
+                        true,
+                        GRpcService.class.getClassLoader(),
+                        serverFutureStub);
+
+        @SuppressWarnings("unchecked")
+        C rpcServer =
+                (C)
+                        Proxy.newProxyInstance(
+                                GRpcService.class.getClassLoader(),
+                                new Class<?>[] {clazz},
+                                invocationHandler);
+
+        return CompletableFuture.completedFuture(rpcServer);
     }
 
     @Override
@@ -66,11 +81,17 @@ public class GRpcService implements RpcService {
 
     @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
-        return null;
+        try {
+            return new GRpcServer(rpcEndpoint, GRpcService.class.getClassLoader());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void stopServer(RpcServer selfGateway) {}
+    public void stopServer(RpcServer server) {
+        server.stop();
+    }
 
     @Override
     public CompletableFuture<Void> stopService() {

@@ -18,23 +18,36 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.runtime.rpc.RpcEndpoint;
+import org.apache.flink.runtime.rpc.RpcGateway;
+import org.apache.flink.runtime.rpc.RpcService;
+import org.apache.flink.util.concurrent.Executors;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Proxy;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 class ServerGrpcTest {
 
+    private static final ClassLoader flinkClassLoader = ServerGrpcTest.class.getClassLoader();
+
     @Test
     void test() throws IOException, ExecutionException, InterruptedException {
         Server server =
-                ServerBuilder.forPort(9000)
-                        .addService(new ServerGrpc.ServerImplBase())
+                NettyServerBuilder.forPort(9000)
+                        .addService(
+                                new ServerGrpc.ServerImpl(
+                                        Executors.directExecutor(), new Object(), flinkClassLoader))
                         .build()
                         .start();
 
@@ -49,5 +62,80 @@ class ServerGrpcTest {
 
         channel.shutdownNow();
         server.shutdownNow();
+    }
+
+    @Test
+    void test2() throws IOException, ExecutionException, InterruptedException {
+        Server server =
+                NettyServerBuilder.forPort(9000)
+                        .addService(
+                                new ServerGrpc.ServerImpl(
+                                        Executors.directExecutor(), new Object(), flinkClassLoader))
+                        .build()
+                        .start();
+
+        ManagedChannel channel =
+                ManagedChannelBuilder.forTarget("localhost:" + 9000).usePlaintext().build();
+
+        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
+
+        GRpcGateway invocationHandler =
+                new GRpcGateway(
+                        "localhost:9000",
+                        "localhost",
+                        true,
+                        Duration.ofSeconds(5),
+                        false,
+                        true,
+                        ServerGrpcTest.class.getClassLoader(),
+                        serverFutureStub);
+
+        @SuppressWarnings("unchecked")
+        TestGateway rpcServer =
+                (TestGateway)
+                        Proxy.newProxyInstance(
+                                flinkClassLoader,
+                                Collections.singleton(TestGateway.class).toArray(new Class<?>[1]),
+                                invocationHandler);
+
+        System.out.println(rpcServer.getCount().get());
+    }
+
+    @Test
+    void test3() throws Exception {
+        final GRpcService rpcService = new GRpcService();
+
+        try (TestEndpoint testEndpoint = new TestEndpoint(rpcService)) {
+            final TestGateway gateway =
+                    rpcService.connect(testEndpoint.getAddress(), TestGateway.class).get();
+
+            System.out.println(gateway.getCount().get());
+        }
+    }
+
+    public interface TestGateway extends RpcGateway {
+        CompletableFuture<Integer> getCount();
+    }
+
+    public static class TestEndpoint extends RpcEndpoint implements TestGateway {
+
+        protected TestEndpoint(RpcService rpcService) {
+            super(rpcService);
+        }
+
+        @Override
+        public String getAddress() {
+            return rpcServer.getAddress();
+        }
+
+        @Override
+        public String getHostname() {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Integer> getCount() {
+            return CompletableFuture.completedFuture(4);
+        }
     }
 }
