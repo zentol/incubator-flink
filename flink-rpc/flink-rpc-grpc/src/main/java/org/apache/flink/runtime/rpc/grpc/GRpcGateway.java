@@ -38,6 +38,7 @@ import org.apache.flink.util.concurrent.FutureUtils;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -50,11 +51,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class GRpcGateway implements RpcGateway, InvocationHandler {
+public class GRpcGateway<F extends Serializable>
+        implements RpcGateway, InvocationHandler, FencedRpcGateway<F> {
 
+    @Nullable private F fencingToken;
     private final String address;
     private final String hostname;
 
+    private final String endpointId;
     private final boolean captureAskCallStack;
     private final Duration timeout;
 
@@ -66,16 +70,20 @@ public class GRpcGateway implements RpcGateway, InvocationHandler {
     private final ServerGrpc.ServerFutureStub server;
 
     public GRpcGateway(
+            @Nullable F fencingToken,
             String address,
             String hostname,
+            String endpointId,
             boolean captureAskCallStack,
             Duration timeout,
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
             ServerGrpc.ServerFutureStub server) {
+        this.fencingToken = fencingToken;
         this.address = address;
         this.hostname = hostname;
+        this.endpointId = endpointId;
         this.captureAskCallStack = captureAskCallStack;
         this.timeout = timeout;
         this.isLocal = isLocal;
@@ -100,15 +108,10 @@ public class GRpcGateway implements RpcGateway, InvocationHandler {
 
         Object result;
 
-        if (declaringClass.equals(Object.class) || declaringClass.equals(RpcGateway.class)) {
+        if (declaringClass.equals(Object.class)
+                || declaringClass.equals(RpcGateway.class)
+                || declaringClass.equals(FencedRpcGateway.class)) {
             result = method.invoke(this, args);
-        } else if (declaringClass.equals(FencedRpcGateway.class)) {
-            throw new UnsupportedOperationException(
-                    "AkkaInvocationHandler does not support the call FencedRpcGateway#"
-                            + method.getName()
-                            + ". This indicates that you retrieved a FencedRpcGateway without specifying a "
-                            + "fencing token. Please use RpcService#connect(RpcService, F, Time) with F being the fencing token to "
-                            + "retrieve a properly FencedRpcGateway.");
         } else {
             result = invokeRpc(method, args);
         }
@@ -218,10 +221,12 @@ public class GRpcGateway implements RpcGateway, InvocationHandler {
 
         if (isLocal && (!forceRpcInvocationSerialization || isLocalRpcInvocation)) {
             rpcInvocation =
-                    new LocalRpcInvocation(declaringClassName, methodName, parameterTypes, args);
+                    new LocalRpcInvocation(
+                            endpointId, declaringClassName, methodName, parameterTypes, args);
         } else {
             rpcInvocation =
-                    new RemoteRpcInvocation(declaringClassName, methodName, parameterTypes, args);
+                    new RemoteRpcInvocation(
+                            endpointId, declaringClassName, methodName, parameterTypes, args);
         }
 
         return rpcInvocation;
@@ -368,5 +373,10 @@ public class GRpcGateway implements RpcGateway, InvocationHandler {
         }
 
         return newException;
+    }
+
+    @Override
+    public F getFencingToken() {
+        return fencingToken;
     }
 }

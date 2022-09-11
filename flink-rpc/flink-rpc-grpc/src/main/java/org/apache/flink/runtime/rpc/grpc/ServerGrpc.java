@@ -44,7 +44,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
@@ -125,16 +127,19 @@ public final class ServerGrpc {
         private final Logger log = LoggerFactory.getLogger(getClass());
 
         private final Executor mainThread;
-        private final Object rpcEndpoint;
+        private final Map<String, RpcEndpoint> targets = new ConcurrentHashMap<>();
+
         private final ClassLoader flinkClassLoader;
 
-        public ServerImpl(Executor mainThread, Object rpcEndpoint, ClassLoader flinkClassLoader) {
-            this.mainThread = mainThread;
-            this.rpcEndpoint = rpcEndpoint;
+        public ServerImpl(Executor executor, ClassLoader flinkClassLoader) {
+            this.mainThread = executor;
             this.flinkClassLoader = flinkClassLoader;
         }
 
-        /** */
+        public void addTarget(RpcEndpoint rpcEndpoint) {
+            targets.put(rpcEndpoint.getEndpointId(), rpcEndpoint);
+        }
+
         public void tell(byte[] request, StreamObserver<Void> responseObserver) {
             try {
                 RpcInvocation o =
@@ -150,7 +155,6 @@ public final class ServerGrpc {
             responseObserver.onCompleted();
         }
 
-        /** */
         public void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
             try {
                 RpcInvocation o =
@@ -183,14 +187,17 @@ public final class ServerGrpc {
          * @param rpcInvocation Rpc invocation message
          */
         private CompletableFuture<?> handleRpcInvocation(RpcInvocation rpcInvocation)
-                throws RpcConnectionException, ReflectiveOperationException {
+                throws RpcConnectionException {
+
+            Object rpcEndpoint = targets.get(rpcInvocation.getTarget());
+
             final Method rpcMethod;
 
             try {
                 String methodName = rpcInvocation.getMethodName();
                 Class<?>[] parameterTypes = rpcInvocation.getParameterTypes();
 
-                rpcMethod = lookupRpcMethod(methodName, parameterTypes);
+                rpcMethod = lookupRpcMethod(methodName, parameterTypes, rpcEndpoint);
             } catch (final NoSuchMethodException e) {
                 log.error("Could not find rpc method for rpc invocation.", e);
 
@@ -268,7 +275,8 @@ public final class ServerGrpc {
          * @throws NoSuchMethodException Thrown if the method with the given name and parameter
          *     types cannot be found at the rpc endpoint
          */
-        private Method lookupRpcMethod(final String methodName, final Class<?>[] parameterTypes)
+        private Method lookupRpcMethod(
+                final String methodName, final Class<?>[] parameterTypes, Object rpcEndpoint)
                 throws NoSuchMethodException {
             return rpcEndpoint.getClass().getMethod(methodName, parameterTypes);
         }

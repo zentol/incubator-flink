@@ -97,6 +97,9 @@ public interface RpcSystem extends RpcSystemUtils, AutoCloseable {
         Exception loadError = null;
         while (iterator.hasNext()) {
             final RpcSystemLoader next = iterator.next();
+            if (next.getClass().getName().contains("Akka")) {
+                continue;
+            }
             try {
                 return next.loadRpcSystem(config);
             } catch (Exception e) {

@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc.grpc;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.AddressResolution;
+import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
 
 import javax.annotation.Nullable;
@@ -30,7 +31,7 @@ import java.net.UnknownHostException;
 public class GRpcSystem implements RpcSystem {
     @Override
     public RpcServiceBuilder localServiceBuilder(Configuration configuration) {
-        return null;
+        return new GRpcServiceBuilder();
     }
 
     @Override
@@ -38,7 +39,7 @@ public class GRpcSystem implements RpcSystem {
             Configuration configuration,
             @Nullable String externalAddress,
             String externalPortRange) {
-        return null;
+        return new GRpcServiceBuilder();
     }
 
     @Override
@@ -49,16 +50,53 @@ public class GRpcSystem implements RpcSystem {
             AddressResolution addressResolution,
             Configuration config)
             throws UnknownHostException {
-        return null;
+        return hostname + ":" + port + "@" + endpointName;
     }
 
     @Override
     public InetSocketAddress getInetSocketAddressFromRpcUrl(String url) throws Exception {
-        return null;
+        return InetSocketAddress.createUnresolved(
+                url.substring(0, url.indexOf(":")),
+                Integer.parseInt(url.substring(url.indexOf(":") + 1, url.indexOf("@"))));
     }
 
     @Override
     public long getMaximumMessageSizeInBytes(Configuration config) {
         return Long.MAX_VALUE;
+    }
+
+    private static class GRpcServiceBuilder implements RpcServiceBuilder {
+
+        @Override
+        public RpcServiceBuilder withComponentName(String name) {
+            return this;
+        }
+
+        @Override
+        public RpcServiceBuilder withBindAddress(String bindAddress) {
+            return this;
+        }
+
+        @Override
+        public RpcServiceBuilder withBindPort(int bindPort) {
+            return this;
+        }
+
+        @Override
+        public RpcServiceBuilder withExecutorConfiguration(
+                FixedThreadPoolExecutorConfiguration executorConfiguration) {
+            return this;
+        }
+
+        @Override
+        public RpcServiceBuilder withExecutorConfiguration(
+                ForkJoinExecutorConfiguration executorConfiguration) {
+            return this;
+        }
+
+        @Override
+        public RpcService createAndStart() throws Exception {
+            return new GRpcService(GRpcSystem.class.getClassLoader());
+        }
     }
 }

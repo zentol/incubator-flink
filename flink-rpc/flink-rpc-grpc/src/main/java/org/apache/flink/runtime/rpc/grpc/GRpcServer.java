@@ -18,48 +18,50 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.runtime.rpc.MainThreadValidatorUtil;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcServer;
-import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
-
-import io.grpc.Server;
-import io.grpc.netty.NettyServerBuilder;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class GRpcServer implements RpcServer {
 
     private final ScheduledExecutorService mainThread;
-    private final Server server;
 
-    public GRpcServer(RpcEndpoint endpoint, ClassLoader flinkClassLoader) throws IOException {
-        this.mainThread =
-                Executors.newSingleThreadScheduledExecutor(
-                        new ExecutorThreadFactory("flink-rpc-server-" + endpoint.getEndpointId()));
+    private final MainThreadValidatorUtil mainThreadValidator;
+    private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+    private final String address;
+    private final String hostName;
+    private final RpcEndpoint rpcEndpoint;
 
-        this.server =
-                NettyServerBuilder.forPort(0)
-                        .addService(
-                                new ServerGrpc.ServerImpl(mainThread, endpoint, flinkClassLoader))
-                        .build()
-                        .start();
+    public GRpcServer(
+            ScheduledExecutorService mainThread,
+            String address,
+            String hostName,
+            RpcEndpoint rpcEndpoint)
+            throws IOException {
+        this.mainThread = mainThread;
+        this.address = address;
+        this.hostName = hostName;
+        this.rpcEndpoint = rpcEndpoint;
+        this.mainThreadValidator = new MainThreadValidatorUtil(rpcEndpoint);
+        mainThread.submit(mainThreadValidator::enterMainThread);
     }
 
     @Override
     public String getAddress() {
-        return "localhost:" + server.getPort();
+        return address;
     }
 
     @Override
     public String getHostname() {
-        return null;
+        return hostName;
     }
 
     @Override
@@ -90,15 +92,33 @@ public class GRpcServer implements RpcServer {
 
     @Override
     public CompletableFuture<Void> getTerminationFuture() {
-        return null;
+        return terminationFuture;
     }
 
     @Override
-    public void start() {}
+    public void start() {
+        mainThread.submit(
+                () -> {
+                    try {
+                        rpcEndpoint.internalCallOnStart();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
 
     @Override
     public void stop() {
-        mainThread.shutdownNow();
-        server.shutdownNow();
+        mainThread.submit(
+                () -> {
+                    try {
+                        rpcEndpoint.internalCallOnStop();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    // TODO: ehh??? may be that messages are still forwarded even when shut down
+                    // mainThread.submit(mainThreadValidator::exitMainThread);
+                    terminationFuture.complete(null);
+                });
     }
 }

@@ -27,12 +27,28 @@ import org.apache.flink.util.Preconditions;
  */
 public final class LocalRpcInvocation implements RpcInvocation {
 
+    private String endpointId;
     private final String declaringClass;
     private final String methodName;
     private final Class<?>[] parameterTypes;
     private final Object[] args;
 
     private transient String toString;
+
+    public LocalRpcInvocation(
+            String endpointId,
+            String declaringClass,
+            String methodName,
+            Class<?>[] parameterTypes,
+            Object[] args) {
+        this.endpointId = endpointId;
+        this.declaringClass = declaringClass;
+        this.methodName = Preconditions.checkNotNull(methodName);
+        this.parameterTypes = Preconditions.checkNotNull(parameterTypes);
+        this.args = args;
+
+        toString = null;
+    }
 
     public LocalRpcInvocation(
             String declaringClass, String methodName, Class<?>[] parameterTypes, Object[] args) {
@@ -42,6 +58,11 @@ public final class LocalRpcInvocation implements RpcInvocation {
         this.args = args;
 
         toString = null;
+    }
+
+    @Override
+    public String getTarget() {
+        return endpointId;
     }
 
     @Override

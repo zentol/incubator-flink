@@ -21,27 +21,16 @@ package org.apache.flink.runtime.rpc.grpc;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcService;
-import org.apache.flink.util.concurrent.Executors;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Server;
-import io.grpc.netty.NettyServerBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.lang.reflect.Proxy;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 class ServerGrpcTest {
 
     private static final ClassLoader flinkClassLoader = ServerGrpcTest.class.getClassLoader();
 
-    @Test
+    /*  @Test
     void test() throws IOException, ExecutionException, InterruptedException {
         Server server =
                 NettyServerBuilder.forPort(9000)
@@ -83,6 +72,7 @@ class ServerGrpcTest {
                 new GRpcGateway(
                         "localhost:9000",
                         "localhost",
+                        address.substring(address.indexOf("@") + 1),
                         true,
                         Duration.ofSeconds(5),
                         false,
@@ -99,17 +89,30 @@ class ServerGrpcTest {
                                 invocationHandler);
 
         System.out.println(rpcServer.getCount().get());
-    }
+    }*/
 
     @Test
     void test3() throws Exception {
-        final GRpcService rpcService = new GRpcService();
+        final GRpcService rpcService = new GRpcService(flinkClassLoader);
 
-        try (TestEndpoint testEndpoint = new TestEndpoint(rpcService)) {
-            final TestGateway gateway =
-                    rpcService.connect(testEndpoint.getAddress(), TestGateway.class).get();
+        try (TestEndpoint testEndpoint = new TestEndpoint(rpcService);
+                TestEndpoint2 testEndpoint2 = new TestEndpoint2(rpcService)) {
+            testEndpoint.start();
+            testEndpoint2.start();
 
-            System.out.println(gateway.getCount().get());
+            System.out.println(
+                    rpcService
+                            .connect(testEndpoint.getAddress(), TestGateway.class)
+                            .get()
+                            .getCount()
+                            .get());
+
+            System.out.println(
+                    rpcService
+                            .connect(testEndpoint2.getAddress(), TestGateway2.class)
+                            .get()
+                            .getCount2()
+                            .get());
         }
     }
 
@@ -136,6 +139,43 @@ class ServerGrpcTest {
         @Override
         public CompletableFuture<Integer> getCount() {
             return CompletableFuture.completedFuture(4);
+        }
+
+        @Override
+        protected void onStart() throws Exception {
+            System.out.println("start");
+        }
+
+        @Override
+        protected CompletableFuture<Void> onStop() {
+            System.out.println("stop");
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public interface TestGateway2 extends RpcGateway {
+        CompletableFuture<Integer> getCount2();
+    }
+
+    public static class TestEndpoint2 extends RpcEndpoint implements TestGateway2 {
+
+        protected TestEndpoint2(RpcService rpcService) {
+            super(rpcService);
+        }
+
+        @Override
+        public String getAddress() {
+            return rpcServer.getAddress();
+        }
+
+        @Override
+        public String getHostname() {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Integer> getCount2() {
+            return CompletableFuture.completedFuture(2);
         }
     }
 }

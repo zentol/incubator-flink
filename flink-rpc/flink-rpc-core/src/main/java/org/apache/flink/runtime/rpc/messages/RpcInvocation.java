@@ -24,6 +24,10 @@ package org.apache.flink.runtime.rpc.messages;
  */
 public interface RpcInvocation extends Message {
 
+    default String getTarget() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Returns the method's name.
      *

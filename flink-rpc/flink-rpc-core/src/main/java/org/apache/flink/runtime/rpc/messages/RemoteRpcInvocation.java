@@ -35,11 +35,37 @@ import java.io.Serializable;
  */
 public class RemoteRpcInvocation implements RpcInvocation, Serializable {
     private static final long serialVersionUID = 1L;
+    private String endpointId;
 
     // Wrap the invocation information to ease the serialization.
     private RemoteRpcInvocation.MethodInvocation methodInvocation;
 
     private transient String toString;
+
+    public RemoteRpcInvocation(
+            String endpointId,
+            final String declaringClassName,
+            final String methodName,
+            final Class<?>[] parameterTypes,
+            final Object[] args)
+            throws IOException {
+        for (int i = 0; i < (args == null ? 0 : args.length); ++i) {
+            if (args[i] != null && !(args[i] instanceof Serializable)) {
+                throw new IOException(
+                        "Could not serialize "
+                                + i
+                                + "th argument of method "
+                                + methodName
+                                + ". This indicates that the argument type "
+                                + args.getClass().getName()
+                                + " is not serializable. Arguments have to "
+                                + "be serializable for remote rpc calls.");
+            }
+        }
+        this.endpointId = endpointId;
+        methodInvocation =
+                new MethodInvocation(declaringClassName, methodName, parameterTypes, args);
+    }
 
     public RemoteRpcInvocation(
             final String declaringClassName,
@@ -62,6 +88,11 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
         }
         methodInvocation =
                 new MethodInvocation(declaringClassName, methodName, parameterTypes, args);
+    }
+
+    @Override
+    public String getTarget() {
+        return endpointId;
     }
 
     @Override
@@ -107,11 +138,13 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
     private void writeObject(ObjectOutputStream oos) throws IOException {
         // Translate it to byte array so that we can deserialize classes which cannot be found in
         // akka class loader.
+        oos.writeObject(endpointId);
         byte[] bytes = InstantiationUtil.serializeObject(methodInvocation);
         oos.writeObject(bytes);
     }
 
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        endpointId = (String) ois.readObject();
         byte[] bytes = (byte[]) ois.readObject();
         methodInvocation =
                 InstantiationUtil.deserializeObject(bytes, ClassLoader.getSystemClassLoader());
