@@ -18,11 +18,13 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.RpcService;
+import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
@@ -32,26 +34,64 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Proxy;
+import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class GRpcService implements RpcService {
 
-    private final ScheduledExecutorService mainThread =
-            Executors.newSingleThreadScheduledExecutor(
-                    new ExecutorThreadFactory("flink-grpc-service"));
+    private final ScheduledExecutorService mainThread;
     private final Server server;
     private final ServerGrpc.ServerImpl service;
 
-    public GRpcService(ClassLoader flinkClassLoader) {
+    private final String bindAddress;
+    @Nullable private final String externalAddress;
+    @Nullable private final Integer externalPort;
+
+    public GRpcService(
+            Configuration configuration,
+            String componentName,
+            String bindAddress,
+            @Nullable String externalAddress,
+            @Nullable Integer bindPort,
+            Iterator<Integer> externalPortRange,
+            ExecutorService executorService,
+            ClassLoader flinkClassLoader) {
         try {
+            this.mainThread =
+                    Executors.newSingleThreadScheduledExecutor(
+                            new ExecutorThreadFactory("flink-grpc-service-" + componentName));
+
+            Executors.newScheduledThreadPool()
+            ScheduledExecutorServiceAdapter
+
             this.service = new ServerGrpc.ServerImpl(mainThread, flinkClassLoader);
-            this.server = NettyServerBuilder.forPort(0).addService(service).build().start();
+
+            this.bindAddress = bindAddress;
+            this.externalAddress = externalAddress;
+            this.externalPort = externalPortRange.hasNext() ? externalPortRange.next() : null;
+
+            Preconditions.checkArgument(bindPort != null || externalPort != null);
+
+            // TODO: check error message on bind error
+            this.server =
+                    NettyServerBuilder.forAddress(
+                                    InetSocketAddress.createUnresolved(
+                                            bindAddress,
+                                            Optional.ofNullable(bindPort).orElse(externalPort)))
+                            .addService(service)
+                            .build()
+                            .start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -59,12 +99,12 @@ public class GRpcService implements RpcService {
 
     @Override
     public String getAddress() {
-        return "localhost";
+        return externalAddress != null ? externalAddress : bindAddress;
     }
 
     @Override
     public int getPort() {
-        return server.getPort();
+        return externalPort != null ? externalPort : server.getPort();
     }
 
     @Override

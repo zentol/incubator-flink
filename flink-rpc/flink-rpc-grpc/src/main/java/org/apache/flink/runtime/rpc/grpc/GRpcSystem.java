@@ -18,20 +18,29 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.AddressResolution;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
+import org.apache.flink.util.NetUtils;
+import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 
 import javax.annotation.Nullable;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 public class GRpcSystem implements RpcSystem {
     @Override
     public RpcServiceBuilder localServiceBuilder(Configuration configuration) {
-        return new GRpcServiceBuilder();
+        return new GRpcServiceBuilder(configuration);
     }
 
     @Override
@@ -39,7 +48,7 @@ public class GRpcSystem implements RpcSystem {
             Configuration configuration,
             @Nullable String externalAddress,
             String externalPortRange) {
-        return new GRpcServiceBuilder();
+        return new GRpcServiceBuilder(configuration, externalAddress, externalPortRange);
     }
 
     @Override
@@ -67,36 +76,127 @@ public class GRpcSystem implements RpcSystem {
 
     private static class GRpcServiceBuilder implements RpcServiceBuilder {
 
+        private final Configuration configuration;
+        @Nullable private final String externalAddress;
+        private final String externalPortRange;
+
+        @Nullable private String componentName;
+        private String bindAddress = NetUtils.getWildcardIPAddress();
+        @Nullable private Integer bindPort = null;
+        @Nullable private Function<String, ExecutorService> scheduledExecutorServiceFactory = null;
+
+        public GRpcServiceBuilder(Configuration configuration) {
+            this.configuration = configuration;
+            this.bindPort = 0;
+            this.externalAddress = null;
+            this.externalPortRange = "";
+        }
+
+        public GRpcServiceBuilder(
+                Configuration configuration,
+                @Nullable String externalAddress,
+                @Nullable String externalPortRange) {
+            this.configuration = configuration;
+            this.externalAddress =
+                    externalAddress == null
+                            ? InetAddress.getLoopbackAddress().getHostAddress()
+                            : externalAddress;
+            this.externalPortRange = externalPortRange;
+        }
+
         @Override
         public RpcServiceBuilder withComponentName(String name) {
+            this.componentName = Preconditions.checkNotNull(name);
             return this;
         }
 
         @Override
         public RpcServiceBuilder withBindAddress(String bindAddress) {
+            this.bindAddress = bindAddress;
             return this;
         }
 
         @Override
         public RpcServiceBuilder withBindPort(int bindPort) {
+            this.bindPort = bindPort;
             return this;
         }
 
         @Override
         public RpcServiceBuilder withExecutorConfiguration(
                 FixedThreadPoolExecutorConfiguration executorConfiguration) {
+            scheduledExecutorServiceFactory =
+                    componentName ->
+                            Executors.newFixedThreadPool(
+                                    executorConfiguration.getMaxNumThreads(),
+                                    new ExecutorThreadFactory.Builder()
+                                            .setPoolName("flink-" + componentName)
+                                            .setThreadPriority(
+                                                    executorConfiguration.getThreadPriority())
+                                            .build());
             return this;
         }
 
         @Override
         public RpcServiceBuilder withExecutorConfiguration(
                 ForkJoinExecutorConfiguration executorConfiguration) {
+
+            int parallelism =
+                    Math.min(
+                            Math.max(
+                                    (int)
+                                            Math.ceil(
+                                                    Runtime.getRuntime().availableProcessors()
+                                                            * executorConfiguration
+                                                                    .getParallelismFactor()),
+                                    executorConfiguration.getMinParallelism()),
+                            executorConfiguration.getMaxParallelism());
+
+            scheduledExecutorServiceFactory =
+                    componentName ->
+                            Executors.newScheduledThreadPool(
+                                    parallelism,
+                                    new ExecutorThreadFactory.Builder()
+                                            .setPoolName("flink-" + componentName)
+                                            .build());
             return this;
         }
 
         @Override
-        public RpcService createAndStart() throws Exception {
-            return new GRpcService(GRpcSystem.class.getClassLoader());
+        public RpcService createAndStart() {
+            Preconditions.checkNotNull(componentName);
+
+            if (scheduledExecutorServiceFactory == null) {
+                final double parallelismFactor =
+                        configuration.getDouble(AkkaOptions.FORK_JOIN_EXECUTOR_PARALLELISM_FACTOR);
+                final int minParallelism =
+                        configuration.getInteger(AkkaOptions.FORK_JOIN_EXECUTOR_PARALLELISM_MIN);
+                final int maxParallelism =
+                        configuration.getInteger(AkkaOptions.FORK_JOIN_EXECUTOR_PARALLELISM_MAX);
+
+                withExecutorConfiguration(
+                        new RpcSystem.ForkJoinExecutorConfiguration(
+                                parallelismFactor, minParallelism, maxParallelism));
+            }
+
+            // parse port range definition and create port iterator
+            final Iterator<Integer> portsIterator;
+            try {
+                portsIterator = NetUtils.getPortRangeFromString(externalPortRange);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Invalid port range definition: " + externalPortRange);
+            }
+
+            return new GRpcService(
+                    configuration,
+                    componentName,
+                    bindAddress,
+                    externalAddress,
+                    bindPort,
+                    portsIterator,
+                    scheduledExecutorServiceFactory.apply(componentName),
+                    GRpcSystem.class.getClassLoader());
         }
     }
 }

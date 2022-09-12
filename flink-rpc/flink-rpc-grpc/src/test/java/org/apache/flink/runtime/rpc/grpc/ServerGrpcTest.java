@@ -93,7 +93,16 @@ class ServerGrpcTest {
 
     @Test
     void test3() throws Exception {
-        final GRpcService rpcService = new GRpcService(flinkClassLoader);
+        final GRpcService rpcService =
+                new GRpcService(
+                        configuration,
+                        componentName,
+                        bindAddress,
+                        externalAddress,
+                        bindAddress,
+                        externalPortRange,
+                        scheduledExecutorServiceFactory.apply(componentName),
+                        flinkClassLoader);
 
         try (TestEndpoint testEndpoint = new TestEndpoint(rpcService);
                 TestEndpoint2 testEndpoint2 = new TestEndpoint2(rpcService)) {
