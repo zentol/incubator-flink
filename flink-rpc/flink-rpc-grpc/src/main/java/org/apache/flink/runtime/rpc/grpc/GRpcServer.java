@@ -54,6 +54,10 @@ public class GRpcServer implements RpcServer {
         mainThread.submit(mainThreadValidator::enterMainThread);
     }
 
+    public String getEndpointId() {
+        return rpcEndpoint.getEndpointId();
+    }
+
     @Override
     public String getAddress() {
         return address;

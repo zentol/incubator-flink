@@ -18,9 +18,11 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcService;
+import org.apache.flink.runtime.rpc.RpcSystem;
 
 import org.junit.jupiter.api.Test;
 
@@ -93,35 +95,36 @@ class ServerGrpcTest {
 
     @Test
     void test3() throws Exception {
-        final GRpcService rpcService =
-                new GRpcService(
-                        configuration,
-                        componentName,
-                        bindAddress,
-                        externalAddress,
-                        bindAddress,
-                        externalPortRange,
-                        scheduledExecutorServiceFactory.apply(componentName),
-                        flinkClassLoader);
+        try (RpcSystem rpcSystem = new GRpcSystem()) {
+            final RpcService rpcService =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000,8001")
+                            .withComponentName("test")
+                            .createAndStart();
 
-        try (TestEndpoint testEndpoint = new TestEndpoint(rpcService);
-                TestEndpoint2 testEndpoint2 = new TestEndpoint2(rpcService)) {
-            testEndpoint.start();
-            testEndpoint2.start();
+            try {
+                try (TestEndpoint testEndpoint = new TestEndpoint(rpcService);
+                        TestEndpoint2 testEndpoint2 = new TestEndpoint2(rpcService)) {
+                    testEndpoint.start();
+                    testEndpoint2.start();
 
-            System.out.println(
-                    rpcService
-                            .connect(testEndpoint.getAddress(), TestGateway.class)
-                            .get()
-                            .getCount()
-                            .get());
+                    System.out.println(
+                            rpcService
+                                    .connect(testEndpoint.getAddress(), TestGateway.class)
+                                    .get()
+                                    .getCount()
+                                    .get());
 
-            System.out.println(
-                    rpcService
-                            .connect(testEndpoint2.getAddress(), TestGateway2.class)
-                            .get()
-                            .getCount2()
-                            .get());
+                    System.out.println(
+                            rpcService
+                                    .connect(testEndpoint2.getAddress(), TestGateway2.class)
+                                    .get()
+                                    .getCount2()
+                                    .get());
+                }
+            } finally {
+                rpcService.stopService().get();
+            }
         }
     }
 

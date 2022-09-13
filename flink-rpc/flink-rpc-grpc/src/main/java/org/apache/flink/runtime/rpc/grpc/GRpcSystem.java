@@ -29,9 +29,11 @@ import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -78,7 +80,7 @@ public class GRpcSystem implements RpcSystem {
 
         private final Configuration configuration;
         @Nullable private final String externalAddress;
-        private final String externalPortRange;
+        private final Iterator<Integer> externalPortRange;
 
         @Nullable private String componentName;
         private String bindAddress = NetUtils.getWildcardIPAddress();
@@ -89,7 +91,7 @@ public class GRpcSystem implements RpcSystem {
             this.configuration = configuration;
             this.bindPort = 0;
             this.externalAddress = null;
-            this.externalPortRange = "";
+            this.externalPortRange = Collections.emptyIterator();
         }
 
         public GRpcServiceBuilder(
@@ -101,7 +103,10 @@ public class GRpcSystem implements RpcSystem {
                     externalAddress == null
                             ? InetAddress.getLoopbackAddress().getHostAddress()
                             : externalAddress;
-            this.externalPortRange = externalPortRange;
+            this.externalPortRange =
+                    externalPortRange != null
+                            ? NetUtils.getPortRangeFromString(externalPortRange)
+                            : Collections.emptyIterator();
         }
 
         @Override
@@ -163,7 +168,7 @@ public class GRpcSystem implements RpcSystem {
         }
 
         @Override
-        public RpcService createAndStart() {
+        public RpcService createAndStart() throws IOException {
             Preconditions.checkNotNull(componentName);
 
             if (scheduledExecutorServiceFactory == null) {
@@ -179,14 +184,11 @@ public class GRpcSystem implements RpcSystem {
                                 parallelismFactor, minParallelism, maxParallelism));
             }
 
-            // parse port range definition and create port iterator
-            final Iterator<Integer> portsIterator;
-            try {
-                portsIterator = NetUtils.getPortRangeFromString(externalPortRange);
-            } catch (Exception e) {
-                throw new IllegalArgumentException(
-                        "Invalid port range definition: " + externalPortRange);
-            }
+            Preconditions.checkArgument(bindPort != null || externalPortRange.hasNext());
+
+            final Iterator<Integer> finalExternalPortRange = externalPortRange.hasNext()
+                    ? externalPortRange
+                    : Collections.singletonList(bindPort).iterator();
 
             return new GRpcService(
                     configuration,
@@ -194,7 +196,7 @@ public class GRpcSystem implements RpcSystem {
                     bindAddress,
                     externalAddress,
                     bindPort,
-                    portsIterator,
+                    finalExternalPortRange,
                     scheduledExecutorServiceFactory.apply(componentName),
                     GRpcSystem.class.getClassLoader());
         }

@@ -88,13 +88,13 @@ public final class ServerGrpc {
         @Override
         public InputStream stream(Void value) {
             // should never be called
-            throw new RuntimeException();
+            throw new RuntimeException("Serialization should never be attempted for this call.");
         }
 
         @Override
         public Void parse(InputStream stream) {
             // should never be called
-            throw new RuntimeException();
+            throw new RuntimeException("Serialization should never be attempted for this call.");
         }
     }
 
@@ -138,6 +138,10 @@ public final class ServerGrpc {
 
         public void addTarget(RpcEndpoint rpcEndpoint) {
             targets.put(rpcEndpoint.getEndpointId(), rpcEndpoint);
+        }
+
+        public void removeTarget(String rpcEndpoint) {
+            targets.remove(rpcEndpoint);
         }
 
         public void tell(byte[] request, StreamObserver<Void> responseObserver) {

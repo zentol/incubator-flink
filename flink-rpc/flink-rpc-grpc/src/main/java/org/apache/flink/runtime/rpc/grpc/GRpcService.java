@@ -18,13 +18,14 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.RpcService;
-import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
@@ -39,10 +40,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Proxy;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +59,10 @@ public class GRpcService implements RpcService {
     @Nullable private final String externalAddress;
     @Nullable private final Integer externalPort;
 
+    private final Duration rpcTimeout;
+    private final ClassLoader flinkClassLoader;
+    private final boolean captureAskCallStack;
+
     public GRpcService(
             Configuration configuration,
             String componentName,
@@ -66,35 +71,57 @@ public class GRpcService implements RpcService {
             @Nullable Integer bindPort,
             Iterator<Integer> externalPortRange,
             ExecutorService executorService,
-            ClassLoader flinkClassLoader) {
-        try {
-            this.mainThread =
-                    Executors.newSingleThreadScheduledExecutor(
-                            new ExecutorThreadFactory("flink-grpc-service-" + componentName));
+            ClassLoader flinkClassLoader)
+            throws IOException {
+        this.flinkClassLoader = flinkClassLoader;
+        this.mainThread =
+                Executors.newSingleThreadScheduledExecutor(
+                        new ExecutorThreadFactory("flink-grpc-service-" + componentName));
 
-            Executors.newScheduledThreadPool()
-            ScheduledExecutorServiceAdapter
+        this.service = new ServerGrpc.ServerImpl(mainThread, flinkClassLoader);
 
-            this.service = new ServerGrpc.ServerImpl(mainThread, flinkClassLoader);
+        this.bindAddress = bindAddress;
+        this.externalAddress = externalAddress;
 
-            this.bindAddress = bindAddress;
-            this.externalAddress = externalAddress;
-            this.externalPort = externalPortRange.hasNext() ? externalPortRange.next() : null;
+        this.rpcTimeout = configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION);
+        this.captureAskCallStack = configuration.get(AkkaOptions.CAPTURE_ASK_CALLSTACK);
 
-            Preconditions.checkArgument(bindPort != null || externalPort != null);
+        final Tuple2<Integer, Server> externalPortAndServer =
+                startServerOnOpenPort(bindAddress, bindPort, externalPortRange, service);
+        this.externalPort = externalPortAndServer.f0;
+        this.server = externalPortAndServer.f1;
+    }
 
-            // TODO: check error message on bind error
-            this.server =
-                    NettyServerBuilder.forAddress(
-                                    InetSocketAddress.createUnresolved(
-                                            bindAddress,
-                                            Optional.ofNullable(bindPort).orElse(externalPort)))
-                            .addService(service)
-                            .build()
-                            .start();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private static Tuple2<Integer, Server> startServerOnOpenPort(
+            String bindAddress,
+            Integer bindPort,
+            Iterator<Integer> externalPortRange,
+            ServerGrpc.ServerImpl service)
+            throws IOException {
+        boolean firstAttempt = true;
+        while (firstAttempt || externalPortRange.hasNext()) {
+            final int externalPortCandidate = externalPortRange.next();
+            final int bindPortCandidate = bindPort != null ? bindPort : externalPortCandidate;
+
+            try {
+                final Server serverCandidate =
+                        NettyServerBuilder.forAddress(
+                                        new InetSocketAddress(bindAddress, bindPortCandidate))
+                                .addService(service)
+                                .build()
+                                .start();
+
+                return Tuple2.of(externalPortCandidate, serverCandidate);
+            } catch (IOException e) {
+                if ((e.getCause() instanceof BindException)) {
+                    // retry with next port
+                    firstAttempt = false;
+                } else {
+                    throw e;
+                }
+            }
         }
+        throw new BindException("Could not start RPC server on any port. " + externalPortRange);
     }
 
     @Override
@@ -119,13 +146,13 @@ public class GRpcService implements RpcService {
                 new GRpcGateway<>(
                         null,
                         address,
-                        "localhost",
+                        getAddress(),
                         address.substring(address.indexOf("@") + 1),
-                        true,
-                        Duration.ofSeconds(5),
+                        captureAskCallStack,
+                        rpcTimeout,
                         false,
                         true,
-                        GRpcService.class.getClassLoader(),
+                        flinkClassLoader,
                         serverFutureStub);
 
         @SuppressWarnings("unchecked")
@@ -152,13 +179,13 @@ public class GRpcService implements RpcService {
                 new GRpcGateway<>(
                         fencingToken,
                         address,
-                        "localhost",
+                        getAddress(),
                         address.substring(address.indexOf("@") + 1),
-                        true,
-                        Duration.ofSeconds(5),
+                        captureAskCallStack,
+                        rpcTimeout,
                         false,
                         true,
-                        GRpcService.class.getClassLoader(),
+                        flinkClassLoader,
                         serverFutureStub);
 
         @SuppressWarnings("unchecked")
@@ -190,6 +217,7 @@ public class GRpcService implements RpcService {
 
     @Override
     public void stopServer(RpcServer server) {
+        service.removeTarget(((GRpcServer) server).getEndpointId());
         server.stop();
     }
 
