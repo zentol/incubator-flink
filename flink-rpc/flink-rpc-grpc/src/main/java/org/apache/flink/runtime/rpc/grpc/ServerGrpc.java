@@ -18,9 +18,12 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.Local;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
+import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
+import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.IOUtils;
 import org.apache.flink.util.InstantiationUtil;
@@ -43,8 +46,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -146,7 +151,7 @@ public final class ServerGrpc {
 
         public void tell(byte[] request, StreamObserver<Void> responseObserver) {
             try {
-                RpcInvocation o =
+                RemoteFencedMessage<?, RpcInvocation> o =
                         InstantiationUtil.deserializeObject(
                                 request, ServerGrpc.class.getClassLoader());
 
@@ -161,7 +166,7 @@ public final class ServerGrpc {
 
         public void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
             try {
-                RpcInvocation o =
+                RemoteFencedMessage<?, RpcInvocation> o =
                         InstantiationUtil.deserializeObject(
                                 request, ServerGrpc.class.getClassLoader());
                 System.out.println("ask " + o);
@@ -187,13 +192,51 @@ public final class ServerGrpc {
          * Handle rpc invocations by looking up the rpc method on the rpc endpoint and calling this
          * method with the provided method arguments. If the method has a return value, it is
          * returned to the sender of the call.
-         *
-         * @param rpcInvocation Rpc invocation message
          */
-        private CompletableFuture<?> handleRpcInvocation(RpcInvocation rpcInvocation)
-                throws RpcConnectionException {
+        private CompletableFuture<?> handleRpcInvocation(
+                RemoteFencedMessage<?, RpcInvocation> message) throws RpcConnectionException {
 
-            Object rpcEndpoint = targets.get(rpcInvocation.getTarget());
+            final RpcInvocation rpcInvocation = message.getPayload();
+
+            final RpcEndpoint rpcEndpoint = targets.get(rpcInvocation.getTarget());
+
+            if (rpcEndpoint instanceof FencedRpcEndpoint) {
+                final Serializable expectedFencingToken =
+                        ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
+
+                if (expectedFencingToken == null) {
+                    log.debug(
+                            "Fencing token not set: Ignoring message {} because the fencing token is null.",
+                            message);
+
+                    return FutureUtils.completedExceptionally(
+                            new FencingTokenException(
+                                    String.format(
+                                            "Fencing token not set: Ignoring message %s sent to %s because the fencing token is null.",
+                                            message, rpcEndpoint.getAddress())));
+                } else {
+                    final Serializable fencingToken = message.getFencingToken();
+
+                    if (!Objects.equals(expectedFencingToken, fencingToken)) {
+                        log.debug(
+                                "Fencing token mismatch: Ignoring message {} because the fencing token {} did "
+                                        + "not match the expected fencing token {}.",
+                                message,
+                                fencingToken,
+                                expectedFencingToken);
+
+                        return FutureUtils.completedExceptionally(
+                                new FencingTokenException(
+                                        "Fencing token mismatch: Ignoring message "
+                                                + message
+                                                + " because the fencing token "
+                                                + fencingToken
+                                                + " did not match the expected fencing token "
+                                                + expectedFencingToken
+                                                + '.'));
+                    }
+                }
+            }
 
             final Method rpcMethod;
 

@@ -18,11 +18,13 @@
 
 package org.apache.flink.runtime.rpc.messages;
 
+import java.io.Serializable;
+
 /**
  * Interface for rpc invocation messages. The interface allows to request all necessary information
  * to lookup a method and call it with the corresponding arguments.
  */
-public interface RpcInvocation extends Message {
+public interface RpcInvocation extends Message, Serializable {
 
     default String getTarget() {
         throw new UnsupportedOperationException();

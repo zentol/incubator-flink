@@ -45,7 +45,6 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -60,6 +59,7 @@ public class GRpcService implements RpcService {
     @Nullable private final Integer externalPort;
 
     private final Duration rpcTimeout;
+    private final ScheduledExecutorService executorService;
     private final ClassLoader flinkClassLoader;
     private final boolean captureAskCallStack;
 
@@ -70,9 +70,10 @@ public class GRpcService implements RpcService {
             @Nullable String externalAddress,
             @Nullable Integer bindPort,
             Iterator<Integer> externalPortRange,
-            ExecutorService executorService,
+            ScheduledExecutorService executorService,
             ClassLoader flinkClassLoader)
             throws IOException {
+        this.executorService = executorService;
         this.flinkClassLoader = flinkClassLoader;
         this.mainThread =
                 Executors.newSingleThreadScheduledExecutor(
@@ -223,12 +224,13 @@ public class GRpcService implements RpcService {
 
     @Override
     public CompletableFuture<Void> stopService() {
+        executorService.shutdownNow();
         server.shutdownNow();
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public ScheduledExecutor getScheduledExecutor() {
-        return new ScheduledExecutorServiceAdapter(mainThread);
+        return new ScheduledExecutorServiceAdapter(executorService);
     }
 }

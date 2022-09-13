@@ -27,6 +27,7 @@ import org.apache.flink.runtime.rpc.RpcTimeout;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcException;
 import org.apache.flink.runtime.rpc.messages.LocalRpcInvocation;
+import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
@@ -296,8 +297,10 @@ public class GRpcGateway<F extends Serializable>
      *
      * @param message to send to the RPC endpoint.
      */
-    protected void tell(Object message) throws IOException {
-        server.tell(InstantiationUtil.serializeObject(message));
+    protected void tell(RpcInvocation message) throws IOException {
+        server.tell(
+                InstantiationUtil.serializeObject(
+                        new RemoteFencedMessage<>(getFencingToken(), message)));
     }
 
     /**

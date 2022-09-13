@@ -35,8 +35,8 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 
 public class GRpcSystem implements RpcSystem {
@@ -85,7 +85,9 @@ public class GRpcSystem implements RpcSystem {
         @Nullable private String componentName;
         private String bindAddress = NetUtils.getWildcardIPAddress();
         @Nullable private Integer bindPort = null;
-        @Nullable private Function<String, ExecutorService> scheduledExecutorServiceFactory = null;
+
+        @Nullable
+        private Function<String, ScheduledExecutorService> scheduledExecutorServiceFactory = null;
 
         public GRpcServiceBuilder(Configuration configuration) {
             this.configuration = configuration;
@@ -132,7 +134,7 @@ public class GRpcSystem implements RpcSystem {
                 FixedThreadPoolExecutorConfiguration executorConfiguration) {
             scheduledExecutorServiceFactory =
                     componentName ->
-                            Executors.newFixedThreadPool(
+                            Executors.newScheduledThreadPool(
                                     executorConfiguration.getMaxNumThreads(),
                                     new ExecutorThreadFactory.Builder()
                                             .setPoolName("flink-" + componentName)
@@ -186,9 +188,10 @@ public class GRpcSystem implements RpcSystem {
 
             Preconditions.checkArgument(bindPort != null || externalPortRange.hasNext());
 
-            final Iterator<Integer> finalExternalPortRange = externalPortRange.hasNext()
-                    ? externalPortRange
-                    : Collections.singletonList(bindPort).iterator();
+            final Iterator<Integer> finalExternalPortRange =
+                    externalPortRange.hasNext()
+                            ? externalPortRange
+                            : Collections.singletonList(bindPort).iterator();
 
             return new GRpcService(
                     configuration,
