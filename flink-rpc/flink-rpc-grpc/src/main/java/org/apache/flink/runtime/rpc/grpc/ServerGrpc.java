@@ -38,6 +38,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.ServiceDescriptor;
 import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -174,16 +175,30 @@ public final class ServerGrpc {
                 CompletableFuture<?> resp = handleRpcInvocation(o);
 
                 resp.thenAccept(
-                        s -> {
-                            try {
-                                responseObserver.onNext(InstantiationUtil.serializeObject(s));
-                            } catch (IOException e) {
-                                responseObserver.onError(e);
-                            }
-                            responseObserver.onCompleted();
-                        });
+                                s -> {
+                                    try {
+                                        responseObserver.onNext(
+                                                InstantiationUtil.serializeObject(s));
+                                    } catch (IOException e) {
+                                        // bruh why do we need to set BOTH?
+                                        responseObserver.onError(
+                                                new StatusException(Status.INTERNAL.withCause(e))
+                                                        .initCause(e));
+                                    }
+                                    responseObserver.onCompleted();
+                                })
+                        .exceptionally(
+                                e -> {
+                                    // bruh why do we need to set BOTH?
+                                    responseObserver.onError(
+                                            new StatusException(Status.INTERNAL.withCause(e))
+                                                    .initCause(e));
+                                    responseObserver.onCompleted();
+                                });
             } catch (Exception e) {
-                responseObserver.onError(e);
+                // bruh why do we need to set BOTH?
+                responseObserver.onError(
+                        new StatusException(Status.INTERNAL.withCause(e)).initCause(e));
                 responseObserver.onCompleted();
             }
         }
