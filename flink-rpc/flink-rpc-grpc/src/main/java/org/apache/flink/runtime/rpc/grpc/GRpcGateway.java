@@ -311,10 +311,12 @@ public class GRpcGateway<F extends Serializable>
      *     TimeoutException}
      * @return Response future
      */
-    protected CompletableFuture<?> ask(Object message, Duration timeout) throws IOException {
+    protected CompletableFuture<?> ask(RpcInvocation message, Duration timeout) throws IOException {
         CompletableFuture<byte[]> ask =
                 FutureUtils.orTimeout(
-                        server.ask(InstantiationUtil.serializeObject(message)),
+                        server.ask(
+                                InstantiationUtil.serializeObject(
+                                        new RemoteFencedMessage<>(getFencingToken(), message))),
                         timeout.toMillis(),
                         TimeUnit.MILLISECONDS);
 
