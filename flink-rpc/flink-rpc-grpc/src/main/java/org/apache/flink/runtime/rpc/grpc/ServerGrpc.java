@@ -379,6 +379,10 @@ public final class ServerGrpc {
                         public void onClose(Status status, Metadata trailers) {
                             // TODO: handle errors
                             System.out.println("onClose: " + status);
+
+                            if (!status.isOk()) {
+                                response.completeExceptionally(status.asException());
+                            }
                         }
                     },
                     new Metadata());
