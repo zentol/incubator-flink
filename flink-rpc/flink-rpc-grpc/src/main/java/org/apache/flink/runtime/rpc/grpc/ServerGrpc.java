@@ -194,6 +194,7 @@ public final class ServerGrpc {
                                             new StatusException(Status.INTERNAL.withCause(e))
                                                     .initCause(e));
                                     responseObserver.onCompleted();
+                                    return null;
                                 });
             } catch (Exception e) {
                 // bruh why do we need to set BOTH?
