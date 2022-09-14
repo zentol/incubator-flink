@@ -26,72 +26,58 @@ import org.apache.flink.runtime.rpc.RpcSystem;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.BindException;
 import java.util.concurrent.CompletableFuture;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ServerGrpcTest {
 
-    private static final ClassLoader flinkClassLoader = ServerGrpcTest.class.getClassLoader();
+    @Test
+    void testPortConflictsResolved() throws Exception {
+        try (RpcSystem rpcSystem = new GRpcSystem()) {
+            final RpcService rpcService1 =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000-9000")
+                            .withComponentName("test")
+                            .createAndStart();
 
-    /*  @Test
-    void test() throws IOException, ExecutionException, InterruptedException {
-        Server server =
-                NettyServerBuilder.forPort(9000)
-                        .addService(
-                                new ServerGrpc.ServerImpl(
-                                        Executors.directExecutor(), new Object(), flinkClassLoader))
-                        .build()
-                        .start();
+            final RpcService rpcService2 =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000-9000")
+                            .withComponentName("test")
+                            .createAndStart();
 
-        ManagedChannel channel =
-                ManagedChannelBuilder.forTarget("localhost:" + 9000).usePlaintext().build();
-
-        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
-
-        // serverFutureStub.tell(new byte[] {1, 2, 3});
-        byte[] bytes = serverFutureStub.ask(new byte[] {1}).get();
-        System.out.println("resp " + Arrays.toString(bytes));
-
-        channel.shutdownNow();
-        server.shutdownNow();
+            rpcService1.stopService().get();
+            rpcService2.stopService().get();
+        }
     }
 
     @Test
-    void test2() throws IOException, ExecutionException, InterruptedException {
-        Server server =
-                NettyServerBuilder.forPort(9000)
-                        .addService(
-                                new ServerGrpc.ServerImpl(
-                                        Executors.directExecutor(), new Object(), flinkClassLoader))
-                        .build()
-                        .start();
+    void testPortConflictsDetected() throws Exception {
+        try (RpcSystem rpcSystem = new GRpcSystem()) {
+            final RpcService rpcService1 =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000-9000")
+                            .withComponentName("test")
+                            .createAndStart();
 
-        ManagedChannel channel =
-                ManagedChannelBuilder.forTarget("localhost:" + 9000).usePlaintext().build();
-
-        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
-
-        GRpcGateway invocationHandler =
-                new GRpcGateway(
-                        "localhost:9000",
-                        "localhost",
-                        address.substring(address.indexOf("@") + 1),
-                        true,
-                        Duration.ofSeconds(5),
-                        false,
-                        true,
-                        ServerGrpcTest.class.getClassLoader(),
-                        serverFutureStub);
-
-        @SuppressWarnings("unchecked")
-        TestGateway rpcServer =
-                (TestGateway)
-                        Proxy.newProxyInstance(
-                                flinkClassLoader,
-                                Collections.singleton(TestGateway.class).toArray(new Class<?>[1]),
-                                invocationHandler);
-
-        System.out.println(rpcServer.getCount().get());
-    }*/
+            try {
+                assertThatThrownBy(
+                                () ->
+                                        rpcSystem
+                                                .remoteServiceBuilder(
+                                                        new Configuration(),
+                                                        null,
+                                                        String.valueOf(rpcService1.getPort()))
+                                                .withComponentName("test")
+                                                .createAndStart())
+                        .isInstanceOf(BindException.class);
+            } finally {
+                rpcService1.stopService();
+            }
+        }
+    }
 
     @Test
     void test3() throws Exception {
