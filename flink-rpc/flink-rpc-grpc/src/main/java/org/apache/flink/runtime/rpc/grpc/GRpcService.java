@@ -21,38 +21,67 @@ package org.apache.flink.runtime.rpc.grpc;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
+import org.apache.flink.runtime.rpc.Local;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.RpcService;
+import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
+import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
+import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
+import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.util.IOUtils;
+import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
+import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
 
+import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.MethodDescriptor;
 import io.grpc.Server;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.ServiceDescriptor;
+import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class GRpcService implements RpcService {
+import static io.grpc.MethodDescriptor.generateFullMethodName;
+import static io.grpc.stub.ServerCalls.asyncUnaryCall;
+import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
+
+public class GRpcService implements RpcService, BindableService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GRpcService.class);
 
     private final ScheduledExecutorService mainThread;
     private final Server server;
-    private final ServerGrpc.ServerImpl service;
 
     private final String bindAddress;
     @Nullable private final String externalAddress;
@@ -62,6 +91,7 @@ public class GRpcService implements RpcService {
     private final ScheduledExecutorService executorService;
     private final ClassLoader flinkClassLoader;
     private final boolean captureAskCallStack;
+    private final Map<String, RpcEndpoint> targets = new ConcurrentHashMap<>();
 
     public GRpcService(
             Configuration configuration,
@@ -79,8 +109,6 @@ public class GRpcService implements RpcService {
                 Executors.newSingleThreadScheduledExecutor(
                         new ExecutorThreadFactory("flink-grpc-service-" + componentName));
 
-        this.service = new ServerGrpc.ServerImpl(mainThread, flinkClassLoader);
-
         this.bindAddress = bindAddress;
         this.externalAddress = externalAddress;
 
@@ -88,7 +116,7 @@ public class GRpcService implements RpcService {
         this.captureAskCallStack = configuration.get(AkkaOptions.CAPTURE_ASK_CALLSTACK);
 
         final Tuple2<Integer, Server> externalPortAndServer =
-                startServerOnOpenPort(bindAddress, bindPort, externalPortRange, service);
+                startServerOnOpenPort(bindAddress, bindPort, externalPortRange, this);
         this.externalPort = externalPortAndServer.f0;
         this.server = externalPortAndServer.f1;
     }
@@ -97,7 +125,7 @@ public class GRpcService implements RpcService {
             String bindAddress,
             Integer bindPort,
             Iterator<Integer> externalPortRange,
-            ServerGrpc.ServerImpl service)
+            BindableService service)
             throws IOException {
         boolean firstAttempt = true;
         while (firstAttempt || externalPortRange.hasNext()) {
@@ -141,8 +169,6 @@ public class GRpcService implements RpcService {
         ManagedChannel channel =
                 ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
 
-        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
-
         GRpcGateway<?> invocationHandler =
                 new GRpcGateway<>(
                         null,
@@ -154,7 +180,7 @@ public class GRpcService implements RpcService {
                         false,
                         true,
                         flinkClassLoader,
-                        serverFutureStub);
+                        channel);
 
         @SuppressWarnings("unchecked")
         C rpcServer =
@@ -174,8 +200,6 @@ public class GRpcService implements RpcService {
         ManagedChannel channel =
                 ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
 
-        ServerGrpc.ServerFutureStub serverFutureStub = ServerGrpc.newStub(channel);
-
         GRpcGateway<F> invocationHandler =
                 new GRpcGateway<>(
                         fencingToken,
@@ -187,7 +211,7 @@ public class GRpcService implements RpcService {
                         false,
                         true,
                         flinkClassLoader,
-                        serverFutureStub);
+                        channel);
 
         @SuppressWarnings("unchecked")
         C rpcServer =
@@ -209,7 +233,7 @@ public class GRpcService implements RpcService {
                             getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId(),
                             "localhost",
                             rpcEndpoint);
-            service.addTarget(rpcEndpoint);
+            addTarget(rpcEndpoint);
             return gRpcServer;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -218,7 +242,7 @@ public class GRpcService implements RpcService {
 
     @Override
     public void stopServer(RpcServer server) {
-        service.removeTarget(((GRpcServer) server).getEndpointId());
+        removeTarget(((GRpcServer) server).getEndpointId());
         server.stop();
     }
 
@@ -232,5 +256,265 @@ public class GRpcService implements RpcService {
     @Override
     public ScheduledExecutor getScheduledExecutor() {
         return new ScheduledExecutorServiceAdapter(executorService);
+    }
+
+    public static final MethodDescriptor<byte[], Void> METHOD_TELL =
+            MethodDescriptor.<byte[], Void>newBuilder()
+                    .setType(MethodDescriptor.MethodType.UNARY)
+                    .setFullMethodName(generateFullMethodName("Server", "tell"))
+                    .setRequestMarshaller(new Serde())
+                    .setResponseMarshaller(new FailingSerde())
+                    .build();
+
+    public static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
+            MethodDescriptor.<byte[], byte[]>newBuilder()
+                    .setType(MethodDescriptor.MethodType.UNARY)
+                    .setFullMethodName(generateFullMethodName("Server", "ask"))
+                    .setRequestMarshaller(new Serde())
+                    .setResponseMarshaller(new Serde())
+                    .build();
+
+    private static final ServiceDescriptor SERVICE_DESCRIPTOR =
+            ServiceDescriptor.newBuilder("Server")
+                    .addMethod(METHOD_TELL)
+                    .addMethod(METHOD_ASK)
+                    .build();
+
+    @Override
+    public ServerServiceDefinition bindService() {
+        return ServerServiceDefinition.builder(SERVICE_DESCRIPTOR)
+                .addMethod(METHOD_TELL, asyncUnaryCall(this::tell))
+                .addMethod(METHOD_ASK, asyncUnaryCall(this::ask))
+                .build();
+    }
+
+    public void addTarget(RpcEndpoint rpcEndpoint) {
+        targets.put(rpcEndpoint.getEndpointId(), rpcEndpoint);
+    }
+
+    public void removeTarget(String rpcEndpoint) {
+        targets.remove(rpcEndpoint);
+    }
+
+    public void tell(byte[] request, StreamObserver<Void> responseObserver) {
+        try {
+            RemoteFencedMessage<?, RpcInvocation> o =
+                    InstantiationUtil.deserializeObject(request, flinkClassLoader);
+
+            System.out.println("tell " + o);
+
+            handleRpcInvocation(o);
+        } catch (Exception e) {
+            responseObserver.onError(e);
+        }
+        responseObserver.onCompleted();
+    }
+
+    public void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
+        try {
+            RemoteFencedMessage<?, RpcInvocation> o =
+                    InstantiationUtil.deserializeObject(request, flinkClassLoader);
+            System.out.println("ask " + o);
+
+            CompletableFuture<?> resp = handleRpcInvocation(o);
+
+            resp.thenAccept(
+                            s -> {
+                                try {
+                                    responseObserver.onNext(InstantiationUtil.serializeObject(s));
+                                } catch (IOException e) {
+                                    // bruh why do we need to set BOTH?
+                                    responseObserver.onError(
+                                            new StatusException(Status.INTERNAL.withCause(e))
+                                                    .initCause(e));
+                                }
+                                responseObserver.onCompleted();
+                            })
+                    .exceptionally(
+                            e -> {
+                                // bruh why do we need to set BOTH?
+                                responseObserver.onError(
+                                        new StatusException(Status.INTERNAL.withCause(e))
+                                                .initCause(e));
+                                responseObserver.onCompleted();
+                                return null;
+                            });
+        } catch (Exception e) {
+            // bruh why do we need to set BOTH?
+            responseObserver.onError(
+                    new StatusException(Status.INTERNAL.withCause(e)).initCause(e));
+            responseObserver.onCompleted();
+        }
+    }
+
+    /**
+     * Handle rpc invocations by looking up the rpc method on the rpc endpoint and calling this
+     * method with the provided method arguments. If the method has a return value, it is returned
+     * to the sender of the call.
+     */
+    private CompletableFuture<?> handleRpcInvocation(RemoteFencedMessage<?, RpcInvocation> message)
+            throws RpcConnectionException {
+
+        final RpcInvocation rpcInvocation = message.getPayload();
+
+        final RpcEndpoint rpcEndpoint = targets.get(rpcInvocation.getTarget());
+
+        if (rpcEndpoint instanceof FencedRpcEndpoint) {
+            final Serializable expectedFencingToken =
+                    ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
+
+            if (expectedFencingToken == null) {
+                LOG.debug(
+                        "Fencing token not set: Ignoring message {} because the fencing token is null.",
+                        message);
+
+                return FutureUtils.completedExceptionally(
+                        new FencingTokenException(
+                                String.format(
+                                        "Fencing token not set: Ignoring message %s sent to %s because the fencing token is null.",
+                                        message, rpcEndpoint.getAddress())));
+            } else {
+                final Serializable fencingToken = message.getFencingToken();
+
+                if (!Objects.equals(expectedFencingToken, fencingToken)) {
+                    LOG.debug(
+                            "Fencing token mismatch: Ignoring message {} because the fencing token {} did "
+                                    + "not match the expected fencing token {}.",
+                            message,
+                            fencingToken,
+                            expectedFencingToken);
+
+                    return FutureUtils.completedExceptionally(
+                            new FencingTokenException(
+                                    "Fencing token mismatch: Ignoring message "
+                                            + message
+                                            + " because the fencing token "
+                                            + fencingToken
+                                            + " did not match the expected fencing token "
+                                            + expectedFencingToken
+                                            + '.'));
+                }
+            }
+        }
+
+        final Method rpcMethod;
+
+        try {
+            String methodName = rpcInvocation.getMethodName();
+            Class<?>[] parameterTypes = rpcInvocation.getParameterTypes();
+
+            rpcMethod = lookupRpcMethod(methodName, parameterTypes, rpcEndpoint);
+        } catch (final NoSuchMethodException e) {
+            LOG.error("Could not find rpc method for rpc invocation.", e);
+
+            throw new RpcConnectionException("Could not find rpc method for rpc invocation.", e);
+        }
+
+        try {
+            // this supports declaration of anonymous classes
+            rpcMethod.setAccessible(true);
+
+            if (rpcMethod.getReturnType().equals(Void.TYPE)) {
+                // No return value to send back
+                mainThread.execute(
+                        () -> {
+                            try {
+                                runWithContextClassLoader(
+                                        () ->
+                                                rpcMethod.invoke(
+                                                        rpcEndpoint, rpcInvocation.getArgs()),
+                                        flinkClassLoader);
+                            } catch (ReflectiveOperationException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                return CompletableFuture.completedFuture(null);
+            } else {
+                final CompletableFuture<Object> result = new CompletableFuture<>();
+                mainThread.execute(
+                        () -> {
+                            try {
+                                runWithContextClassLoader(
+                                        () -> {
+                                            Object rpcResult =
+                                                    rpcMethod.invoke(
+                                                            rpcEndpoint, rpcInvocation.getArgs());
+                                            if (rpcResult instanceof CompletableFuture) {
+                                                FutureUtils.forward(
+                                                        (CompletableFuture<Object>) rpcResult,
+                                                        result);
+                                            } else {
+                                                result.complete(rpcResult);
+                                            }
+                                        },
+                                        flinkClassLoader);
+                            } catch (ReflectiveOperationException e) {
+                                LOG.debug(
+                                        "Reporting back error thrown in remote procedure {}",
+                                        rpcMethod,
+                                        e);
+                                result.completeExceptionally(e);
+                            }
+                        });
+
+                final String methodName = rpcMethod.getName();
+                final boolean isLocalRpcInvocation = rpcMethod.getAnnotation(Local.class) != null;
+
+                return result;
+            }
+        } catch (Throwable e) {
+            LOG.error("Error while executing remote procedure call {}.", rpcMethod, e);
+            // tell the sender about the failure
+            throw e;
+        }
+    }
+
+    /**
+     * Look up the rpc method on the given {@link RpcEndpoint} instance.
+     *
+     * @param methodName Name of the method
+     * @param parameterTypes Parameter types of the method
+     * @return Method of the rpc endpoint
+     * @throws NoSuchMethodException Thrown if the method with the given name and parameter types
+     *     cannot be found at the rpc endpoint
+     */
+    private Method lookupRpcMethod(
+            final String methodName, final Class<?>[] parameterTypes, Object rpcEndpoint)
+            throws NoSuchMethodException {
+        return rpcEndpoint.getClass().getMethod(methodName, parameterTypes);
+    }
+
+    private static class FailingSerde implements MethodDescriptor.Marshaller<Void> {
+
+        @Override
+        public InputStream stream(Void value) {
+            // should never be called
+            throw new RuntimeException("Serialization should never be attempted for this call.");
+        }
+
+        @Override
+        public Void parse(InputStream stream) {
+            // should never be called
+            throw new RuntimeException("Serialization should never be attempted for this call.");
+        }
+    }
+
+    private static class Serde implements MethodDescriptor.Marshaller<byte[]> {
+
+        @Override
+        public InputStream stream(byte[] value) {
+            return new ByteArrayInputStream(value);
+        }
+
+        @Override
+        public byte[] parse(InputStream stream) {
+            try {
+                byte[] bytes = new byte[stream.available()];
+                IOUtils.readFully(stream, bytes, 0, stream.available());
+                return bytes;
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
+        }
     }
 }

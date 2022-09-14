@@ -36,6 +36,12 @@ import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.Metadata;
+import io.grpc.Status;
+
 import javax.annotation.Nullable;
 
 import java.io.IOException;
@@ -68,7 +74,7 @@ public class GRpcGateway<F extends Serializable>
 
     private final ClassLoader flinkClassLoader;
 
-    private final ServerGrpc.ServerFutureStub server;
+    private final Channel channel;
 
     public GRpcGateway(
             @Nullable F fencingToken,
@@ -80,7 +86,7 @@ public class GRpcGateway<F extends Serializable>
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
-            ServerGrpc.ServerFutureStub server) {
+            Channel channel) {
         this.fencingToken = fencingToken;
         this.address = address;
         this.hostname = hostname;
@@ -90,7 +96,7 @@ public class GRpcGateway<F extends Serializable>
         this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
-        this.server = server;
+        this.channel = channel;
     }
 
     @Override
@@ -298,9 +304,23 @@ public class GRpcGateway<F extends Serializable>
      * @param message to send to the RPC endpoint.
      */
     protected void tell(RpcInvocation message) throws IOException {
-        server.tell(
+
+        ClientCall<byte[], Void> call =
+                channel.newCall(GRpcService.METHOD_TELL, CallOptions.DEFAULT);
+
+        call.start(
+                new ClientCall.Listener<Void>() {
+                    @Override
+                    public void onClose(Status status, Metadata trailers) {
+                        // TODO: handle errors
+                    }
+                },
+                new Metadata());
+
+        call.sendMessage(
                 InstantiationUtil.serializeObject(
                         new RemoteFencedMessage<>(getFencingToken(), message)));
+        call.halfClose();
     }
 
     /**
@@ -312,15 +332,40 @@ public class GRpcGateway<F extends Serializable>
      * @return Response future
      */
     protected CompletableFuture<?> ask(RpcInvocation message, Duration timeout) throws IOException {
-        CompletableFuture<byte[]> ask =
-                FutureUtils.orTimeout(
-                        server.ask(
-                                InstantiationUtil.serializeObject(
-                                        new RemoteFencedMessage<>(getFencingToken(), message))),
-                        timeout.toMillis(),
-                        TimeUnit.MILLISECONDS);
 
-        return ClassLoadingUtils.guardCompletionWithContextClassLoader(ask, flinkClassLoader);
+        ClientCall<byte[], byte[]> call =
+                channel.newCall(GRpcService.METHOD_ASK, CallOptions.DEFAULT);
+
+        CompletableFuture<byte[]> response = new CompletableFuture<>();
+        call.start(
+                new ClientCall.Listener<byte[]>() {
+                    @Override
+                    public void onMessage(byte[] message) {
+                        System.out.println("onMessage");
+                        response.complete(message);
+                    }
+
+                    @Override
+                    public void onClose(Status status, Metadata trailers) {
+                        // TODO: handle errors
+                        System.out.println("onClose: " + status);
+
+                        if (!status.isOk()) {
+                            response.completeExceptionally(status.asException());
+                        }
+                    }
+                },
+                new Metadata());
+
+        call.request(1);
+        call.sendMessage(
+                InstantiationUtil.serializeObject(
+                        new RemoteFencedMessage<>(getFencingToken(), message)));
+        call.halfClose();
+
+        return ClassLoadingUtils.guardCompletionWithContextClassLoader(
+                FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
+                flinkClassLoader);
     }
 
     private static Object deserializeValueIfNeeded(
