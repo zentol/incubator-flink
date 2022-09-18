@@ -114,15 +114,6 @@ public class GRpcServer implements RpcServer {
     @Override
     public void stop() {
         mainThread.submit(
-                () -> {
-                    try {
-                        rpcEndpoint.internalCallOnStop();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    // TODO: ehh??? may be that messages are still forwarded even when shut down
-                    // mainThread.submit(mainThreadValidator::exitMainThread);
-                    terminationFuture.complete(null);
-                });
+                () -> FutureUtils.forward(rpcEndpoint.internalCallOnStop(), terminationFuture));
     }
 }

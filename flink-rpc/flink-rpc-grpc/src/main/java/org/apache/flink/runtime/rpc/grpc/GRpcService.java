@@ -28,6 +28,7 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
+import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
@@ -59,6 +60,7 @@ import java.lang.reflect.Proxy;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -67,6 +69,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
@@ -220,9 +223,22 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public CompletableFuture<Void> stopService() {
-        executorService.shutdownNow();
-        server.shutdownNow();
-        return CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+        mainThread.execute(
+                () -> {
+                    ArrayList<RpcEndpoint> rpcEndpoints = new ArrayList<>(targets.values());
+                    targets.clear();
+                    FutureUtils.forward(
+                            FutureUtils.waitForAll(
+                                    rpcEndpoints.stream()
+                                            .map(RpcEndpoint::closeAsync)
+                                            .collect(Collectors.toList())),
+                            terminationFuture);
+                });
+        return terminationFuture
+                .thenRun(executorService::shutdownNow)
+                .thenRun(server::shutdown)
+                .thenRun(mainThread::shutdown);
     }
 
     @Override
