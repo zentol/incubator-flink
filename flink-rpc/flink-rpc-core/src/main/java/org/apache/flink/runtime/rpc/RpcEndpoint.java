@@ -34,6 +34,7 @@ import javax.annotation.Nonnull;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -316,7 +317,18 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      */
     public <C extends RpcGateway> C getSelfGateway(Class<C> selfGatewayType) {
         try {
-            return rpcService.connect(rpcServer.getAddress(), selfGatewayType).get();
+            if (this instanceof FencedRpcEndpoint) {
+                Serializable fencingToken = ((FencedRpcEndpoint) this).getFencingToken();
+                return (C)
+                        rpcService
+                                .connect(
+                                        rpcServer.getAddress(),
+                                        fencingToken,
+                                        (Class<FencedRpcGateway>) selfGatewayType)
+                                .get();
+            } else {
+                return rpcService.connect(rpcServer.getAddress(), selfGatewayType).get();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
