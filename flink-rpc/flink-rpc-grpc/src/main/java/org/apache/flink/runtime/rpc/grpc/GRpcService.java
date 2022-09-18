@@ -42,10 +42,8 @@ import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
 import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.MethodDescriptor;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
-import io.grpc.ServiceDescriptor;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.netty.NettyServerBuilder;
@@ -70,8 +68,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static io.grpc.MethodDescriptor.generateFullMethodName;
-import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
 public class GRpcService implements RpcService, BindableService {
@@ -239,32 +235,9 @@ public class GRpcService implements RpcService, BindableService {
         return new ScheduledExecutorServiceAdapter(executorService);
     }
 
-    static final MethodDescriptor<byte[], Void> METHOD_TELL =
-            MethodDescriptor.<byte[], Void>newBuilder()
-                    .setType(MethodDescriptor.MethodType.UNARY)
-                    .setFullMethodName(generateFullMethodName("Server", "tell"))
-                    .setRequestMarshaller(new ByteArrayMarshaller())
-                    .setResponseMarshaller(new FailingMarshaller())
-                    .build();
-
-    static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
-            MethodDescriptor.<byte[], byte[]>newBuilder()
-                    .setType(MethodDescriptor.MethodType.UNARY)
-                    .setFullMethodName(generateFullMethodName("Server", "ask"))
-                    .setRequestMarshaller(new ByteArrayMarshaller())
-                    .setResponseMarshaller(new ByteArrayMarshaller())
-                    .build();
-
     @Override
     public ServerServiceDefinition bindService() {
-        return ServerServiceDefinition.builder(
-                        ServiceDescriptor.newBuilder("Server")
-                                .addMethod(METHOD_TELL)
-                                .addMethod(METHOD_ASK)
-                                .build())
-                .addMethod(METHOD_TELL, asyncUnaryCall(this::tell))
-                .addMethod(METHOD_ASK, asyncUnaryCall(this::ask))
-                .build();
+        return GRpcServerSpec.createService("Server", this::tell, this::ask);
     }
 
     public void addTarget(RpcEndpoint rpcEndpoint) {

@@ -33,7 +33,6 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.Metadata;
@@ -248,8 +247,7 @@ public class GRpcGateway<F extends Serializable>
      */
     protected void tell(RpcInvocation message) throws IOException {
 
-        ClientCall<byte[], Void> call =
-                channel.newCall(GRpcService.METHOD_TELL, CallOptions.DEFAULT);
+        final ClientCall<byte[], Void> call = GRpcServerSpec.prepareTell(channel);
 
         call.start(
                 new ClientCall.Listener<Void>() {
@@ -276,8 +274,7 @@ public class GRpcGateway<F extends Serializable>
      */
     protected CompletableFuture<?> ask(RpcInvocation message, Duration timeout) throws IOException {
 
-        ClientCall<byte[], byte[]> call =
-                channel.newCall(GRpcService.METHOD_ASK, CallOptions.DEFAULT);
+        final ClientCall<byte[], byte[]> call = GRpcServerSpec.prepareAsk(channel);
 
         CompletableFuture<byte[]> response = new CompletableFuture<>();
         call.start(
