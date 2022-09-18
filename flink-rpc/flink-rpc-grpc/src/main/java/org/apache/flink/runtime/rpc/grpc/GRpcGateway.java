@@ -18,12 +18,11 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
 import org.apache.flink.runtime.rpc.Local;
 import org.apache.flink.runtime.rpc.RpcGateway;
-import org.apache.flink.runtime.rpc.RpcTimeout;
+import org.apache.flink.runtime.rpc.RpcGatewayUtils;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcException;
 import org.apache.flink.runtime.rpc.messages.LocalRpcInvocation;
@@ -32,8 +31,6 @@ import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.InstantiationUtil;
-import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import io.grpc.CallOptions;
@@ -141,7 +138,8 @@ public class GRpcGateway<F extends Serializable>
         Class<?>[] parameterTypes = method.getParameterTypes();
         final boolean isLocalRpcInvocation = method.getAnnotation(Local.class) != null;
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-        Duration futureTimeout = extractRpcTimeout(parameterAnnotations, args, timeout);
+        Duration futureTimeout =
+                RpcGatewayUtils.extractRpcTimeout(parameterAnnotations, args, timeout);
 
         final RpcInvocation rpcInvocation =
                 createRpcInvocationMessage(
@@ -242,61 +240,6 @@ public class GRpcGateway<F extends Serializable>
     // ------------------------------------------------------------------------
     //  Helper methods
     // ------------------------------------------------------------------------
-
-    /**
-     * Extracts the {@link RpcTimeout} annotated rpc timeout value from the list of given method
-     * arguments. If no {@link RpcTimeout} annotated parameter could be found, then the default
-     * timeout is returned.
-     *
-     * @param parameterAnnotations Parameter annotations
-     * @param args Array of arguments
-     * @param defaultTimeout Default timeout to return if no {@link RpcTimeout} annotated parameter
-     *     has been found
-     * @return Timeout extracted from the array of arguments or the default timeout
-     */
-    private static Duration extractRpcTimeout(
-            Annotation[][] parameterAnnotations, Object[] args, Duration defaultTimeout) {
-        if (args != null) {
-            Preconditions.checkArgument(parameterAnnotations.length == args.length);
-
-            for (int i = 0; i < parameterAnnotations.length; i++) {
-                if (isRpcTimeout(parameterAnnotations[i])) {
-                    if (args[i] instanceof Time) {
-                        return TimeUtils.toDuration((Time) args[i]);
-                    } else if (args[i] instanceof Duration) {
-                        return (Duration) args[i];
-                    } else {
-                        throw new RuntimeException(
-                                "The rpc timeout parameter must be of type "
-                                        + Time.class.getName()
-                                        + " or "
-                                        + Duration.class.getName()
-                                        + ". The type "
-                                        + args[i].getClass().getName()
-                                        + " is not supported.");
-                    }
-                }
-            }
-        }
-
-        return defaultTimeout;
-    }
-
-    /**
-     * Checks whether any of the annotations is of type {@link RpcTimeout}.
-     *
-     * @param annotations Array of annotations
-     * @return True if {@link RpcTimeout} was found; otherwise false
-     */
-    private static boolean isRpcTimeout(Annotation[] annotations) {
-        for (Annotation annotation : annotations) {
-            if (annotation.annotationType().equals(RpcTimeout.class)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /**
      * Sends the message to the RPC endpoint.
