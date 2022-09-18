@@ -242,7 +242,7 @@ public class GRpcService implements RpcService, BindableService {
         return new ScheduledExecutorServiceAdapter(executorService);
     }
 
-    public static final MethodDescriptor<byte[], Void> METHOD_TELL =
+    static final MethodDescriptor<byte[], Void> METHOD_TELL =
             MethodDescriptor.<byte[], Void>newBuilder()
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .setFullMethodName(generateFullMethodName("Server", "tell"))
@@ -250,7 +250,7 @@ public class GRpcService implements RpcService, BindableService {
                     .setResponseMarshaller(new FailingSerde())
                     .build();
 
-    public static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
+    static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
             MethodDescriptor.<byte[], byte[]>newBuilder()
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .setFullMethodName(generateFullMethodName("Server", "ask"))
@@ -258,15 +258,13 @@ public class GRpcService implements RpcService, BindableService {
                     .setResponseMarshaller(new Serde())
                     .build();
 
-    private static final ServiceDescriptor SERVICE_DESCRIPTOR =
-            ServiceDescriptor.newBuilder("Server")
-                    .addMethod(METHOD_TELL)
-                    .addMethod(METHOD_ASK)
-                    .build();
-
     @Override
     public ServerServiceDefinition bindService() {
-        return ServerServiceDefinition.builder(SERVICE_DESCRIPTOR)
+        return ServerServiceDefinition.builder(
+                        ServiceDescriptor.newBuilder("Server")
+                                .addMethod(METHOD_TELL)
+                                .addMethod(METHOD_ASK)
+                                .build())
                 .addMethod(METHOD_TELL, asyncUnaryCall(this::tell))
                 .addMethod(METHOD_ASK, asyncUnaryCall(this::ask))
                 .build();
@@ -280,7 +278,7 @@ public class GRpcService implements RpcService, BindableService {
         targets.remove(rpcEndpoint);
     }
 
-    public void tell(byte[] request, StreamObserver<Void> responseObserver) {
+    private void tell(byte[] request, StreamObserver<Void> responseObserver) {
         try {
             RemoteFencedMessage<?, RpcInvocation> o =
                     InstantiationUtil.deserializeObject(request, flinkClassLoader);
@@ -294,7 +292,7 @@ public class GRpcService implements RpcService, BindableService {
         responseObserver.onCompleted();
     }
 
-    public void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
+    private void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
         try {
             RemoteFencedMessage<?, RpcInvocation> o =
                     InstantiationUtil.deserializeObject(request, flinkClassLoader);
@@ -387,7 +385,7 @@ public class GRpcService implements RpcService, BindableService {
             String methodName = rpcInvocation.getMethodName();
             Class<?>[] parameterTypes = rpcInvocation.getParameterTypes();
 
-            rpcMethod = lookupRpcMethod(methodName, parameterTypes, rpcEndpoint);
+            rpcMethod = rpcEndpoint.getClass().getMethod(methodName, parameterTypes);
         } catch (final NoSuchMethodException e) {
             LOG.error("Could not find rpc method for rpc invocation.", e);
 
@@ -451,21 +449,6 @@ public class GRpcService implements RpcService, BindableService {
             // tell the sender about the failure
             throw e;
         }
-    }
-
-    /**
-     * Look up the rpc method on the given {@link RpcEndpoint} instance.
-     *
-     * @param methodName Name of the method
-     * @param parameterTypes Parameter types of the method
-     * @return Method of the rpc endpoint
-     * @throws NoSuchMethodException Thrown if the method with the given name and parameter types
-     *     cannot be found at the rpc endpoint
-     */
-    private Method lookupRpcMethod(
-            final String methodName, final Class<?>[] parameterTypes, Object rpcEndpoint)
-            throws NoSuchMethodException {
-        return rpcEndpoint.getClass().getMethod(methodName, parameterTypes);
     }
 
     private static class FailingSerde implements MethodDescriptor.Marshaller<Void> {
