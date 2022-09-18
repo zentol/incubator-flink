@@ -33,7 +33,6 @@ import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.FatalExitExceptionHandler;
-import org.apache.flink.util.IOUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -56,9 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -246,16 +243,16 @@ public class GRpcService implements RpcService, BindableService {
             MethodDescriptor.<byte[], Void>newBuilder()
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .setFullMethodName(generateFullMethodName("Server", "tell"))
-                    .setRequestMarshaller(new Serde())
-                    .setResponseMarshaller(new FailingSerde())
+                    .setRequestMarshaller(new ByteArrayMarshaller())
+                    .setResponseMarshaller(new FailingMarshaller())
                     .build();
 
     static final MethodDescriptor<byte[], byte[]> METHOD_ASK =
             MethodDescriptor.<byte[], byte[]>newBuilder()
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .setFullMethodName(generateFullMethodName("Server", "ask"))
-                    .setRequestMarshaller(new Serde())
-                    .setResponseMarshaller(new Serde())
+                    .setRequestMarshaller(new ByteArrayMarshaller())
+                    .setResponseMarshaller(new ByteArrayMarshaller())
                     .build();
 
     @Override
@@ -448,40 +445,6 @@ public class GRpcService implements RpcService, BindableService {
             LOG.error("Error while executing remote procedure call {}.", rpcMethod, e);
             // tell the sender about the failure
             throw e;
-        }
-    }
-
-    private static class FailingSerde implements MethodDescriptor.Marshaller<Void> {
-
-        @Override
-        public InputStream stream(Void value) {
-            // should never be called
-            throw new RuntimeException("Serialization should never be attempted for this call.");
-        }
-
-        @Override
-        public Void parse(InputStream stream) {
-            // should never be called
-            throw new RuntimeException("Serialization should never be attempted for this call.");
-        }
-    }
-
-    private static class Serde implements MethodDescriptor.Marshaller<byte[]> {
-
-        @Override
-        public InputStream stream(byte[] value) {
-            return new ByteArrayInputStream(value);
-        }
-
-        @Override
-        public byte[] parse(InputStream stream) {
-            try {
-                byte[] bytes = new byte[stream.available()];
-                IOUtils.readFully(stream, bytes, 0, stream.available());
-                return bytes;
-            } catch (IOException e) {
-                throw new RuntimeException();
-            }
         }
     }
 }
