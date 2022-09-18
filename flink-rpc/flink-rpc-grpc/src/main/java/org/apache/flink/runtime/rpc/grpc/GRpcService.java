@@ -303,6 +303,11 @@ public class GRpcService implements RpcService, BindableService {
         final RpcInvocation rpcInvocation = message.getPayload();
 
         final RpcEndpoint rpcEndpoint = targets.get(rpcInvocation.getTarget());
+        if (rpcEndpoint == null) {
+            return FutureUtils.completedExceptionally(
+                    new RecipientUnreachableException(
+                            "unknown", rpcInvocation.getTarget(), rpcInvocation.toString()));
+        }
 
         if (rpcEndpoint instanceof FencedRpcEndpoint) {
             final Serializable expectedFencingToken =

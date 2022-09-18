@@ -337,10 +337,8 @@ public class GRpcGateway<F extends Serializable>
         final Exception newException;
 
         // TODO: add exception type
-        if (false /*AkkaRpcServiceUtils.isRecipientTerminatedException(exception)*/) {
-            newException =
-                    new RecipientUnreachableException(
-                            "unknown", recipient, rpcInvocation.toString());
+        if (exception.getClass().isAssignableFrom(RecipientUnreachableException.class)) {
+            newException = (Exception) exception;
         } else {
             newException =
                     new TimeoutException(
