@@ -32,6 +32,7 @@ import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.IOUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
@@ -107,7 +108,10 @@ public class GRpcService implements RpcService, BindableService {
         this.flinkClassLoader = flinkClassLoader;
         this.mainThread =
                 Executors.newSingleThreadScheduledExecutor(
-                        new ExecutorThreadFactory("flink-grpc-service-" + componentName));
+                        new ExecutorThreadFactory.Builder()
+                                .setPoolName("flink-grpc-service-" + componentName)
+                                .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
+                                .build());
 
         this.bindAddress = bindAddress;
         this.externalAddress = externalAddress;

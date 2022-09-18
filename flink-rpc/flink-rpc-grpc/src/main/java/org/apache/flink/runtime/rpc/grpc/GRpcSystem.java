@@ -23,6 +23,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.AddressResolution;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
+import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.NetUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
@@ -138,6 +139,7 @@ public class GRpcSystem implements RpcSystem {
                                     executorConfiguration.getMaxNumThreads(),
                                     new ExecutorThreadFactory.Builder()
                                             .setPoolName("flink-" + componentName)
+                                            .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
                                             .setThreadPriority(
                                                     executorConfiguration.getThreadPriority())
                                             .build());
@@ -165,6 +167,7 @@ public class GRpcSystem implements RpcSystem {
                                     parallelism,
                                     new ExecutorThreadFactory.Builder()
                                             .setPoolName("flink-" + componentName)
+                                            .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
                                             .build());
             return this;
         }
