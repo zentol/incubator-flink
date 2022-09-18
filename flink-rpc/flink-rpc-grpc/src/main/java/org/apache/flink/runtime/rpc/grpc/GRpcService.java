@@ -169,42 +169,22 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
-        String actualAddress = address.substring(0, address.indexOf("@"));
-        ManagedChannel channel =
-                ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
-
-        GRpcGateway<?> invocationHandler =
-                new GRpcGateway<>(
-                        null,
-                        address,
-                        getAddress(),
-                        address.substring(address.indexOf("@") + 1),
-                        captureAskCallStack,
-                        rpcTimeout,
-                        false,
-                        true,
-                        flinkClassLoader,
-                        channel);
-
-        @SuppressWarnings("unchecked")
-        C rpcServer =
-                (C)
-                        Proxy.newProxyInstance(
-                                GRpcService.class.getClassLoader(),
-                                new Class<?>[] {clazz},
-                                invocationHandler);
-
-        return CompletableFuture.completedFuture(rpcServer);
+        return internalConnect(address, null, clazz);
     }
 
     @Override
     public <F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(
             String address, F fencingToken, Class<C> clazz) {
-        String actualAddress = address.substring(0, address.indexOf("@"));
-        ManagedChannel channel =
+        return internalConnect(address, fencingToken, clazz);
+    }
+
+    private <F extends Serializable, C> CompletableFuture<C> internalConnect(
+            String address, @Nullable F fencingToken, Class<C> clazz) {
+        final String actualAddress = address.substring(0, address.indexOf("@"));
+        final ManagedChannel channel =
                 ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
 
-        GRpcGateway<F> invocationHandler =
+        final GRpcGateway<F> invocationHandler =
                 new GRpcGateway<>(
                         fencingToken,
                         address,
@@ -218,7 +198,7 @@ public class GRpcService implements RpcService, BindableService {
                         channel);
 
         @SuppressWarnings("unchecked")
-        C rpcServer =
+        final C rpcServer =
                 (C)
                         Proxy.newProxyInstance(
                                 GRpcService.class.getClassLoader(),
