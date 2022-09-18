@@ -1214,6 +1214,12 @@ public class Execution
             if (currentState == FINISHED || currentState == CANCELED) {
                 // do nothing, the task was really fast (nice)
                 // or it was canceled really fast
+            } else if (currentState == DEPLOYING && to == RUNNING) {
+                // deploying -> initializing transition got lost or der is incorrect
+                transitionState(currentState, RUNNING);
+            } else if (currentState == RUNNING && to == INITIALIZING) {
+                // deploying -> initializing arrived after initializing -> running
+                // ignore transition
             } else if (currentState == CANCELING || currentState == FAILED) {
                 if (LOG.isDebugEnabled()) {
                     // this log statement is guarded because the 'getVertexWithAttempt()' method
