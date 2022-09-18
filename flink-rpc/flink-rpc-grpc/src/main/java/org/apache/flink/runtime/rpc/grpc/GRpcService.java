@@ -251,10 +251,10 @@ public class GRpcService implements RpcService, BindableService {
             System.out.println("tell " + o);
 
             handleRpcInvocation(o);
+            responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(e);
         }
-        responseObserver.onCompleted();
     }
 
     private void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
@@ -269,13 +269,13 @@ public class GRpcService implements RpcService, BindableService {
                             s -> {
                                 try {
                                     responseObserver.onNext(InstantiationUtil.serializeObject(s));
+                                    responseObserver.onCompleted();
                                 } catch (IOException e) {
                                     // bruh why do we need to set BOTH?
                                     responseObserver.onError(
                                             new StatusException(Status.INTERNAL.withCause(e))
                                                     .initCause(e));
                                 }
-                                responseObserver.onCompleted();
                             })
                     .exceptionally(
                             e -> {
@@ -283,14 +283,12 @@ public class GRpcService implements RpcService, BindableService {
                                 responseObserver.onError(
                                         new StatusException(Status.INTERNAL.withCause(e))
                                                 .initCause(e));
-                                responseObserver.onCompleted();
                                 return null;
                             });
         } catch (Exception e) {
             // bruh why do we need to set BOTH?
             responseObserver.onError(
                     new StatusException(Status.INTERNAL.withCause(e)).initCause(e));
-            responseObserver.onCompleted();
         }
     }
 
