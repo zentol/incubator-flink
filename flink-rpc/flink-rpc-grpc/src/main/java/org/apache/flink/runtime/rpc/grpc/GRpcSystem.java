@@ -174,7 +174,10 @@ public class GRpcSystem implements RpcSystem {
 
         @Override
         public RpcService createAndStart() throws IOException {
-            Preconditions.checkNotNull(componentName);
+            if (componentName == null) {
+                componentName = "Flink";
+            }
+            // Preconditions.checkNotNull(componentName);
 
             if (scheduledExecutorServiceFactory == null) {
                 final double parallelismFactor =
