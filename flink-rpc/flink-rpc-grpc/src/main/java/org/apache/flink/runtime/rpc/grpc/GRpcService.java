@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
@@ -60,6 +59,7 @@ import java.lang.reflect.Proxy;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -112,42 +112,37 @@ public class GRpcService implements RpcService, BindableService {
         this.rpcTimeout = configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION);
         this.captureAskCallStack = configuration.get(AkkaOptions.CAPTURE_ASK_CALLSTACK);
 
-        final Tuple2<Integer, Server> externalPortAndServer =
-                startServerOnOpenPort(bindAddress, bindPort, externalPortRange, this);
-        this.externalPort = externalPortAndServer.f0;
-        this.server = externalPortAndServer.f1;
+        if (bindPort != null) {
+            this.server =
+                    startServerOnOpenPort(
+                            bindAddress, Collections.singleton(bindPort).iterator(), this);
+        } else {
+            this.server = startServerOnOpenPort(bindAddress, externalPortRange, this);
+        }
+        this.externalPort =
+                bindPort != null && externalPortRange.hasNext()
+                        ? externalPortRange.next()
+                        : this.server.getPort();
     }
 
-    private static Tuple2<Integer, Server> startServerOnOpenPort(
-            String bindAddress,
-            Integer bindPort,
-            Iterator<Integer> externalPortRange,
-            BindableService service)
+    private static Server startServerOnOpenPort(
+            String bindAddress, Iterator<Integer> bindPorts, BindableService service)
             throws IOException {
-        boolean firstAttempt = true;
-        while (firstAttempt || externalPortRange.hasNext()) {
-            final int externalPortCandidate = externalPortRange.next();
-            final int bindPortCandidate = bindPort != null ? bindPort : externalPortCandidate;
 
+        while (bindPorts.hasNext()) {
             try {
-                final Server serverCandidate =
-                        NettyServerBuilder.forAddress(
-                                        new InetSocketAddress(bindAddress, bindPortCandidate))
-                                .addService(service)
-                                .build()
-                                .start();
-
-                return Tuple2.of(externalPortCandidate, serverCandidate);
+                return NettyServerBuilder.forAddress(
+                                new InetSocketAddress(bindAddress, bindPorts.next()))
+                        .addService(service)
+                        .build()
+                        .start();
             } catch (IOException e) {
-                if ((e.getCause() instanceof BindException)) {
-                    // retry with next port
-                    firstAttempt = false;
-                } else {
+                if (!(e.getCause() instanceof BindException)) {
                     throw e;
                 }
             }
         }
-        throw new BindException("Could not start RPC server on any port. " + externalPortRange);
+        throw new BindException("Could not start RPC server on any port.");
     }
 
     @Override

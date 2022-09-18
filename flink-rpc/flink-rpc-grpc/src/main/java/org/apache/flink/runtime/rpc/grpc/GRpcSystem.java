@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.Executors;
@@ -60,13 +59,12 @@ public class GRpcSystem implements RpcSystem {
             int port,
             String endpointName,
             AddressResolution addressResolution,
-            Configuration config)
-            throws UnknownHostException {
+            Configuration config) {
         return hostname + ":" + port + "@" + endpointName;
     }
 
     @Override
-    public InetSocketAddress getInetSocketAddressFromRpcUrl(String url) throws Exception {
+    public InetSocketAddress getInetSocketAddressFromRpcUrl(String url) {
         return InetSocketAddress.createUnresolved(
                 url.substring(0, url.indexOf(":")),
                 Integer.parseInt(url.substring(url.indexOf(":") + 1, url.indexOf("@"))));
@@ -194,18 +192,13 @@ public class GRpcSystem implements RpcSystem {
 
             Preconditions.checkArgument(bindPort != null || externalPortRange.hasNext());
 
-            final Iterator<Integer> finalExternalPortRange =
-                    externalPortRange.hasNext()
-                            ? externalPortRange
-                            : Collections.singletonList(bindPort).iterator();
-
             return new GRpcService(
                     configuration,
                     componentName,
                     bindAddress,
                     externalAddress,
                     bindPort,
-                    finalExternalPortRange,
+                    externalPortRange,
                     scheduledExecutorServiceFactory.apply(componentName),
                     GRpcSystem.class.getClassLoader());
         }
