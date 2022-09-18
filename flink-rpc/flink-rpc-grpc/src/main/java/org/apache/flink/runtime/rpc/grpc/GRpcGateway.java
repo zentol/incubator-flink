@@ -58,7 +58,7 @@ import java.util.concurrent.TimeoutException;
 public class GRpcGateway<F extends Serializable>
         implements RpcGateway, InvocationHandler, FencedRpcGateway<F> {
 
-    @Nullable private F fencingToken;
+    @Nullable private final F fencingToken;
     private final String address;
     private final String hostname;
 
