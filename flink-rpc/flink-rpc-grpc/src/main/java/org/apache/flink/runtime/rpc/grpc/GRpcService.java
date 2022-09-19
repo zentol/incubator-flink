@@ -158,20 +158,28 @@ public class GRpcService implements RpcService, BindableService {
     @SuppressWarnings("unchecked")
     public <C extends RpcGateway> C getSelfGateway(
             Class<C> selfGatewayType, RpcEndpoint rpcEndpoint, RpcServer rpcServer) {
-        try {
-            if (rpcEndpoint instanceof FencedRpcEndpoint) {
-                Serializable fencingToken = ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
-                return (C)
-                        connect(
-                                        rpcServer.getAddress(),
-                                        fencingToken,
-                                        (Class<FencedRpcGateway<Serializable>>) selfGatewayType)
-                                .get();
-            } else {
-                return connect(rpcServer.getAddress(), selfGatewayType).get();
+        if (selfGatewayType.isInstance(rpcEndpoint)) {
+            try {
+                if (rpcEndpoint instanceof FencedRpcEndpoint) {
+                    Serializable fencingToken =
+                            ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
+                    return (C)
+                            connect(
+                                            rpcServer.getAddress(),
+                                            fencingToken,
+                                            (Class<FencedRpcGateway<Serializable>>) selfGatewayType)
+                                    .get();
+                } else {
+                    return connect(rpcServer.getAddress(), selfGatewayType).get();
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+        } else {
+            throw new RuntimeException(
+                    "RpcEndpoint does not implement the RpcGateway interface of type "
+                            + selfGatewayType
+                            + '.');
         }
     }
 
