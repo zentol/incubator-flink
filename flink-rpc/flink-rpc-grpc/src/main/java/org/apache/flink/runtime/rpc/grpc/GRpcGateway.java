@@ -31,6 +31,7 @@ import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import io.grpc.Channel;
@@ -183,7 +184,13 @@ public class GRpcGateway<F extends Serializable>
                                             address,
                                             rpcInvocation));
                         } else {
-                            completableFuture.complete(resultValue);
+                            if (resultValue instanceof SerializedThrowable) {
+                                completableFuture.completeExceptionally(
+                                        ((SerializedThrowable) resultValue)
+                                                .deserializeError(flinkClassLoader));
+                            } else {
+                                completableFuture.complete(resultValue);
+                            }
                         }
                     });
 
@@ -287,7 +294,6 @@ public class GRpcGateway<F extends Serializable>
 
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        // TODO: handle errors
                         System.out.println("onClose: " + status);
 
                         if (!status.isOk()) {

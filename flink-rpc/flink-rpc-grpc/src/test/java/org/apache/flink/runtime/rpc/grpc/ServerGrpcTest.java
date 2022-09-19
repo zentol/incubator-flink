@@ -23,11 +23,13 @@ import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcSystem;
+import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.jupiter.api.Test;
 
 import java.net.BindException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -75,6 +77,37 @@ class ServerGrpcTest {
                         .isInstanceOf(BindException.class);
             } finally {
                 rpcService1.closeAsync();
+            }
+        }
+    }
+
+    @Test
+    void testErrorsReturned() throws Exception {
+        try (RpcSystem rpcSystem = new GRpcSystem()) {
+            final RpcService rpcService =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000,8001")
+                            .withComponentName("test")
+                            .createAndStart();
+
+            try {
+                try (FailingEndpoint testEndpoint = new FailingEndpoint(rpcService)) {
+                    testEndpoint.start();
+
+                    assertThatThrownBy(
+                                    () ->
+                                            rpcService
+                                                    .connect(
+                                                            testEndpoint.getAddress(),
+                                                            TestGateway.class)
+                                                    .get()
+                                                    .getCount()
+                                                    .get())
+                            .isInstanceOf(ExecutionException.class)
+                            .hasCauseInstanceOf(RuntimeException.class);
+                }
+            } finally {
+                rpcService.closeAsync().get();
             }
         }
     }
@@ -174,6 +207,28 @@ class ServerGrpcTest {
         @Override
         public CompletableFuture<Integer> getCount2() {
             return CompletableFuture.completedFuture(2);
+        }
+    }
+
+    public static class FailingEndpoint extends RpcEndpoint implements TestGateway {
+
+        protected FailingEndpoint(RpcService rpcService) {
+            super(rpcService);
+        }
+
+        @Override
+        public String getAddress() {
+            return rpcServer.getAddress();
+        }
+
+        @Override
+        public String getHostname() {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Integer> getCount() {
+            return FutureUtils.completedExceptionally(new RuntimeException());
         }
     }
 }

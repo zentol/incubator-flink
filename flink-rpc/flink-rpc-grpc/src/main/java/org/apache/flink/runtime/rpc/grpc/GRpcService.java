@@ -32,8 +32,10 @@ import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
@@ -287,24 +289,40 @@ public class GRpcService implements RpcService, BindableService {
                                     responseObserver.onNext(InstantiationUtil.serializeObject(s));
                                     responseObserver.onCompleted();
                                 } catch (IOException e) {
-                                    // bruh why do we need to set BOTH?
+                                    LOG.error("Failed to serialize RPC response.", e);
                                     responseObserver.onError(
-                                            new StatusException(Status.INTERNAL.withCause(e))
-                                                    .initCause(e));
+                                            new StatusException(
+                                                    Status.INTERNAL.withDescription(
+                                                            "Could not serialize response.")));
                                 }
                             })
                     .exceptionally(
                             e -> {
-                                // bruh why do we need to set BOTH?
-                                responseObserver.onError(
-                                        new StatusException(Status.INTERNAL.withCause(e))
-                                                .initCause(e));
+                                try {
+                                    responseObserver.onNext(
+                                            InstantiationUtil.serializeObject(
+                                                    new SerializedThrowable(
+                                                            ExceptionUtils.stripCompletionException(
+                                                                    e))));
+                                    responseObserver.onCompleted();
+                                } catch (IOException ex) {
+                                    responseObserver.onError(
+                                            new StatusException(
+                                                    Status.INTERNAL.withDescription(
+                                                            "Could not serialize exception.")));
+                                }
                                 return null;
                             });
         } catch (Exception e) {
-            // bruh why do we need to set BOTH?
-            responseObserver.onError(
-                    new StatusException(Status.INTERNAL.withCause(e)).initCause(e));
+            try {
+                responseObserver.onNext(
+                        InstantiationUtil.serializeObject(new SerializedThrowable(e)));
+                responseObserver.onCompleted();
+            } catch (IOException ex) {
+                responseObserver.onError(
+                        new StatusException(
+                                Status.INTERNAL.withDescription("Could not serialize exception.")));
+            }
         }
     }
 
