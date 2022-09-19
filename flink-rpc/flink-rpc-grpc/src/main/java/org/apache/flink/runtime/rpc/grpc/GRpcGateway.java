@@ -342,7 +342,6 @@ public class GRpcGateway<F extends Serializable>
 
         final Exception newException;
 
-        // TODO: add exception type
         if (exception.getClass().isAssignableFrom(RecipientUnreachableException.class)) {
             newException = (Exception) exception;
         } else {
