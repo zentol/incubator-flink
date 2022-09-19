@@ -24,6 +24,7 @@ import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledFutureAdapter;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 
 import org.slf4j.Logger;
@@ -290,6 +291,11 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
     public final CompletableFuture<Void> closeAsync() {
         rpcService.stopServer(rpcServer);
         return getTerminationFuture();
+    }
+
+    @Override
+    public CompletableFuture<Void> closeAsync(Logger log) {
+        return ShutdownLog.logShutdown(log, getEndpointId(), this::closeAsync);
     }
 
     // ------------------------------------------------------------------------

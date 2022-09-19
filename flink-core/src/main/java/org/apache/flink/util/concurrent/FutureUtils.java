@@ -25,6 +25,8 @@ import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.function.RunnableWithException;
 import org.apache.flink.util.function.SupplierWithException;
 
+import org.slf4j.Logger;
+
 import javax.annotation.Nullable;
 
 import java.time.Duration;
@@ -98,6 +100,20 @@ public class FutureUtils {
         } catch (Exception e) {
             future.completeExceptionally(e);
         }
+    }
+
+    public static <T> CompletableFuture<T> logCompletion(
+            Logger log, String action, CompletableFuture<T> future) {
+        future.handle(
+                (t, throwable) -> {
+                    if (throwable == null) {
+                        log.debug("Completed {}.", action);
+                    } else {
+                        log.debug("Failed {}.", action, throwable);
+                    }
+                    return null;
+                });
+        return future;
     }
 
     // ------------------------------------------------------------------------
