@@ -139,6 +139,7 @@ public class GRpcService implements RpcService, BindableService {
                 return NettyServerBuilder.forAddress(
                                 new InetSocketAddress(bindAddress, bindPorts.next()))
                         .addService(service)
+                        .maxInboundMessageSize(1024 * 1024 * 128) // 128 mb
                         .build()
                         .start();
             } catch (IOException e) {
