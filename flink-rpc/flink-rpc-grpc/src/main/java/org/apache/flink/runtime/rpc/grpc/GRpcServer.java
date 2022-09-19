@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,7 +95,11 @@ public class GRpcServer implements RpcServer {
 
     @Override
     public void runAsync(Runnable runnable) {
-        mainThread.submit(runnable);
+        try {
+            mainThread.submit(runnable);
+        } catch (RejectedExecutionException e) {
+            // ignore; means something was scheduled while the endpoint was already shut down
+        }
     }
 
     @Override
