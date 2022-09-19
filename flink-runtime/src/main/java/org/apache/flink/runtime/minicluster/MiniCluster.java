@@ -1178,7 +1178,7 @@ public class MiniCluster implements AutoCloseableAsync {
 
         for (DispatcherResourceManagerComponent dispatcherResourceManagerComponent :
                 dispatcherResourceManagerComponents) {
-            terminationFutures.add(dispatcherResourceManagerComponent.closeAsync());
+            terminationFutures.add(dispatcherResourceManagerComponent.closeAsync(LOG));
         }
 
         final FutureUtils.ConjunctFuture<Void> dispatcherTerminationFuture =
