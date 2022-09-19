@@ -222,7 +222,7 @@ public class GRpcService implements RpcService, BindableService {
     }
 
     @Override
-    public CompletableFuture<Void> stopService() {
+    public CompletableFuture<Void> closeAsync() {
         CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
         mainThread.execute(
                 () -> {

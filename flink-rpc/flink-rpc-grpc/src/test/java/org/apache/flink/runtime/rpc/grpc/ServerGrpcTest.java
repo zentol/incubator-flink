@@ -48,8 +48,8 @@ class ServerGrpcTest {
                             .withComponentName("test")
                             .createAndStart();
 
-            rpcService1.stopService().get();
-            rpcService2.stopService().get();
+            rpcService1.closeAsync().get();
+            rpcService2.closeAsync().get();
         }
     }
 
@@ -74,7 +74,7 @@ class ServerGrpcTest {
                                                 .createAndStart())
                         .isInstanceOf(BindException.class);
             } finally {
-                rpcService1.stopService();
+                rpcService1.closeAsync();
             }
         }
     }
@@ -109,7 +109,7 @@ class ServerGrpcTest {
                                     .get());
                 }
             } finally {
-                rpcService.stopService().get();
+                rpcService.closeAsync().get();
             }
         }
     }
