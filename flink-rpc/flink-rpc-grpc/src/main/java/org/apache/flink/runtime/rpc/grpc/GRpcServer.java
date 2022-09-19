@@ -26,6 +26,7 @@ import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.util.TernaryBoolean;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
@@ -128,11 +129,15 @@ public class GRpcServer implements RpcServer {
         return terminationFuture;
     }
 
+    private final AtomicReference<TernaryBoolean> isRunning =
+            new AtomicReference<>(TernaryBoolean.UNDEFINED);
+
     @Override
     public void start() {
         mainThread.submit(
                 () -> {
                     try {
+                        isRunning.set(TernaryBoolean.TRUE);
                         rpcEndpoint.internalCallOnStart();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -140,16 +145,16 @@ public class GRpcServer implements RpcServer {
                 });
     }
 
-    private final AtomicBoolean isRunning = new AtomicBoolean(true);
-
     @Override
     public void stop() {
-        if (isRunning.getAndSet(false)) {
+        if (isRunning.compareAndSet(TernaryBoolean.TRUE, TernaryBoolean.FALSE)) {
             mainThread.submit(
                     () -> {
                         FutureUtils.forward(rpcEndpoint.internalCallOnStop(), terminationFuture);
                         terminationFuture.thenRun(mainThread::shutdownNow);
                     });
+        } else {
+            terminationFuture.complete(null);
         }
     }
 
