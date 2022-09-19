@@ -30,6 +30,12 @@ under the License.
 	</parent>
 
 	<artifactId>flink-rpc-grpc</artifactId>
+	<name>Flink : RPC : gRPC</name>
+	<packaging>jar</packaging>
+
+	<properties>
+		<flink.grpc.version>1.49.0</flink.grpc.version>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -47,12 +53,12 @@ under the License.
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-stub</artifactId>
-			<version>1.49.0</version>
+			<version>${flink.grpc.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty</artifactId>
-			<version>1.49.0</version>
+			<version>${flink.grpc.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
