@@ -18,6 +18,8 @@
 
 package org.apache.flink.util;
 
+import org.slf4j.Logger;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -30,6 +32,10 @@ public interface AutoCloseableAsync extends AutoCloseable {
      * @return Future which is completed once the resource has been closed
      */
     CompletableFuture<Void> closeAsync();
+
+    default CompletableFuture<Void> closeAsync(Logger log) {
+        return ShutdownLog.logShutdown(log, getClass().getSimpleName(), this::closeAsync);
+    }
 
     default void close() throws Exception {
         try {

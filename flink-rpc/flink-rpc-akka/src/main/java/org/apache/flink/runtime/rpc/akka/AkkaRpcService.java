@@ -398,8 +398,6 @@ public class AkkaRpcService implements RpcService {
                 return terminationFuture;
             }
 
-            LOG.info("Stopping Akka RPC service.");
-
             stopped = true;
 
             akkaRpcActorsTerminationFuture = terminateAkkaRpcActors();
@@ -419,8 +417,6 @@ public class AkkaRpcService implements RpcService {
                     runWithContextClassLoader(
                             () -> FutureUtils.doForward(ignored, throwable, terminationFuture),
                             flinkClassLoader);
-
-                    LOG.info("Stopped Akka RPC service.");
                 });
 
         return terminationFuture;

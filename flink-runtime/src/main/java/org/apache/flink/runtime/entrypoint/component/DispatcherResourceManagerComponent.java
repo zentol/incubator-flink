@@ -31,6 +31,7 @@ import org.apache.flink.runtime.webmonitor.WebMonitorEndpoint;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
+import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
@@ -146,24 +147,23 @@ public class DispatcherResourceManagerComponent implements AutoCloseableAsync {
             final Supplier<CompletableFuture<?>> additionalShutdownAction) {
         if (isRunning.compareAndSet(true, false)) {
             final CompletableFuture<Void> operationsConsumedFuture =
-                    dispatcherOperationCaches.closeAsync();
+                    dispatcherOperationCaches.closeAsync(LOG);
             final CompletableFuture<Void> webMonitorShutdownFuture =
                     FutureUtils.composeAfterwards(
-                            operationsConsumedFuture, webMonitorEndpoint::closeAsync);
+                            operationsConsumedFuture, () -> webMonitorEndpoint.closeAsync(LOG));
             final CompletableFuture<Void> closeWebMonitorAndAdditionalShutdownActionFuture =
                     FutureUtils.composeAfterwards(
                             webMonitorShutdownFuture, additionalShutdownAction);
 
             return FutureUtils.composeAfterwards(
-                    closeWebMonitorAndAdditionalShutdownActionFuture, this::closeAsyncInternal);
+                    closeWebMonitorAndAdditionalShutdownActionFuture,
+                    () -> ShutdownLog.logShutdown(LOG, "components", this::closeAsyncInternal));
         } else {
             return terminationFuture;
         }
     }
 
     private CompletableFuture<Void> closeAsyncInternal() {
-        LOG.info("Closing components.");
-
         Exception exception = null;
 
         final Collection<CompletableFuture<Void>> terminationFutures = new ArrayList<>(3);
@@ -180,9 +180,9 @@ public class DispatcherResourceManagerComponent implements AutoCloseableAsync {
             exception = ExceptionUtils.firstOrSuppressed(e, exception);
         }
 
-        terminationFutures.add(dispatcherRunner.closeAsync());
+        terminationFutures.add(dispatcherRunner.closeAsync(LOG));
 
-        terminationFutures.add(resourceManagerService.closeAsync());
+        terminationFutures.add(resourceManagerService.closeAsync(LOG));
 
         if (exception != null) {
             terminationFutures.add(FutureUtils.completedExceptionally(exception));

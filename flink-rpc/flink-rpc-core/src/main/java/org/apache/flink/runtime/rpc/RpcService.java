@@ -20,7 +20,10 @@ package org.apache.flink.runtime.rpc;
 
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.util.AutoCloseableAsync;
+import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
+
+import org.slf4j.Logger;
 
 import java.io.Serializable;
 import java.util.concurrent.CompletableFuture;
@@ -105,4 +108,10 @@ public interface RpcService extends AutoCloseableAsync {
      * @return The RPC service provided scheduled executor
      */
     ScheduledExecutor getScheduledExecutor();
+
+    @Override
+    default CompletableFuture<Void> closeAsync(Logger log) {
+        return ShutdownLog.logShutdown(
+                log, "RpcService@" + getAddress() + ":" + getPort(), this::closeAsync);
+    }
 }

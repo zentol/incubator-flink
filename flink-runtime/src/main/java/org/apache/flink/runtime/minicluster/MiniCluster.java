@@ -105,6 +105,7 @@ import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.Reference;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.ExponentialBackoffRetryStrategy;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -706,7 +707,7 @@ public class MiniCluster implements AutoCloseableAsync {
 
             // metrics shutdown
             if (metricRegistry != null) {
-                terminationFutures.add(metricRegistry.closeAsync());
+                terminationFutures.add(metricRegistry.closeAsync(LOG));
                 metricRegistry = null;
             }
 
@@ -1283,10 +1284,10 @@ public class MiniCluster implements AutoCloseableAsync {
             final Collection<CompletableFuture<?>> rpcTerminationFutures =
                     new ArrayList<>(numRpcServices);
 
-            rpcTerminationFutures.add(commonRpcService.closeAsync());
+            rpcTerminationFutures.add(commonRpcService.closeAsync(LOG));
 
             for (RpcService rpcService : rpcServices) {
-                rpcTerminationFutures.add(rpcService.closeAsync());
+                rpcTerminationFutures.add(rpcService.closeAsync(LOG));
             }
 
             commonRpcService = null;
@@ -1299,8 +1300,14 @@ public class MiniCluster implements AutoCloseableAsync {
     private CompletableFuture<Void> terminateExecutors(long executorShutdownTimeoutMillis) {
         synchronized (lock) {
             if (ioExecutor != null) {
-                return ExecutorUtils.nonBlockingShutdown(
-                        executorShutdownTimeoutMillis, TimeUnit.MILLISECONDS, ioExecutor);
+                return ShutdownLog.logShutdown(
+                        LOG,
+                        "ioExecutor",
+                        () ->
+                                ExecutorUtils.nonBlockingShutdown(
+                                        executorShutdownTimeoutMillis,
+                                        TimeUnit.MILLISECONDS,
+                                        ioExecutor));
             } else {
                 return CompletableFuture.completedFuture(null);
             }
