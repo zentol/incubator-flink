@@ -33,10 +33,8 @@ import org.apache.flink.runtime.rpc.grpc.messages.RemoteResponseWithID;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
-import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedThrowable;
-import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
@@ -67,7 +65,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
@@ -233,13 +230,6 @@ public class GRpcService implements RpcService, BindableService {
         try {
             GRpcServer gRpcServer =
                     new GRpcServer(
-                            Executors.newSingleThreadScheduledExecutor(
-                                    new ExecutorThreadFactory.Builder()
-                                            .setPoolName(
-                                                    "flink-grpc-service-"
-                                                            + rpcEndpoint.getEndpointId())
-                                            .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
-                                            .build()),
                             getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId(),
                             "localhost",
                             rpcEndpoint,
@@ -266,7 +256,7 @@ public class GRpcService implements RpcService, BindableService {
                         targets.values().stream()
                                 .map(
                                         server -> {
-                                            server.runAsync(server::stop);
+                                            server.stop();
                                             return server.getTerminationFuture();
                                         })
                                 .collect(Collectors.toList())),

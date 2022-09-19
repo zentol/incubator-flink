@@ -26,7 +26,9 @@ import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.TernaryBoolean;
+import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +58,7 @@ public class GRpcServer implements RpcServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(GRpcServer.class);
 
-    private final ScheduledExecutorService mainThread;
+    private ScheduledExecutorService mainThread;
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final String address;
@@ -64,20 +67,12 @@ public class GRpcServer implements RpcServer {
     private final ClassLoader flinkClassLoader;
 
     public GRpcServer(
-            ScheduledExecutorService mainThread,
-            String address,
-            String hostName,
-            RpcEndpoint rpcEndpoint,
-            ClassLoader flinkClassLoader)
+            String address, String hostName, RpcEndpoint rpcEndpoint, ClassLoader flinkClassLoader)
             throws IOException {
-        this.mainThread = mainThread;
         this.address = address;
         this.hostName = hostName;
         this.rpcEndpoint = rpcEndpoint;
         this.flinkClassLoader = flinkClassLoader;
-        final MainThreadValidatorUtil mainThreadValidator =
-                new MainThreadValidatorUtil(rpcEndpoint);
-        mainThread.submit(mainThreadValidator::enterMainThread);
     }
 
     public String getEndpointId() {
@@ -134,6 +129,16 @@ public class GRpcServer implements RpcServer {
 
     @Override
     public void start() {
+        mainThread =
+                Executors.newSingleThreadScheduledExecutor(
+                        new ExecutorThreadFactory.Builder()
+                                .setPoolName("flink-grpc-service-" + rpcEndpoint.getEndpointId())
+                                .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
+                                .build());
+        final MainThreadValidatorUtil mainThreadValidator =
+                new MainThreadValidatorUtil(rpcEndpoint);
+        mainThread.submit(mainThreadValidator::enterMainThread);
+
         mainThread.submit(
                 () -> {
                     try {
