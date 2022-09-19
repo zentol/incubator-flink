@@ -190,6 +190,22 @@ public class TestingRpcService implements RpcService {
     }
 
     @Override
+    public <C extends RpcGateway> C getSelfGateway(
+            Class<C> selfGatewayType, RpcEndpoint rpcEndpoint, RpcServer rpcServer) {
+        if (selfGatewayType.isInstance(rpcServer)) {
+            @SuppressWarnings("unchecked")
+            C selfGateway = ((C) rpcServer);
+
+            return selfGateway;
+        } else {
+            throw new RuntimeException(
+                    "RpcEndpoint does not implement the RpcGateway interface of type "
+                            + selfGatewayType
+                            + '.');
+        }
+    }
+
+    @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
         return backingRpcService.startServer(rpcEndpoint);
     }
