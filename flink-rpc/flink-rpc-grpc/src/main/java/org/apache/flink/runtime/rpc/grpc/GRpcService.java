@@ -30,6 +30,8 @@ import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
+import org.apache.flink.runtime.rpc.grpc.messages.RemoteRequestWithID;
+import org.apache.flink.runtime.rpc.grpc.messages.RemoteResponseWithID;
 import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
@@ -251,7 +253,7 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GRpcServerSpec.createService("Server", this::tell, this::ask);
+        return GRpcServerSpec.createService("Server", this::setupConnection);
     }
 
     public void addTarget(RpcEndpoint rpcEndpoint) {
@@ -262,69 +264,76 @@ public class GRpcService implements RpcService, BindableService {
         targets.remove(rpcEndpoint);
     }
 
-    private void tell(byte[] request, StreamObserver<Void> responseObserver) {
-        try {
-            RemoteFencedMessage<?, RpcInvocation> o =
-                    InstantiationUtil.deserializeObject(request, flinkClassLoader);
+    private StreamObserver<byte[]> setupConnection(StreamObserver<byte[]> responseObserver) {
+        return new StreamObserver<byte[]>() {
+            @Override
+            public void onNext(byte[] bytes) {
+                try {
+                    RemoteRequestWithID<Serializable> request =
+                            InstantiationUtil.deserializeObject(bytes, flinkClassLoader);
 
-            System.out.println("tell " + o);
+                    switch (request.getType()) {
+                        case TELL:
+                            handleRpcInvocation(request);
+                            break;
+                        case ASK:
+                            CompletableFuture<?> resp = handleRpcInvocation(request);
 
-            handleRpcInvocation(o);
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            responseObserver.onError(e);
-        }
-    }
+                            resp.thenAccept(
+                                            s -> {
+                                                try {
+                                                    responseObserver.onNext(
+                                                            InstantiationUtil.serializeObject(
+                                                                    new RemoteResponseWithID<>(
+                                                                            (Serializable) s,
+                                                                            request.getId())));
+                                                } catch (IOException e) {
+                                                    LOG.error(
+                                                            "Failed to serialize RPC response.", e);
+                                                    responseObserver.onError(
+                                                            new StatusException(
+                                                                    Status.INTERNAL.withDescription(
+                                                                            "Could not serialize response.")));
+                                                }
+                                            })
+                                    .exceptionally(
+                                            e -> {
+                                                try {
+                                                    responseObserver.onNext(
+                                                            InstantiationUtil.serializeObject(
+                                                                    new RemoteResponseWithID<>(
+                                                                            new SerializedThrowable(
+                                                                                    ExceptionUtils
+                                                                                            .stripCompletionException(
+                                                                                                    e)),
+                                                                            request.getId())));
+                                                } catch (IOException ex) {
+                                                    responseObserver.onError(
+                                                            new StatusException(
+                                                                    Status.INTERNAL.withDescription(
+                                                                            "Could not serialize exception.")));
+                                                }
+                                                return null;
+                                            });
+                            break;
+                    }
 
-    private void ask(byte[] request, StreamObserver<byte[]> responseObserver) {
-        try {
-            RemoteFencedMessage<?, RpcInvocation> o =
-                    InstantiationUtil.deserializeObject(request, flinkClassLoader);
-            System.out.println("ask " + o);
-
-            CompletableFuture<?> resp = handleRpcInvocation(o);
-
-            resp.thenAccept(
-                            s -> {
-                                try {
-                                    responseObserver.onNext(InstantiationUtil.serializeObject(s));
-                                    responseObserver.onCompleted();
-                                } catch (IOException e) {
-                                    LOG.error("Failed to serialize RPC response.", e);
-                                    responseObserver.onError(
-                                            new StatusException(
-                                                    Status.INTERNAL.withDescription(
-                                                            "Could not serialize response.")));
-                                }
-                            })
-                    .exceptionally(
-                            e -> {
-                                try {
-                                    responseObserver.onNext(
-                                            InstantiationUtil.serializeObject(
-                                                    new SerializedThrowable(
-                                                            ExceptionUtils.stripCompletionException(
-                                                                    e))));
-                                    responseObserver.onCompleted();
-                                } catch (IOException ex) {
-                                    responseObserver.onError(
-                                            new StatusException(
-                                                    Status.INTERNAL.withDescription(
-                                                            "Could not serialize exception.")));
-                                }
-                                return null;
-                            });
-        } catch (Exception e) {
-            try {
-                responseObserver.onNext(
-                        InstantiationUtil.serializeObject(new SerializedThrowable(e)));
-                responseObserver.onCompleted();
-            } catch (IOException ex) {
-                responseObserver.onError(
-                        new StatusException(
-                                Status.INTERNAL.withDescription("Could not serialize exception.")));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    responseObserver.onError(e);
+                }
             }
-        }
+
+            @Override
+            public void onError(Throwable t) {
+                responseObserver.onError(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                responseObserver.onCompleted();
+            }
+        };
     }
 
     /**

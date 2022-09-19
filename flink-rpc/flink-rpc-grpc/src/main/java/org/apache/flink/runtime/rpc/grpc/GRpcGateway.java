@@ -25,8 +25,10 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcGatewayUtils;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcException;
+import org.apache.flink.runtime.rpc.grpc.messages.RemoteRequestWithID;
+import org.apache.flink.runtime.rpc.grpc.messages.RemoteResponseWithID;
+import org.apache.flink.runtime.rpc.grpc.messages.Type;
 import org.apache.flink.runtime.rpc.messages.LocalRpcInvocation;
-import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
 import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.ExceptionUtils;
@@ -37,7 +39,8 @@ import org.apache.flink.util.concurrent.FutureUtils;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.Metadata;
-import io.grpc.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -48,6 +51,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -57,6 +62,8 @@ import java.util.concurrent.TimeoutException;
 
 public class GRpcGateway<F extends Serializable>
         implements RpcGateway, InvocationHandler, FencedRpcGateway<F> {
+
+    private final Logger LOG = LoggerFactory.getLogger(GRpcGateway.class);
 
     @Nullable private final F fencingToken;
     private final String address;
@@ -71,7 +78,9 @@ public class GRpcGateway<F extends Serializable>
 
     private final ClassLoader flinkClassLoader;
 
-    private final Channel channel;
+    private final ClientCall<byte[], byte[]> call;
+    private long nextId = 0;
+    private final Map<Long, CompletableFuture<Object>> pendingResponses = new HashMap<>();
 
     public GRpcGateway(
             @Nullable F fencingToken,
@@ -93,7 +102,33 @@ public class GRpcGateway<F extends Serializable>
         this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
-        this.channel = channel;
+        this.call = GRpcServerSpec.prepareConnection(channel);
+        this.call.start(
+                new ClientCall.Listener<byte[]>() {
+                    @Override
+                    public void onMessage(byte[] o) {
+                        try {
+                            final RemoteResponseWithID<?> response =
+                                    InstantiationUtil.deserializeObject(o, flinkClassLoader);
+
+                            CompletableFuture<Object> objectCompletableFuture =
+                                    pendingResponses.remove(response.getId());
+                            if (objectCompletableFuture != null) {
+                                objectCompletableFuture.complete(response.getPayload());
+                            } else {
+                                System.out.println(
+                                        "Unexpected response with ID " + response.getId());
+                            }
+
+                        } catch (IOException | ClassNotFoundException e) {
+                            throw new CompletionException(
+                                    new RpcException(
+                                            "Could not deserialize the serialized payload of RPC method : ",
+                                            e));
+                        }
+                    }
+                },
+                new Metadata());
     }
 
     @Override
@@ -252,23 +287,15 @@ public class GRpcGateway<F extends Serializable>
      *
      * @param message to send to the RPC endpoint.
      */
-    protected void tell(RpcInvocation message) throws IOException {
+    private synchronized void tell(RpcInvocation message) throws IOException {
+        final long id = nextId++;
 
-        final ClientCall<byte[], Void> call = GRpcServerSpec.prepareTell(channel);
-
-        call.start(
-                new ClientCall.Listener<Void>() {
-                    @Override
-                    public void onClose(Status status, Metadata trailers) {
-                        // TODO: handle errors
-                    }
-                },
-                new Metadata());
+        LOG.info("Sending tell #{} (RPC={})", id, message);
 
         call.sendMessage(
                 InstantiationUtil.serializeObject(
-                        new RemoteFencedMessage<>(getFencingToken(), message)));
-        call.halfClose();
+                        new RemoteRequestWithID<>(fencingToken, message, id, Type.TELL)));
+        call.request(1);
     }
 
     /**
@@ -279,35 +306,22 @@ public class GRpcGateway<F extends Serializable>
      *     TimeoutException}
      * @return Response future
      */
-    protected CompletableFuture<?> ask(RpcInvocation message, Duration timeout) throws IOException {
+    private synchronized CompletableFuture<?> ask(RpcInvocation message, Duration timeout)
+            throws IOException {
+        final long id = nextId++;
 
-        final ClientCall<byte[], byte[]> call = GRpcServerSpec.prepareAsk(channel);
+        LOG.info("Sending ask #{} (RPC={})", id, message);
 
-        CompletableFuture<byte[]> response = new CompletableFuture<>();
-        call.start(
-                new ClientCall.Listener<byte[]>() {
-                    @Override
-                    public void onMessage(byte[] message) {
-                        System.out.println("onMessage");
-                        response.complete(message);
-                    }
+        CompletableFuture<Object> response = new CompletableFuture<>();
+        response.thenAccept(
+                resp -> LOG.info("Received ask #{} response {} (RPC={})", id, resp, message));
 
-                    @Override
-                    public void onClose(Status status, Metadata trailers) {
-                        System.out.println("onClose: " + status);
+        pendingResponses.put(id, response);
 
-                        if (!status.isOk()) {
-                            response.completeExceptionally(status.asException());
-                        }
-                    }
-                },
-                new Metadata());
-
-        call.request(1);
         call.sendMessage(
                 InstantiationUtil.serializeObject(
-                        new RemoteFencedMessage<>(getFencingToken(), message)));
-        call.halfClose();
+                        new RemoteRequestWithID<>(fencingToken, message, id, Type.ASK)));
+        call.request(1);
 
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
