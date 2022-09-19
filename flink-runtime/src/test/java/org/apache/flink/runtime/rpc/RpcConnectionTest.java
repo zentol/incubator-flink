@@ -71,7 +71,7 @@ public class RpcConnectionTest extends TestLogger {
         } catch (Throwable t) {
             fail("wrong exception: " + t);
         } finally {
-            rpcService.stopService().get();
+            rpcService.closeAsync().get();
         }
     }
 }
