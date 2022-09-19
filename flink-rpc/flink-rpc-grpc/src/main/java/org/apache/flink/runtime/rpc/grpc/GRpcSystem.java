@@ -105,10 +105,15 @@ public class GRpcSystem implements RpcSystem {
                     externalAddress == null
                             ? InetAddress.getLoopbackAddress().getHostAddress()
                             : externalAddress;
-            this.externalPortRange =
-                    externalPortRange != null
-                            ? NetUtils.getPortRangeFromString(externalPortRange)
-                            : Collections.emptyIterator();
+            try {
+                this.externalPortRange =
+                        externalPortRange != null
+                                ? NetUtils.getPortRangeFromString(externalPortRange)
+                                : Collections.emptyIterator();
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Invalid port range definition: " + externalPortRange);
+            }
         }
 
         @Override
