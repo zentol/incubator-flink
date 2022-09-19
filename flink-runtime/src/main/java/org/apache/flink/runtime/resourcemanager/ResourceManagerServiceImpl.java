@@ -135,23 +135,28 @@ public class ResourceManagerServiceImpl implements ResourceManagerService, Leade
                 return deregisterWithoutLeaderRm();
             }
 
+            LOG.debug("Starting de-registration of application.");
             final ResourceManager<?> currentLeaderRM = leaderResourceManager;
-            return currentLeaderRM
-                    .getStartedFuture()
-                    .thenCompose(
-                            ignore -> {
-                                synchronized (lock) {
-                                    if (isLeader(currentLeaderRM)) {
-                                        return currentLeaderRM
-                                                .getSelfGateway(ResourceManagerGateway.class)
-                                                .deregisterApplication(
-                                                        applicationStatus, diagnostics)
-                                                .thenApply(ack -> null);
-                                    } else {
-                                        return deregisterWithoutLeaderRm();
-                                    }
-                                }
-                            });
+            return FutureUtils.logCompletion(
+                    LOG,
+                    "de-registration of application",
+                    currentLeaderRM
+                            .getStartedFuture()
+                            .thenCompose(
+                                    ignore -> {
+                                        synchronized (lock) {
+                                            if (isLeader(currentLeaderRM)) {
+                                                return currentLeaderRM
+                                                        .getSelfGateway(
+                                                                ResourceManagerGateway.class)
+                                                        .deregisterApplication(
+                                                                applicationStatus, diagnostics)
+                                                        .thenApply(ack -> null);
+                                            } else {
+                                                return deregisterWithoutLeaderRm();
+                                            }
+                                        }
+                                    }));
         }
     }
 
