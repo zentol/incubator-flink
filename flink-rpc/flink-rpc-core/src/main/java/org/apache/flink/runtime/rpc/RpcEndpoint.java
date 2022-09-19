@@ -34,12 +34,10 @@ import javax.annotation.Nonnull;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
@@ -316,35 +314,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      * @return Self gateway of the specified type which can be used to issue asynchronous rpcs
      */
     public <C extends RpcGateway> C getSelfGateway(Class<C> selfGatewayType) {
-        try {
-            if (this instanceof FencedRpcEndpoint) {
-                Serializable fencingToken = ((FencedRpcEndpoint) this).getFencingToken();
-                return (C)
-                        rpcService
-                                .connect(
-                                        rpcServer.getAddress(),
-                                        fencingToken,
-                                        (Class<FencedRpcGateway>) selfGatewayType)
-                                .get();
-            } else {
-                return rpcService.connect(rpcServer.getAddress(), selfGatewayType).get();
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-        //        if (selfGatewayType.isInstance(rpcServer)) {
-        //            @SuppressWarnings("unchecked")
-        //            C selfGateway = ((C) rpcServer);
-        //
-        //            return selfGateway;
-        //        } else {
-        //            throw new RuntimeException(
-        //                    "RpcEndpoint does not implement the RpcGateway interface of type "
-        //                            + selfGatewayType
-        //                            + '.');
-        //        }
+        return rpcService.getSelfGateway(selfGatewayType, this, rpcServer);
     }
 
     /**

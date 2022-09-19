@@ -36,8 +36,8 @@ import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import io.grpc.Channel;
 import io.grpc.ClientCall;
+import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +79,7 @@ public class GRpcGateway<F extends Serializable>
     private final ClassLoader flinkClassLoader;
 
     private final ClientCall<byte[], byte[]> call;
+    private final ManagedChannel channel;
     private long nextId = 0;
     private final Map<Long, CompletableFuture<Object>> pendingResponses = new HashMap<>();
 
@@ -92,7 +93,7 @@ public class GRpcGateway<F extends Serializable>
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
-            Channel channel) {
+            ManagedChannel channel) {
         this.fencingToken = fencingToken;
         this.address = address;
         this.hostname = hostname;
@@ -102,6 +103,7 @@ public class GRpcGateway<F extends Serializable>
         this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
+        this.channel = channel;
         this.call = GRpcServerSpec.prepareConnection(channel);
         this.call.start(
                 new ClientCall.Listener<byte[]>() {
