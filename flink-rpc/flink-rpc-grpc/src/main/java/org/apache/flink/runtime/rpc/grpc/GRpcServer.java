@@ -34,7 +34,6 @@ public class GRpcServer implements RpcServer {
 
     private final ScheduledExecutorService mainThread;
 
-    private final MainThreadValidatorUtil mainThreadValidator;
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final String address;
     private final String hostName;
@@ -50,7 +49,8 @@ public class GRpcServer implements RpcServer {
         this.address = address;
         this.hostName = hostName;
         this.rpcEndpoint = rpcEndpoint;
-        this.mainThreadValidator = new MainThreadValidatorUtil(rpcEndpoint);
+        final MainThreadValidatorUtil mainThreadValidator =
+                new MainThreadValidatorUtil(rpcEndpoint);
         mainThread.submit(mainThreadValidator::enterMainThread);
     }
 
