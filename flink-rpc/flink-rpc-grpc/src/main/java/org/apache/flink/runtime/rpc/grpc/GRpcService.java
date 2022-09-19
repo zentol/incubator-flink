@@ -253,8 +253,9 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public void stopServer(RpcServer server) {
-        targets.remove(((GRpcServer) server).getEndpointId());
         server.stop();
+        server.getTerminationFuture()
+                .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()));
     }
 
     @Override
