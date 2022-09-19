@@ -18,17 +18,30 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
+import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
+import org.apache.flink.runtime.rpc.Local;
 import org.apache.flink.runtime.rpc.MainThreadValidatorUtil;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcServer;
+import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
+import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
+import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.concurrent.FutureUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
 /**
  * A gRPC-based {@link RpcServer}. This class is relatively small because the actual server work is
@@ -37,23 +50,28 @@ import java.util.concurrent.TimeUnit;
  */
 public class GRpcServer implements RpcServer {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GRpcServer.class);
+
     private final ScheduledExecutorService mainThread;
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final String address;
     private final String hostName;
     private final RpcEndpoint rpcEndpoint;
+    private final ClassLoader flinkClassLoader;
 
     public GRpcServer(
             ScheduledExecutorService mainThread,
             String address,
             String hostName,
-            RpcEndpoint rpcEndpoint)
+            RpcEndpoint rpcEndpoint,
+            ClassLoader flinkClassLoader)
             throws IOException {
         this.mainThread = mainThread;
         this.address = address;
         this.hostName = hostName;
         this.rpcEndpoint = rpcEndpoint;
+        this.flinkClassLoader = flinkClassLoader;
         final MainThreadValidatorUtil mainThreadValidator =
                 new MainThreadValidatorUtil(rpcEndpoint);
         mainThread.submit(mainThreadValidator::enterMainThread);
@@ -120,5 +138,117 @@ public class GRpcServer implements RpcServer {
     public void stop() {
         mainThread.submit(
                 () -> FutureUtils.forward(rpcEndpoint.internalCallOnStop(), terminationFuture));
+    }
+
+    public CompletableFuture<?> handleRpcInvocation(
+            final Serializable fencingToken, final RpcInvocation rpcInvocation)
+            throws RpcConnectionException {
+        if (rpcEndpoint instanceof FencedRpcEndpoint) {
+            final Serializable expectedFencingToken =
+                    ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
+
+            if (expectedFencingToken == null) {
+                LOG.debug(
+                        "Fencing token not set: Ignoring message {} because the fencing token is null.",
+                        rpcInvocation);
+
+                return FutureUtils.completedExceptionally(
+                        new FencingTokenException(
+                                String.format(
+                                        "Fencing token not set: Ignoring message %s sent to %s because the fencing token is null.",
+                                        rpcInvocation, rpcEndpoint.getAddress())));
+            } else {
+
+                if (!Objects.equals(expectedFencingToken, fencingToken)) {
+                    LOG.debug(
+                            "Fencing token mismatch: Ignoring message {} because the fencing token {} did "
+                                    + "not match the expected fencing token {}.",
+                            rpcInvocation,
+                            fencingToken,
+                            expectedFencingToken);
+
+                    return FutureUtils.completedExceptionally(
+                            new FencingTokenException(
+                                    "Fencing token mismatch: Ignoring message "
+                                            + rpcInvocation
+                                            + " because the fencing token "
+                                            + fencingToken
+                                            + " did not match the expected fencing token "
+                                            + expectedFencingToken
+                                            + '.'));
+                }
+            }
+        }
+
+        final Method rpcMethod;
+
+        try {
+            String methodName = rpcInvocation.getMethodName();
+            Class<?>[] parameterTypes = rpcInvocation.getParameterTypes();
+
+            rpcMethod = rpcEndpoint.getClass().getMethod(methodName, parameterTypes);
+        } catch (final NoSuchMethodException e) {
+            LOG.error("Could not find rpc method for rpc invocation.", e);
+
+            throw new RpcConnectionException("Could not find rpc method for rpc invocation.", e);
+        }
+
+        try {
+            // this supports declaration of anonymous classes
+            rpcMethod.setAccessible(true);
+
+            if (rpcMethod.getReturnType().equals(Void.TYPE)) {
+                // No return value to send back
+                mainThread.execute(
+                        () -> {
+                            try {
+                                runWithContextClassLoader(
+                                        () ->
+                                                rpcMethod.invoke(
+                                                        rpcEndpoint, rpcInvocation.getArgs()),
+                                        flinkClassLoader);
+                            } catch (ReflectiveOperationException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                return CompletableFuture.completedFuture(null);
+            } else {
+                final CompletableFuture<Object> result = new CompletableFuture<>();
+                mainThread.execute(
+                        () -> {
+                            try {
+                                runWithContextClassLoader(
+                                        () -> {
+                                            Object rpcResult =
+                                                    rpcMethod.invoke(
+                                                            rpcEndpoint, rpcInvocation.getArgs());
+                                            if (rpcResult instanceof CompletableFuture) {
+                                                FutureUtils.forward(
+                                                        (CompletableFuture<Object>) rpcResult,
+                                                        result);
+                                            } else {
+                                                result.complete(rpcResult);
+                                            }
+                                        },
+                                        flinkClassLoader);
+                            } catch (ReflectiveOperationException e) {
+                                LOG.debug(
+                                        "Reporting back error thrown in remote procedure {}",
+                                        rpcMethod,
+                                        e);
+                                result.completeExceptionally(e);
+                            }
+                        });
+
+                final String methodName = rpcMethod.getName();
+                final boolean isLocalRpcInvocation = rpcMethod.getAnnotation(Local.class) != null;
+
+                return result;
+            }
+        } catch (Throwable e) {
+            LOG.error("Error while executing remote procedure call {}.", rpcMethod, e);
+            // tell the sender about the failure
+            throw e;
+        }
     }
 }
