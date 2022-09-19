@@ -300,10 +300,15 @@ public class GRpcGateway<F extends Serializable>
 
         LOG.info("Sending tell #{} (RPC={})", id, message);
 
-        call.sendMessage(
-                InstantiationUtil.serializeObject(
-                        new RemoteRequestWithID<>(fencingToken, message, id, Type.TELL)));
-        call.request(1);
+        ClassLoadingUtils.runWithContextClassLoader(
+                () -> {
+                    call.sendMessage(
+                            InstantiationUtil.serializeObject(
+                                    new RemoteRequestWithID<>(
+                                            fencingToken, message, id, Type.TELL)));
+                    call.request(1);
+                },
+                flinkClassLoader);
     }
 
     /**
@@ -326,10 +331,15 @@ public class GRpcGateway<F extends Serializable>
 
         pendingResponses.put(id, response);
 
-        call.sendMessage(
-                InstantiationUtil.serializeObject(
-                        new RemoteRequestWithID<>(fencingToken, message, id, Type.ASK)));
-        call.request(1);
+        ClassLoadingUtils.runWithContextClassLoader(
+                () -> {
+                    call.sendMessage(
+                            InstantiationUtil.serializeObject(
+                                    new RemoteRequestWithID<>(
+                                            fencingToken, message, id, Type.ASK)));
+                    call.request(1);
+                },
+                flinkClassLoader);
 
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
