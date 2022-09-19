@@ -196,6 +196,10 @@ public class GRpcService implements RpcService, BindableService {
 
     private <F extends Serializable, C> CompletableFuture<C> internalConnect(
             String address, @Nullable F fencingToken, Class<C> clazz) {
+        if (!address.contains("@")) {
+            return FutureUtils.completedExceptionally(
+                    new IllegalArgumentException("Invalid address: " + address));
+        }
         final String actualAddress = address.substring(0, address.indexOf("@"));
         final ManagedChannel channel =
                 ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
