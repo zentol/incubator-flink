@@ -60,10 +60,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * A gRPC-based {@link RpcGateway}. Submits requests against a {@link GRpcService} and processes the
+ * responses.
+ *
+ * <p>Fencing is always used, with a sentinel value if no fencing token was provided by Flink.
+ */
 public class GRpcGateway<F extends Serializable>
         implements RpcGateway, InvocationHandler, FencedRpcGateway<F> {
 
-    private final Logger LOG = LoggerFactory.getLogger(GRpcGateway.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GRpcGateway.class);
 
     @Nullable private final F fencingToken;
     private final String address;

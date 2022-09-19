@@ -35,6 +35,13 @@ import java.nio.file.Paths;
 import java.util.ServiceLoader;
 import java.util.UUID;
 
+/**
+ * Loader for the gRPC-based RPC system.
+ *
+ * <p>This loader expects the flink-rpc-grpc jar to be accessible via {@link
+ * ClassLoader#getResource(String)}. It will extract the jar into a temporary directory and create a
+ * new {@link SubmoduleClassLoader} to load the rpc system from that jar.
+ */
 public class GRpcSystemLoader implements RpcSystemLoader {
     @Override
     public RpcSystem loadRpcSystem(Configuration config) {

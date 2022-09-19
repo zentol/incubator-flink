@@ -30,6 +30,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A gRPC-based {@link RpcServer}. This class is relatively small because the actual server work is
+ * handled by the {@link GRpcService} because we can't add additional endpoints (==gRPC services) on
+ * the fly.
+ */
 public class GRpcServer implements RpcServer {
 
     private final ScheduledExecutorService mainThread;

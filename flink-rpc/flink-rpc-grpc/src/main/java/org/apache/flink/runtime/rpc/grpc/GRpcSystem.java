@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 
+/** A gRPC-based {@link RpcSystem}. */
 public class GRpcSystem implements RpcSystem {
     @Override
     public RpcServiceBuilder localServiceBuilder(Configuration configuration) {

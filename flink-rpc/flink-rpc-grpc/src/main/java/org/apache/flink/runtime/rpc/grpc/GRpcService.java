@@ -78,6 +78,10 @@ import java.util.stream.Collectors;
 
 import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
+/**
+ * A gRPC-based {@link RpcService}. Acts as the main server receiving requests which are then
+ * dispatched to the correct {@link RpcEndpoint}. Also provides the main thread.
+ */
 public class GRpcService implements RpcService, BindableService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GRpcService.class);
