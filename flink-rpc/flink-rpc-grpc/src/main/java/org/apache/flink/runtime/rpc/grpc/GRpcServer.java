@@ -40,6 +40,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.flink.runtime.rpc.grpc.ClassLoadingUtils.runWithContextClassLoader;
 
@@ -134,10 +135,17 @@ public class GRpcServer implements RpcServer {
                 });
     }
 
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
+
     @Override
     public void stop() {
-        mainThread.submit(
-                () -> FutureUtils.forward(rpcEndpoint.internalCallOnStop(), terminationFuture));
+        if (isRunning.getAndSet(false)) {
+            mainThread.submit(
+                    () -> {
+                        FutureUtils.forward(rpcEndpoint.internalCallOnStop(), terminationFuture);
+                        terminationFuture.thenRun(mainThread::shutdownNow);
+                    });
+        }
     }
 
     public CompletableFuture<?> handleRpcInvocation(

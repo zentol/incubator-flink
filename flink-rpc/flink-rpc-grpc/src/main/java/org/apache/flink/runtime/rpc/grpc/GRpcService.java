@@ -61,7 +61,6 @@ import java.lang.reflect.Proxy;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -80,7 +79,6 @@ public class GRpcService implements RpcService, BindableService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GRpcService.class);
 
-    private final ScheduledExecutorService mainThread;
     private final Server server;
 
     private final String bindAddress;
@@ -105,12 +103,6 @@ public class GRpcService implements RpcService, BindableService {
             throws IOException {
         this.executorService = executorService;
         this.flinkClassLoader = flinkClassLoader;
-        this.mainThread =
-                Executors.newSingleThreadScheduledExecutor(
-                        new ExecutorThreadFactory.Builder()
-                                .setPoolName("flink-grpc-service-" + componentName)
-                                .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
-                                .build());
 
         this.bindAddress = bindAddress;
         this.externalAddress = externalAddress;
@@ -233,7 +225,13 @@ public class GRpcService implements RpcService, BindableService {
         try {
             GRpcServer gRpcServer =
                     new GRpcServer(
-                            mainThread,
+                            Executors.newSingleThreadScheduledExecutor(
+                                    new ExecutorThreadFactory.Builder()
+                                            .setPoolName(
+                                                    "flink-grpc-service-"
+                                                            + rpcEndpoint.getEndpointId())
+                                            .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
+                                            .build()),
                             getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId(),
                             "localhost",
                             rpcEndpoint,
@@ -254,25 +252,18 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public CompletableFuture<Void> closeAsync() {
         CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
-        mainThread.execute(
-                () -> {
-                    ArrayList<RpcServer> rpcEndpoints = new ArrayList<>(targets.values());
-                    targets.clear();
-                    FutureUtils.forward(
-                            FutureUtils.waitForAll(
-                                    rpcEndpoints.stream()
-                                            .map(
-                                                    server -> {
-                                                        server.stop();
-                                                        return server.getTerminationFuture();
-                                                    })
-                                            .collect(Collectors.toList())),
-                            terminationFuture);
-                });
-        return terminationFuture
-                .thenRun(executorService::shutdownNow)
-                .thenRun(server::shutdown)
-                .thenRun(mainThread::shutdown);
+        FutureUtils.forward(
+                FutureUtils.waitForAll(
+                        targets.values().stream()
+                                .map(
+                                        server -> {
+                                            server.runAsync(server::stop);
+                                            return server.getTerminationFuture();
+                                        })
+                                .collect(Collectors.toList())),
+                terminationFuture);
+
+        return terminationFuture.thenRun(executorService::shutdownNow).thenRun(server::shutdown);
     }
 
     @Override
