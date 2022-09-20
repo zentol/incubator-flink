@@ -478,6 +478,12 @@ public class OperatorEventSendingCheckpointITCase extends TestLogger {
         }
 
         @Override
+        public <C extends RpcGateway> C getSelfGateway(
+                Class<C> selfGatewayType, RpcEndpoint rpcEndpoint, RpcServer rpcServer) {
+            return rpcService.getSelfGateway(selfGatewayType, rpcEndpoint, rpcServer);
+        }
+
+        @Override
         public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
             final CompletableFuture<C> future = rpcService.connect(address, clazz);
             return clazz == TaskExecutorGateway.class ? decorateTmGateway(future) : future;
