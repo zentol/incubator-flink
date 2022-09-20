@@ -326,6 +326,8 @@ public class GRpcService implements RpcService, BindableService {
         return GRpcServerSpec.createService("Server", this::setupConnection);
     }
 
+    private final Object lock = new Object();
+
     private StreamObserver<byte[]> setupConnection(StreamObserver<byte[]> responseObserver) {
         return new StreamObserver<byte[]>() {
             @Override
@@ -341,59 +343,77 @@ public class GRpcService implements RpcService, BindableService {
                         case ASK:
                             CompletableFuture<?> resp = handleRpcInvocation(request);
 
-                            resp.thenAccept(
+                            resp.thenAcceptAsync(
                                             s -> {
-                                                try {
-                                                    responseObserver.onNext(
-                                                            InstantiationUtil.serializeObject(
-                                                                    new RemoteResponseWithID<>(
-                                                                            (Serializable) s,
-                                                                            request.getId())));
-                                                } catch (IOException e) {
-                                                    LOG.error(
-                                                            "Failed to serialize RPC response.", e);
-                                                    responseObserver.onError(
-                                                            new StatusException(
-                                                                    Status.INTERNAL.withDescription(
-                                                                            "Could not serialize response.")));
+                                                synchronized (lock) {
+                                                    try {
+                                                        responseObserver.onNext(
+                                                                InstantiationUtil.serializeObject(
+                                                                        new RemoteResponseWithID<>(
+                                                                                (Serializable) s,
+                                                                                request.getId())));
+                                                    } catch (IOException e) {
+                                                        LOG.error(
+                                                                "Failed to serialize response for RPC={}.",
+                                                                request.getPayload(),
+                                                                e);
+                                                        responseObserver.onError(
+                                                                new StatusException(
+                                                                        Status.INTERNAL
+                                                                                .withDescription(
+                                                                                        "Could not serialize response.")));
+                                                    }
                                                 }
                                             })
                                     .exceptionally(
                                             e -> {
-                                                try {
-                                                    responseObserver.onNext(
-                                                            InstantiationUtil.serializeObject(
-                                                                    new RemoteResponseWithID<>(
-                                                                            new SerializedThrowable(
-                                                                                    ExceptionUtils
-                                                                                            .stripCompletionException(
-                                                                                                    e)),
-                                                                            request.getId())));
-                                                } catch (IOException ex) {
-                                                    responseObserver.onError(
-                                                            new StatusException(
-                                                                    Status.INTERNAL.withDescription(
-                                                                            "Could not serialize exception.")));
+                                                synchronized (lock) {
+                                                    LOG.error(
+                                                            "RPC ({}) failed.",
+                                                            request.getPayload(),
+                                                            e);
+                                                    try {
+                                                        responseObserver.onNext(
+                                                                InstantiationUtil.serializeObject(
+                                                                        new RemoteResponseWithID<>(
+                                                                                new SerializedThrowable(
+                                                                                        ExceptionUtils
+                                                                                                .stripCompletionException(
+                                                                                                        e)),
+                                                                                request.getId())));
+                                                    } catch (IOException ex) {
+                                                        responseObserver.onError(
+                                                                new StatusException(
+                                                                        Status.INTERNAL
+                                                                                .withDescription(
+                                                                                        "Could not serialize exception.")));
+                                                    }
+                                                    return null;
                                                 }
-                                                return null;
                                             });
                             break;
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    responseObserver.onError(e);
+                    synchronized (lock) {
+                        LOG.error("Fatal RPC failed.", e);
+                        responseObserver.onError(e);
+                    }
                 }
             }
 
             @Override
             public void onError(Throwable t) {
-                responseObserver.onError(t);
+                synchronized (lock) {
+                    responseObserver.onError(t);
+                }
             }
 
             @Override
             public void onCompleted() {
-                responseObserver.onCompleted();
+                synchronized (lock) {
+                    responseObserver.onCompleted();
+                }
             }
         };
     }
