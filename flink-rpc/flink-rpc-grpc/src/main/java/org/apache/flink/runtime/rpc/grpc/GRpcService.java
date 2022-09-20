@@ -67,6 +67,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -202,46 +203,77 @@ public class GRpcService implements RpcService, BindableService {
         final ManagedChannel channel =
                 ManagedChannelBuilder.forTarget(actualAddress).usePlaintext().build();
 
-        final GRpcGateway<F> invocationHandler =
-                new GRpcGateway<>(
-                        fencingToken,
-                        address,
-                        getAddress(),
-                        address.substring(address.indexOf("@") + 1),
-                        captureAskCallStack,
-                        rpcTimeout,
-                        false,
-                        true,
-                        flinkClassLoader,
-                        channel);
+        final CompletableFuture<Void> connectFuture = new CompletableFuture<>();
+        waitUntilConnectionEstablished(
+                getScheduledExecutor(),
+                channel,
+                channel.getState(true),
+                address,
+                connectFuture,
+                Duration.ZERO);
 
-        @SuppressWarnings("unchecked")
-        final C rpcServer =
-                (C)
-                        Proxy.newProxyInstance(
-                                GRpcService.class.getClassLoader(),
-                                new Class<?>[] {clazz},
-                                invocationHandler);
+        return connectFuture.thenApply(
+                ignored -> {
+                    final GRpcGateway<F> invocationHandler =
+                            new GRpcGateway<>(
+                                    fencingToken,
+                                    address,
+                                    getAddress(),
+                                    address.substring(address.indexOf("@") + 1),
+                                    captureAskCallStack,
+                                    rpcTimeout,
+                                    false,
+                                    true,
+                                    flinkClassLoader,
+                                    channel);
 
-        final CompletableFuture<C> connectFuture = new CompletableFuture<>();
-
-        final ConnectivityState state = channel.getState(true);
-        channel.notifyWhenStateChanged(
-                state,
-                () -> {
-                    switch (channel.getState(false)) {
-                        case IDLE:
-                        case CONNECTING:
-                        case READY:
-                            connectFuture.complete(rpcServer);
-                            break;
-                        case TRANSIENT_FAILURE:
-                            connectFuture.completeExceptionally(
-                                    new RpcConnectionException("Failed to connect to " + address));
-                        case SHUTDOWN:
-                    }
+                    return (C)
+                            Proxy.newProxyInstance(
+                                    GRpcService.class.getClassLoader(),
+                                    new Class<?>[] {clazz},
+                                    invocationHandler);
                 });
-        return connectFuture;
+    }
+
+    private static void waitUntilConnectionEstablished(
+            ScheduledExecutor scheduledExecutor,
+            ManagedChannel channel,
+            ConnectivityState state,
+            String address,
+            CompletableFuture<Void> connectFuture,
+            Duration delay) {
+        scheduledExecutor.schedule(
+                () ->
+                        channel.notifyWhenStateChanged(
+                                state,
+                                () -> {
+                                    switch (channel.getState(true)) {
+                                        case READY:
+                                            connectFuture.complete(null);
+                                            break;
+                                        case TRANSIENT_FAILURE:
+                                            connectFuture.completeExceptionally(
+                                                    new RpcConnectionException(
+                                                            "Failed to connect to " + address));
+                                            break;
+                                        case SHUTDOWN:
+                                            connectFuture.completeExceptionally(
+                                                    new RpcConnectionException(
+                                                            "Channel was shut down unexpectedly."));
+                                            break;
+                                        case IDLE:
+                                        case CONNECTING:
+                                            waitUntilConnectionEstablished(
+                                                    scheduledExecutor,
+                                                    channel,
+                                                    state,
+                                                    address,
+                                                    connectFuture,
+                                                    Duration.ofMillis(50));
+                                    }
+                                }),
+                delay.toMillis(),
+                TimeUnit.MILLISECONDS);
     }
 
     @Override
