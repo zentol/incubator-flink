@@ -40,6 +40,7 @@ import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
 
 import io.grpc.BindableService;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -222,7 +223,25 @@ public class GRpcService implements RpcService, BindableService {
                                 new Class<?>[] {clazz},
                                 invocationHandler);
 
-        return CompletableFuture.completedFuture(rpcServer);
+        final CompletableFuture<C> connectFuture = new CompletableFuture<>();
+
+        final ConnectivityState state = channel.getState(true);
+        channel.notifyWhenStateChanged(
+                state,
+                () -> {
+                    switch (channel.getState(false)) {
+                        case IDLE:
+                        case CONNECTING:
+                        case READY:
+                            connectFuture.complete(rpcServer);
+                            break;
+                        case TRANSIENT_FAILURE:
+                            connectFuture.completeExceptionally(
+                                    new RpcConnectionException("Failed to connect to " + address));
+                        case SHUTDOWN:
+                    }
+                });
+        return connectFuture;
     }
 
     @Override
