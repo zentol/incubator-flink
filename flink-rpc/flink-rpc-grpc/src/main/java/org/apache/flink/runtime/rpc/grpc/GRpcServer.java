@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Objects;
@@ -254,6 +255,12 @@ public class GRpcServer implements RpcServer {
                                             }
                                         },
                                         flinkClassLoader);
+                            } catch (InvocationTargetException e) {
+                                LOG.debug(
+                                        "Reporting back error thrown in remote procedure {}",
+                                        rpcMethod,
+                                        e.getTargetException());
+                                result.completeExceptionally(e.getTargetException());
                             } catch (ReflectiveOperationException e) {
                                 LOG.debug(
                                         "Reporting back error thrown in remote procedure {}",
