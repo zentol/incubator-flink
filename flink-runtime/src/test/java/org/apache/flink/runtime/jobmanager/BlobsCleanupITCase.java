@@ -197,6 +197,8 @@ public class BlobsCleanupITCase extends TestLogger {
 
             final CompletableFuture<JobResult> resultFuture = miniCluster.requestJobResult(jid);
 
+            Thread.sleep(5000);
+
             if (testCase == TestCase.JOB_FAILS) {
                 // fail a task so that the job is going to be recovered (we actually do not
                 // need the blocking part of the invokable and can start throwing right away)

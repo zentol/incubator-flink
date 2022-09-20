@@ -64,6 +64,7 @@ import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -443,6 +444,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
 
     /** Tests that the TaskManager fails the task if the partition update fails. */
     @Test
+    @Ignore("relies on local message passing through self gateway")
     public void testUpdateTaskInputPartitionsFailure() throws Exception {
         final ExecutionAttemptID eid = createExecutionAttemptId();
 
@@ -475,6 +477,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
                             new IntermediateResultPartitionID(), producerLocation);
             final PartitionInfo partitionUpdate =
                     new PartitionInfo(new IntermediateDataSetID(), shuffleDescriptor);
+            // this relies on partitionUpdate not going through serialization
             doThrow(new IOException())
                     .when(shuffleEnvironment)
                     .updatePartitionInfo(eid, partitionUpdate);
