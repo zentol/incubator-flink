@@ -119,10 +119,10 @@ public class GRpcGateway<F extends Serializable>
                             final RemoteResponseWithID<?> response =
                                     InstantiationUtil.deserializeObject(o, flinkClassLoader);
 
-                            CompletableFuture<Object> objectCompletableFuture =
+                            CompletableFuture<Object> responseFuture =
                                     pendingResponses.remove(response.getId());
-                            if (objectCompletableFuture != null) {
-                                objectCompletableFuture.complete(response.getPayload());
+                            if (responseFuture != null) {
+                                responseFuture.complete(response.getPayload());
                             } else {
                                 System.out.println(
                                         "Unexpected response with ID " + response.getId());
@@ -298,7 +298,7 @@ public class GRpcGateway<F extends Serializable>
     private synchronized void tell(RpcInvocation message) throws IOException {
         final long id = nextId++;
 
-        LOG.info("Sending tell #{} (RPC={})", id, message);
+        LOG.info("Sending tell #{} to '{}' (RPC={})", id, address, message);
 
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
@@ -323,7 +323,7 @@ public class GRpcGateway<F extends Serializable>
             throws IOException {
         final long id = nextId++;
 
-        LOG.info("Sending ask #{} (RPC={})", id, message);
+        LOG.info("Sending ask #{} to '{}' (RPC={})", id, address, message);
 
         CompletableFuture<Object> response = new CompletableFuture<>();
         response.thenAccept(

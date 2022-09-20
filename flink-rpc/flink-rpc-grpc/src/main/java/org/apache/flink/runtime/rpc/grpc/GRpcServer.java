@@ -278,7 +278,7 @@ public class GRpcServer implements RpcServer {
         } catch (Throwable e) {
             LOG.error("Error while executing remote procedure call {}.", rpcMethod, e);
             // tell the sender about the failure
-            throw e;
+            return FutureUtils.completedExceptionally(e);
         }
     }
 }
