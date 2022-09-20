@@ -142,12 +142,12 @@ public class GRpcServer implements RpcServer {
         mainThread.submit(
                 () -> {
                     try {
-                        isRunning.set(TernaryBoolean.TRUE);
                         rpcEndpoint.internalCallOnStart();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 });
+        isRunning.set(TernaryBoolean.TRUE);
     }
 
     @Override
