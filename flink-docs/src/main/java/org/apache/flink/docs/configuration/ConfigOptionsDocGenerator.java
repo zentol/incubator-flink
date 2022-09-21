@@ -172,16 +172,24 @@ public class ConfigOptionsDocGenerator {
                 ConfigOptionsDocGenerator.class.getCanonicalName(),
                 EXCLUSIONS.stream().collect(Collectors.joining("\n\t", "\n\t", "")));
 
+        final Set<String> optionKeys = new HashSet<>();
         for (OptionsClassLocation location : LOCATIONS) {
-            createTable(
+            processConfigOptions(
                     rootDir,
                     location.getModule(),
                     location.getPackage(),
-                    outputDirectory,
-                    DEFAULT_PATH_PREFIX);
+                    DEFAULT_PATH_PREFIX,
+                    optionsClass -> {
+                        List<OptionWithMetaInfo> optionWithMetaInfos =
+                                extractConfigOptions(optionsClass);
+
+                        optionWithMetaInfos.stream()
+                                .map(o -> o.option.key())
+                                .forEach(optionKeys::add);
+                    });
         }
 
-        generateCommonSection(rootDir, outputDirectory, LOCATIONS, DEFAULT_PATH_PREFIX);
+        optionKeys.stream().sorted().forEach(System.out::println);
     }
 
     @VisibleForTesting

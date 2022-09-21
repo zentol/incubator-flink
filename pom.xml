@@ -118,8 +118,8 @@ under the License.
 			 it on the "mvn" commandline in travis. -->
 		<!-- Number of forkCounts for ITCase and UnitTest should take into account allocated memory
 			 to the jvm (-Xmx) and the available memory on the machine running the test -->
-		<flink.forkCountITCase>2</flink.forkCountITCase>
-		<flink.forkCountUnitTest>4</flink.forkCountUnitTest>
+		<flink.forkCountITCase>1</flink.forkCountITCase>
+		<flink.forkCountUnitTest>1</flink.forkCountUnitTest>
 		<flink.reuseForks>true</flink.reuseForks>
 		<flink.surefire.baseArgLine>-XX:+UseG1GC -Xms256m</flink.surefire.baseArgLine>
 		<flink.shaded.version>15.0</flink.shaded.version>

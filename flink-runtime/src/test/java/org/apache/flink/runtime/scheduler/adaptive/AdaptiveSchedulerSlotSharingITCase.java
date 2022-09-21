@@ -81,13 +81,13 @@ public class AdaptiveSchedulerSlotSharingITCase extends TestLogger {
     @Test
     public void testSchedulingOfJobRequiringSlotSharing() throws Exception {
         // run job multiple times to ensure slots are cleaned up properly
-        runJob();
-        runJob();
+        runJob("job1");
+        runJob("job2");
     }
 
-    private void runJob() throws Exception {
+    private void runJob(String jobName) throws Exception {
         final MiniCluster miniCluster = MINI_CLUSTER_RESOURCE.getMiniCluster();
-        final JobGraph jobGraph = createJobGraphWithSlotSharingGroup();
+        final JobGraph jobGraph = createJobGraphWithSlotSharingGroup(jobName);
 
         miniCluster.submitJob(jobGraph).join();
 
@@ -103,7 +103,7 @@ public class AdaptiveSchedulerSlotSharingITCase extends TestLogger {
      * Returns a JobGraph that requires slot sharing to work in order to be able to run with a
      * single slot.
      */
-    private static JobGraph createJobGraphWithSlotSharingGroup() {
+    private static JobGraph createJobGraphWithSlotSharingGroup(String jobName) {
         final SlotSharingGroup slotSharingGroup = new SlotSharingGroup();
 
         final JobVertex source = new JobVertex("Source");
@@ -119,6 +119,6 @@ public class AdaptiveSchedulerSlotSharingITCase extends TestLogger {
         sink.connectNewDataSetAsInput(
                 source, DistributionPattern.POINTWISE, ResultPartitionType.PIPELINED);
 
-        return JobGraphTestUtils.streamingJobGraph(source, sink);
+        return JobGraphTestUtils.streamingJobGraph(jobName, source, sink);
     }
 }

@@ -1,0 +1,1133 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-scala/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-streaming-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-streaming-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-streaming-scala/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-hadoop-compatibility_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-hadoop-compatibility_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-hadoop-compatibility/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-hcatalog_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-hcatalog_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-hcatalog/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-connector-hive_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-connector-hive_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-connector-hive/pom.xml, line 32, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-connector-cassandra_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-connector-cassandra_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-connector-cassandra/pom.xml, line 32, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-connector-base:jar:1.17-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.flink:flink-streaming-java:test-jar -> duplicate declaration of version ${project.version} @ line 82, column 15
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-sql-connector-hive-2.3.9_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-sql-connector-hive-2.3.9_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-sql-connector-hive-2.3.9/pom.xml, line 32, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-sql-connector-hive-3.1.2_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-sql-connector-hive-3.1.2_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-connectors/flink-sql-connector-hive-3.1.2/pom.xml, line 32, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-avro-glue-schema-registry_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-avro-glue-schema-registry_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-formats/flink-avro-glue-schema-registry/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-json-glue-schema-registry_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-json-glue-schema-registry_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-formats/flink-json-glue-schema-registry/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-examples-batch_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-examples-batch_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-examples/flink-examples-batch/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-examples-streaming_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-examples-streaming_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-examples/flink-examples-streaming/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-examples-table_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-examples-table_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-examples/flink-examples-table/pom.xml, line 32, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-examples-streaming-state-machine_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-examples-streaming-state-machine_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-examples/flink-examples-build-helper/flink-examples-streaming-state-machine/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-examples-streaming-gcp-pubsub_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-examples-streaming-gcp-pubsub_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-examples/flink-examples-build-helper/flink-examples-streaming-gcp-pubsub/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-tests:jar:1.17-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.flink:flink-shaded-guava:jar -> duplicate declaration of version (?) @ line 210, column 15
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-glue-schema-registry-avro-test_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-glue-schema-registry-avro-test_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-end-to-end-tests/flink-glue-schema-registry-avro-test/pom.xml, line 30, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-gelly-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-gelly-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-libraries/flink-gelly-scala/pom.xml, line 30, column 17
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-gelly-examples_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-gelly-examples_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-libraries/flink-gelly-examples/pom.xml, line 29, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-cep-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-cep-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-libraries/flink-cep-scala/pom.xml, line 32, column 17
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-table-api-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-table-api-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-table/flink-table-api-scala/pom.xml, line 29, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-table-api-scala-bridge_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-table-api-scala-bridge_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-table/flink-table-api-scala-bridge/pom.xml, line 29, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-table-planner_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-table-planner_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-table/flink-table-planner/pom.xml, line 29, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-dist_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-dist_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-dist/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-dist-scala_2.12:jar:1.17-SNAPSHOT
+[WARNING] 'artifactId' contains an expression but should be a constant. @ org.apache.flink:flink-dist-scala_${scala.binary.version}:1.17-SNAPSHOT, /home/chesnay/dev/repos/flink/flink/flink-dist-scala/pom.xml, line 31, column 14
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.apache.flink:flink-python:jar:1.17-SNAPSHOT
+[WARNING] 'build.plugins.plugin.(groupId:artifactId)' must be unique but found duplicate declaration of plugin org.apache.maven.plugins:maven-dependency-plugin @ line 591, column 12
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] --------------------< org.apache.flink:flink-docs >---------------------
+[INFO] Building Flink : Docs 1.17-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-checkstyle-plugin:3.1.2:check (validate) @ flink-docs ---
+[INFO] 
+[INFO] --- spotless-maven-plugin:2.13.0:check (spotless-check) @ flink-docs ---
+[INFO] Spotless check skipped
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (enforce-maven-version) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (enforce-maven) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (ban-unsafe-snakeyaml) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (ban-unsafe-jackson) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (forbid-log4j-1) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (forbid-direct-akka-rpc-dependencies) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (forbid-direct-table-planner-dependencies) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M1:enforce (enforce-versions) @ flink-docs ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- directory-maven-plugin:0.1:directory-of (directories) @ flink-docs ---
+[INFO] Directory of org.apache.flink:flink-parent set to: /home/chesnay/dev/repos/flink/flink
+[INFO] 
+[INFO] --- maven-remote-resources-plugin:1.5:process (process-resource-bundles) @ flink-docs ---
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:resources (default-resources) @ flink-docs ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.0:compile (default-compile) @ flink-docs ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:testResources (default-testResources) @ flink-docs ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] Copying 3 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.0:testCompile (default-testCompile) @ flink-docs ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-surefire-plugin:3.0.0-M5:test (default-test) @ flink-docs ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ flink-docs ---
+[INFO] Building jar: /home/chesnay/dev/repos/flink/flink/flink-docs/target/flink-docs-1.17-SNAPSHOT.jar
+[INFO] 
+[INFO] --- maven-shade-plugin:3.2.4:shade (shade-flink) @ flink-docs ---
+[INFO] Including org.apache.flink:flink-shaded-force-shading:jar:15.0 in the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-swagger:jar:15.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-annotations:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-core:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-metrics-core:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-asm-9:jar:9.2-15.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-jackson:jar:2.12.4-15.0 from the shaded jar.
+[INFO] Excluding org.apache.commons:commons-lang3:jar:3.3.2 from the shaded jar.
+[INFO] Excluding com.esotericsoftware.kryo:kryo:jar:2.24.0 from the shaded jar.
+[INFO] Excluding com.esotericsoftware.minlog:minlog:jar:1.2 from the shaded jar.
+[INFO] Excluding commons-collections:commons-collections:jar:3.2.2 from the shaded jar.
+[INFO] Excluding org.apache.commons:commons-compress:jar:1.21 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-guava:jar:30.1.1-jre-15.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-java:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.commons:commons-math3:jar:3.6.1 from the shaded jar.
+[INFO] Excluding com.twitter:chill-java:jar:0.7.6 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-streaming-java:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-file-sink-common:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-runtime:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-rpc-core:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-rpc-akka-loader:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-rpc-grpc-loader:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-queryable-state-client-java:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-hadoop-fs:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding commons-io:commons-io:jar:2.11.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-zookeeper-3:jar:3.5.9-15.0 from the shaded jar.
+[INFO] Excluding commons-cli:commons-cli:jar:1.5.0 from the shaded jar.
+[INFO] Excluding org.javassist:javassist:jar:3.24.0-GA from the shaded jar.
+[INFO] Excluding org.xerial.snappy:snappy-java:jar:1.1.8.3 from the shaded jar.
+[INFO] Excluding org.lz4:lz4-java:jar:1.8.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-runtime:test-jar:tests:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-table-api-java:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-table-common:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding com.ibm.icu:icu4j:jar:67.1 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-sql-client:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-clients:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-optimizer:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-table-api-java-bridge:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-table-api-bridge-base:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-sql-gateway-api:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-json:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-table-runtime:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-metrics-prometheus:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-metrics-influxdb:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-runtime-web:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-yarn:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-common:jar:2.8.5 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-annotations:jar:2.8.5 from the shaded jar.
+[INFO] Excluding com.google.guava:guava:jar:11.0.2 from the shaded jar.
+[INFO] Excluding xmlenc:xmlenc:jar:0.52 from the shaded jar.
+[INFO] Excluding org.apache.httpcomponents:httpclient:jar:4.5.13 from the shaded jar.
+[INFO] Excluding org.apache.httpcomponents:httpcore:jar:4.4.14 from the shaded jar.
+[INFO] Excluding commons-codec:commons-codec:jar:1.15 from the shaded jar.
+[INFO] Excluding commons-net:commons-net:jar:3.1 from the shaded jar.
+[INFO] Excluding javax.servlet:servlet-api:jar:2.5 from the shaded jar.
+[INFO] Excluding org.mortbay.jetty:jetty:jar:6.1.26 from the shaded jar.
+[INFO] Excluding org.mortbay.jetty:jetty-util:jar:6.1.26 from the shaded jar.
+[INFO] Excluding org.mortbay.jetty:jetty-sslengine:jar:6.1.26 from the shaded jar.
+[INFO] Excluding javax.servlet.jsp:jsp-api:jar:2.1 from the shaded jar.
+[INFO] Excluding com.sun.jersey:jersey-core:jar:1.9 from the shaded jar.
+[INFO] Excluding com.sun.jersey:jersey-json:jar:1.9 from the shaded jar.
+[INFO] Excluding org.codehaus.jettison:jettison:jar:1.1 from the shaded jar.
+[INFO] Excluding com.sun.xml.bind:jaxb-impl:jar:2.2.3-1 from the shaded jar.
+[INFO] Excluding com.sun.jersey:jersey-server:jar:1.9 from the shaded jar.
+[INFO] Excluding asm:asm:jar:3.1 from the shaded jar.
+[INFO] Excluding commons-logging:commons-logging:jar:1.1.3 from the shaded jar.
+[INFO] Excluding net.java.dev.jets3t:jets3t:jar:0.9.0 from the shaded jar.
+[INFO] Excluding com.jamesmurty.utils:java-xmlbuilder:jar:0.4 from the shaded jar.
+[INFO] Excluding commons-lang:commons-lang:jar:2.6 from the shaded jar.
+[INFO] Excluding commons-configuration:commons-configuration:jar:1.7 from the shaded jar.
+[INFO] Excluding commons-digester:commons-digester:jar:1.8.1 from the shaded jar.
+[INFO] Excluding commons-beanutils:commons-beanutils:jar:1.8.3 from the shaded jar.
+[INFO] Excluding org.codehaus.jackson:jackson-core-asl:jar:1.9.13 from the shaded jar.
+[INFO] Excluding org.codehaus.jackson:jackson-mapper-asl:jar:1.9.13 from the shaded jar.
+[INFO] Excluding org.apache.avro:avro:jar:1.11.1 from the shaded jar.
+[INFO] Excluding com.fasterxml.jackson.core:jackson-core:jar:2.13.2 from the shaded jar.
+[INFO] Excluding com.fasterxml.jackson.core:jackson-databind:jar:2.13.2.2 from the shaded jar.
+[INFO] Excluding com.google.protobuf:protobuf-java:jar:2.5.0 from the shaded jar.
+[INFO] Excluding com.google.code.gson:gson:jar:2.2.4 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-auth:jar:2.8.5 from the shaded jar.
+[INFO] Excluding com.nimbusds:nimbus-jose-jwt:jar:4.41.1 from the shaded jar.
+[INFO] Excluding com.github.stephenc.jcip:jcip-annotations:jar:1.0-1 from the shaded jar.
+[INFO] Excluding net.minidev:json-smart:jar:2.3 from the shaded jar.
+[INFO] Excluding net.minidev:accessors-smart:jar:1.2 from the shaded jar.
+[INFO] Excluding org.ow2.asm:asm:jar:5.0.4 from the shaded jar.
+[INFO] Excluding org.apache.directory.server:apacheds-kerberos-codec:jar:2.0.0-M15 from the shaded jar.
+[INFO] Excluding org.apache.directory.server:apacheds-i18n:jar:2.0.0-M15 from the shaded jar.
+[INFO] Excluding org.apache.directory.api:api-asn1-api:jar:1.0.0-M20 from the shaded jar.
+[INFO] Excluding org.apache.directory.api:api-util:jar:1.0.0-M20 from the shaded jar.
+[INFO] Excluding org.apache.curator:curator-framework:jar:2.7.1 from the shaded jar.
+[INFO] Excluding com.jcraft:jsch:jar:0.1.54 from the shaded jar.
+[INFO] Excluding org.apache.curator:curator-client:jar:2.7.1 from the shaded jar.
+[INFO] Excluding org.apache.curator:curator-recipes:jar:2.7.1 from the shaded jar.
+[INFO] Excluding org.apache.htrace:htrace-core4:jar:4.0.1-incubating from the shaded jar.
+[INFO] Excluding org.apache.zookeeper:zookeeper:jar:3.5.9 from the shaded jar.
+[INFO] Excluding org.apache.zookeeper:zookeeper-jute:jar:3.5.9 from the shaded jar.
+[INFO] Excluding org.apache.yetus:audience-annotations:jar:0.5.0 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-hdfs:jar:2.8.5 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-hdfs-client:jar:2.8.5 from the shaded jar.
+[INFO] Excluding com.squareup.okhttp:okhttp:jar:2.4.0 from the shaded jar.
+[INFO] Excluding com.squareup.okio:okio:jar:1.4.0 from the shaded jar.
+[INFO] Excluding commons-daemon:commons-daemon:jar:1.0.13 from the shaded jar.
+[INFO] Excluding io.netty:netty:jar:3.6.2.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-all:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-buffer:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-dns:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-haproxy:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-http:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-http2:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-memcache:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-mqtt:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-redis:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-smtp:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-socks:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-stomp:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-codec-xml:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-common:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-handler:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-handler-proxy:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-resolver:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-resolver-dns:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-rxtx:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-sctp:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-udt:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-classes-epoll:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-native-unix-common:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-classes-kqueue:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-resolver-dns-classes-macos:jar:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-native-epoll:jar:linux-aarch_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-native-kqueue:jar:osx-x86_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-transport-native-kqueue:jar:osx-aarch_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-resolver-dns-native-macos:jar:osx-x86_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding io.netty:netty-resolver-dns-native-macos:jar:osx-aarch_64:4.1.70.Final from the shaded jar.
+[INFO] Excluding xerces:xercesImpl:jar:2.9.1 from the shaded jar.
+[INFO] Excluding xml-apis:xml-apis:jar:1.3.04 from the shaded jar.
+[INFO] Excluding org.fusesource.leveldbjni:leveldbjni-all:jar:1.8 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-yarn-common:jar:2.8.5 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-yarn-api:jar:2.8.5 from the shaded jar.
+[INFO] Excluding javax.xml.bind:jaxb-api:jar:2.3.1 from the shaded jar.
+[INFO] Excluding javax.activation:javax.activation-api:jar:1.2.0 from the shaded jar.
+[INFO] Excluding com.sun.jersey:jersey-client:jar:1.9 from the shaded jar.
+[INFO] Excluding org.codehaus.jackson:jackson-jaxrs:jar:1.9.13 from the shaded jar.
+[INFO] Excluding org.codehaus.jackson:jackson-xc:jar:1.9.13 from the shaded jar.
+[INFO] Excluding com.google.inject.extensions:guice-servlet:jar:3.0 from the shaded jar.
+[INFO] Excluding com.google.inject:guice:jar:3.0 from the shaded jar.
+[INFO] Excluding javax.inject:javax.inject:jar:1 from the shaded jar.
+[INFO] Excluding aopalliance:aopalliance:jar:1.0 from the shaded jar.
+[INFO] Excluding com.sun.jersey.contribs:jersey-guice:jar:1.9 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-yarn-client:jar:2.8.5 from the shaded jar.
+[INFO] Excluding org.apache.hadoop:hadoop-mapreduce-client-core:jar:2.8.5 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-kubernetes:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-netty:jar:4.1.70.Final-15.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-shaded-jackson-module-jsonSchema:jar:2.12.4-15.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-statebackend-rocksdb:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding com.ververica:frocksdbjni:jar:6.20.3-ververica-1.0 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-python:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-connector-pulsar:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-connector-base:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.pulsar:pulsar-client-all:jar:2.10.0 from the shaded jar.
+[INFO] Excluding org.apache.pulsar:pulsar-client-api:jar:2.10.0 from the shaded jar.
+[INFO] Excluding org.apache.pulsar:bouncy-castle-bc:jar:pkg:2.10.0 from the shaded jar.
+[INFO] Excluding org.bouncycastle:bcpkix-jdk15on:jar:1.69 from the shaded jar.
+[INFO] Excluding org.bouncycastle:bcprov-jdk15on:jar:1.69 from the shaded jar.
+[INFO] Excluding org.bouncycastle:bcutil-jdk15on:jar:1.69 from the shaded jar.
+[INFO] Excluding org.bouncycastle:bcprov-ext-jdk15on:jar:1.69 from the shaded jar.
+[INFO] Excluding org.apache.pulsar:pulsar-client-admin-api:jar:2.10.0 from the shaded jar.
+[INFO] Excluding org.slf4j:jul-to-slf4j:jar:1.7.32 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-cep:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.logging.log4j:log4j-slf4j-impl:jar:2.17.1 from the shaded jar.
+[INFO] Excluding org.apache.logging.log4j:log4j-api:jar:2.17.1 from the shaded jar.
+[INFO] Excluding org.apache.logging.log4j:log4j-core:jar:2.17.1 from the shaded jar.
+[INFO] Excluding com.fasterxml.jackson.core:jackson-annotations:jar:2.13.2 from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-dstl-dfs:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-sql-gateway:jar:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.apache.flink:flink-sql-gateway:test-jar:tests:1.17-SNAPSHOT from the shaded jar.
+[INFO] Excluding org.slf4j:slf4j-api:jar:1.7.32 from the shaded jar.
+[INFO] Excluding com.google.code.findbugs:jsr305:jar:1.3.9 from the shaded jar.
+[INFO] Excluding org.objenesis:objenesis:jar:2.1 from the shaded jar.
+[INFO] Replacing original artifact with shaded artifact.
+[INFO] Replacing /home/chesnay/dev/repos/flink/flink/flink-docs/target/flink-docs-1.17-SNAPSHOT.jar with /home/chesnay/dev/repos/flink/flink/flink-docs/target/flink-docs-1.17-SNAPSHOT-shaded.jar
+[INFO] Dependency-reduced POM written at: /home/chesnay/dev/repos/flink/flink/flink-docs/target/dependency-reduced-pom.xml
+[INFO] 
+[INFO] --- maven-antrun-plugin:1.7:run (generate-config-docs) @ flink-docs ---
+[INFO] Executing tasks
+
+main:
+     [java] 514  [main] INFO  org.apache.flink.docs.configuration.ConfigOptionsDocGenerator [] - Searching the following locations; configured via org.apache.flink.docs.configuration.ConfigOptionsDocGenerator#LOCATIONS:
+     [java] 	flink-core#org.apache.flink.configuration
+     [java] 	flink-runtime#org.apache.flink.runtime.shuffle
+     [java] 	flink-runtime#org.apache.flink.runtime.jobgraph
+     [java] 	flink-runtime#org.apache.flink.runtime.highavailability
+     [java] 	flink-streaming-java#org.apache.flink.streaming.api.environment
+     [java] 	flink-yarn#org.apache.flink.yarn.configuration
+     [java] 	flink-metrics/flink-metrics-prometheus#org.apache.flink.metrics.prometheus
+     [java] 	flink-metrics/flink-metrics-influxdb#org.apache.flink.metrics.influxdb
+     [java] 	flink-state-backends/flink-statebackend-rocksdb#org.apache.flink.contrib.streaming.state
+     [java] 	flink-table/flink-table-api-java#org.apache.flink.table.api.config
+     [java] 	flink-python#org.apache.flink.python
+     [java] 	flink-kubernetes#org.apache.flink.kubernetes.configuration
+     [java] 	flink-clients#org.apache.flink.client.cli
+     [java] 	flink-table/flink-sql-client#org.apache.flink.table.client.config
+     [java] 	flink-connectors/flink-connector-pulsar#org.apache.flink.connector.pulsar.common.config
+     [java] 	flink-connectors/flink-connector-pulsar#org.apache.flink.connector.pulsar.source
+     [java] 	flink-connectors/flink-connector-pulsar#org.apache.flink.connector.pulsar.sink
+     [java] 	flink-libraries/flink-cep#org.apache.flink.cep.configuration
+     [java] 	flink-dstl/flink-dstl-dfs#org.apache.flink.changelog.fs
+     [java] 	flink-table/flink-sql-gateway#org.apache.flink.table.gateway.rest.util
+     [java] 518  [main] INFO  org.apache.flink.docs.configuration.ConfigOptionsDocGenerator [] - Excluding the following classes; configured via org.apache.flink.docs.configuration.ConfigOptionsDocGenerator#EXCLUSIONS:
+     [java] 	org.apache.flink.cep.configuration.SharedBufferCacheConfig
+     [java] 	org.apache.flink.contrib.streaming.state.PredefinedOptions
+     [java] 	org.apache.flink.configuration.ConfigOptions
+     [java] 	org.apache.flink.configuration.ReadableConfig
+     [java] 	org.apache.flink.streaming.api.environment.CheckpointConfig
+     [java] 	org.apache.flink.python.PythonConfig
+     [java] 	org.apache.flink.configuration.WritableConfig
+     [java] <parameter>
+     [java] address
+     [java] akka.ask.callstack
+     [java] akka.ask.timeout
+     [java] akka.client-socket-worker-pool.pool-size-factor
+     [java] akka.client-socket-worker-pool.pool-size-max
+     [java] akka.client-socket-worker-pool.pool-size-min
+     [java] akka.fork-join-executor.parallelism-factor
+     [java] akka.fork-join-executor.parallelism-max
+     [java] akka.fork-join-executor.parallelism-min
+     [java] akka.framesize
+     [java] akka.jvm-exit-on-fatal-error
+     [java] akka.log.lifecycle.events
+     [java] akka.lookup.timeout
+     [java] akka.retry-gate-closed-for
+     [java] akka.server-socket-worker-pool.pool-size-factor
+     [java] akka.server-socket-worker-pool.pool-size-max
+     [java] akka.server-socket-worker-pool.pool-size-min
+     [java] akka.ssl.enabled
+     [java] akka.startup-timeout
+     [java] akka.tcp.timeout
+     [java] akka.throughput
+     [java] bind-address
+     [java] bind-port
+     [java] blob.client.connect.timeout
+     [java] blob.client.socket.timeout
+     [java] blob.fetch.backlog
+     [java] blob.fetch.num-concurrent
+     [java] blob.fetch.retries
+     [java] blob.offload.minsize
+     [java] blob.server.port
+     [java] blob.service.cleanup.interval
+     [java] blob.service.ssl.enabled
+     [java] blob.storage.directory
+     [java] classloader.check-leaked-classloader
+     [java] classloader.fail-on-metaspace-oom-error
+     [java] classloader.parent-first-patterns.additional
+     [java] classloader.parent-first-patterns.default
+     [java] classloader.resolve-order
+     [java] cleanup-strategy
+     [java] cleanup-strategy.exponential-delay.attempts
+     [java] cleanup-strategy.exponential-delay.initial-backoff
+     [java] cleanup-strategy.exponential-delay.max-backoff
+     [java] cleanup-strategy.fixed-delay.attempts
+     [java] cleanup-strategy.fixed-delay.delay
+     [java] client.retry-period
+     [java] client.timeout
+     [java] cluster.evenly-spread-out-slots
+     [java] cluster.fine-grained-resource-management.enabled
+     [java] cluster.intercept-user-system-exit
+     [java] cluster.io-pool.size
+     [java] cluster.processes.halt-on-fatal-error
+     [java] cluster.registration.error-delay
+     [java] cluster.registration.initial-timeout
+     [java] cluster.registration.max-timeout
+     [java] cluster.registration.refused-registration-delay
+     [java] cluster.services.shutdown-timeout
+     [java] cluster.thread-dump.stacktrace-max-depth
+     [java] cluster.uncaught-exception-handling
+     [java] compiler.delimited-informat.max-line-samples
+     [java] compiler.delimited-informat.max-sample-len
+     [java] compiler.delimited-informat.min-line-samples
+     [java] connectTimeout
+     [java] consistency
+     [java] db
+     [java] deleteOnShutdown
+     [java] dstl.dfs.base-path
+     [java] dstl.dfs.batch.persist-delay
+     [java] dstl.dfs.batch.persist-size-threshold
+     [java] dstl.dfs.compression.enabled
+     [java] dstl.dfs.discard.num-threads
+     [java] dstl.dfs.download.local-cache.idle-timeout-ms
+     [java] dstl.dfs.preemptive-persist-threshold
+     [java] dstl.dfs.upload.buffer-size
+     [java] dstl.dfs.upload.max-attempts
+     [java] dstl.dfs.upload.max-in-flight
+     [java] dstl.dfs.upload.next-attempt-delay
+     [java] dstl.dfs.upload.num-threads
+     [java] dstl.dfs.upload.retry-policy
+     [java] dstl.dfs.upload.timeout
+     [java] env.hadoop.conf.dir
+     [java] env.hbase.conf.dir
+     [java] env.java.opts
+     [java] env.java.opts.client
+     [java] env.java.opts.historyserver
+     [java] env.java.opts.jobmanager
+     [java] env.java.opts.taskmanager
+     [java] env.log.dir
+     [java] env.log.max
+     [java] env.pid.dir
+     [java] env.ssh.opts
+     [java] env.yarn.conf.dir
+     [java] execution.allow-client-job-configurations
+     [java] execution.attached
+     [java] execution.batch-shuffle-mode
+     [java] execution.buffer-timeout
+     [java] execution.checkpointing.aligned-checkpoint-timeout
+     [java] execution.checkpointing.checkpoints-after-tasks-finish.enabled
+     [java] execution.checkpointing.externalized-checkpoint-retention
+     [java] execution.checkpointing.interval
+     [java] execution.checkpointing.max-concurrent-checkpoints
+     [java] execution.checkpointing.min-pause
+     [java] execution.checkpointing.mode
+     [java] execution.checkpointing.recover-without-channel-state.checkpoint-id
+     [java] execution.checkpointing.snapshot-compression
+     [java] execution.checkpointing.timeout
+     [java] execution.checkpointing.tolerable-failed-checkpoints
+     [java] execution.checkpointing.unaligned
+     [java] execution.checkpointing.unaligned.forced
+     [java] execution.job-listeners
+     [java] execution.runtime-mode
+     [java] execution.savepoint-restore-mode
+     [java] execution.savepoint.ignore-unclaimed-state
+     [java] execution.savepoint.path
+     [java] execution.shutdown-on-application-finish
+     [java] execution.shutdown-on-attached-exit
+     [java] execution.submit-failed-job-on-application-error
+     [java] execution.target
+     [java] external-resource.<resource_name>.amount
+     [java] external-resource.<resource_name>.driver-factory.class
+     [java] external-resource.<resource_name>.kubernetes.config-key
+     [java] external-resource.<resource_name>.param.<param>
+     [java] external-resource.<resource_name>.yarn.config-key
+     [java] external-resources
+     [java] factory.class
+     [java] filter.excludes
+     [java] filter.includes
+     [java] filterLabelValueCharacters
+     [java] fine-grained.shuffle-mode.all-blocking
+     [java] flink.hadoop.<key>
+     [java] flink.yarn.<key>
+     [java] fs.allowed-fallback-filesystems
+     [java] fs.default-scheme
+     [java] fs.output.always-create-directory
+     [java] fs.overwrite-files
+     [java] groupingKey
+     [java] heartbeat.interval
+     [java] heartbeat.rpc-failure-threshold
+     [java] heartbeat.timeout
+     [java] high-availability
+     [java] high-availability.cluster-id
+     [java] high-availability.jobmanager.port
+     [java] high-availability.kubernetes.leader-election.lease-duration
+     [java] high-availability.kubernetes.leader-election.renew-deadline
+     [java] high-availability.kubernetes.leader-election.retry-period
+     [java] high-availability.storageDir
+     [java] high-availability.zookeeper.client.acl
+     [java] high-availability.zookeeper.client.connection-timeout
+     [java] high-availability.zookeeper.client.max-retry-attempts
+     [java] high-availability.zookeeper.client.retry-wait
+     [java] high-availability.zookeeper.client.session-timeout
+     [java] high-availability.zookeeper.client.tolerate-suspended-connections
+     [java] high-availability.zookeeper.path.jobgraphs
+     [java] high-availability.zookeeper.path.root
+     [java] high-availability.zookeeper.path.running-registry
+     [java] high-availability.zookeeper.quorum
+     [java] historyserver.archive.clean-expired-jobs
+     [java] historyserver.archive.fs.dir
+     [java] historyserver.archive.fs.refresh-interval
+     [java] historyserver.archive.retained-jobs
+     [java] historyserver.log.jobmanager.url-pattern
+     [java] historyserver.log.taskmanager.url-pattern
+     [java] historyserver.web.address
+     [java] historyserver.web.port
+     [java] historyserver.web.refresh-interval
+     [java] historyserver.web.ssl.enabled
+     [java] historyserver.web.tmpdir
+     [java] host
+     [java] hostUrl
+     [java] interval
+     [java] io.tmp.dirs
+     [java] jmx.server.port
+     [java] job-result-store.delete-on-commit
+     [java] job-result-store.storage-path
+     [java] jobName
+     [java] jobmanager.adaptive-batch-scheduler.avg-data-volume-per-task
+     [java] jobmanager.adaptive-batch-scheduler.default-source-parallelism
+     [java] jobmanager.adaptive-batch-scheduler.max-parallelism
+     [java] jobmanager.adaptive-batch-scheduler.min-parallelism
+     [java] jobmanager.adaptive-batch-scheduler.speculative.block-slow-node-duration
+     [java] jobmanager.adaptive-batch-scheduler.speculative.enabled
+     [java] jobmanager.adaptive-batch-scheduler.speculative.max-concurrent-executions
+     [java] jobmanager.adaptive-scheduler.min-parallelism-increase
+     [java] jobmanager.adaptive-scheduler.resource-stabilization-timeout
+     [java] jobmanager.adaptive-scheduler.resource-wait-timeout
+     [java] jobmanager.archive.fs.dir
+     [java] jobmanager.bind-host
+     [java] jobmanager.execution.attempts-history-size
+     [java] jobmanager.execution.failover-strategy
+     [java] jobmanager.future-pool.size
+     [java] jobmanager.io-pool.size
+     [java] jobmanager.memory.enable-jvm-direct-memory-limit
+     [java] jobmanager.memory.flink.size
+     [java] jobmanager.memory.heap.size
+     [java] jobmanager.memory.jvm-metaspace.size
+     [java] jobmanager.memory.jvm-overhead.fraction
+     [java] jobmanager.memory.jvm-overhead.max
+     [java] jobmanager.memory.jvm-overhead.min
+     [java] jobmanager.memory.off-heap.size
+     [java] jobmanager.memory.process.size
+     [java] jobmanager.resource-id
+     [java] jobmanager.retrieve-taskmanager-hostname
+     [java] jobmanager.rpc.address
+     [java] jobmanager.rpc.bind-port
+     [java] jobmanager.rpc.port
+     [java] jobmanager.scheduler
+     [java] jobstore.cache-size
+     [java] jobstore.expiration-time
+     [java] jobstore.max-capacity
+     [java] jobstore.type
+     [java] kubernetes.client.io-pool.size
+     [java] kubernetes.client.user-agent
+     [java] kubernetes.cluster-id
+     [java] kubernetes.config.file
+     [java] kubernetes.container.image
+     [java] kubernetes.container.image.pull-policy
+     [java] kubernetes.container.image.pull-secrets
+     [java] kubernetes.context
+     [java] kubernetes.entry.path
+     [java] kubernetes.env.secretKeyRef
+     [java] kubernetes.flink.conf.dir
+     [java] kubernetes.flink.log.dir
+     [java] kubernetes.hadoop.conf.config-map.name
+     [java] kubernetes.hostnetwork.enabled
+     [java] kubernetes.jobmanager.annotations
+     [java] kubernetes.jobmanager.cpu
+     [java] kubernetes.jobmanager.cpu.limit-factor
+     [java] kubernetes.jobmanager.entrypoint.args
+     [java] kubernetes.jobmanager.labels
+     [java] kubernetes.jobmanager.memory.limit-factor
+     [java] kubernetes.jobmanager.node-selector
+     [java] kubernetes.jobmanager.owner.reference
+     [java] kubernetes.jobmanager.replicas
+     [java] kubernetes.jobmanager.service-account
+     [java] kubernetes.jobmanager.tolerations
+     [java] kubernetes.namespace
+     [java] kubernetes.pod-template-file
+     [java] kubernetes.pod-template-file.jobmanager
+     [java] kubernetes.pod-template-file.taskmanager
+     [java] kubernetes.rest-service.annotations
+     [java] kubernetes.rest-service.exposed.node-port-address-type
+     [java] kubernetes.rest-service.exposed.type
+     [java] kubernetes.secrets
+     [java] kubernetes.service-account
+     [java] kubernetes.taskmanager.annotations
+     [java] kubernetes.taskmanager.cpu
+     [java] kubernetes.taskmanager.cpu.limit-factor
+     [java] kubernetes.taskmanager.entrypoint.args
+     [java] kubernetes.taskmanager.labels
+     [java] kubernetes.taskmanager.memory.limit-factor
+     [java] kubernetes.taskmanager.node-selector
+     [java] kubernetes.taskmanager.service-account
+     [java] kubernetes.taskmanager.tolerations
+     [java] kubernetes.transactional-operation.max-retries
+     [java] metrics.fetcher.update-interval
+     [java] metrics.internal.query-service.port
+     [java] metrics.internal.query-service.thread-priority
+     [java] metrics.job.status.enable
+     [java] metrics.latency.granularity
+     [java] metrics.latency.history-size
+     [java] metrics.latency.interval
+     [java] metrics.reporters
+     [java] metrics.scope.delimiter
+     [java] metrics.scope.jm
+     [java] metrics.scope.jm.job
+     [java] metrics.scope.operator
+     [java] metrics.scope.task
+     [java] metrics.scope.tm
+     [java] metrics.scope.tm.job
+     [java] metrics.system-resource
+     [java] metrics.system-resource-probing-interval
+     [java] parallelism.default
+     [java] password
+     [java] pipeline.auto-generate-uids
+     [java] pipeline.auto-type-registration
+     [java] pipeline.auto-watermark-interval
+     [java] pipeline.cached-files
+     [java] pipeline.cep.sharedbuffer.cache.entry-slots
+     [java] pipeline.cep.sharedbuffer.cache.event-slots
+     [java] pipeline.cep.sharedbuffer.cache.statistics-interval
+     [java] pipeline.classpaths
+     [java] pipeline.closure-cleaner-level
+     [java] pipeline.default-kryo-serializers
+     [java] pipeline.force-avro
+     [java] pipeline.force-kryo
+     [java] pipeline.generic-types
+     [java] pipeline.global-job-parameters
+     [java] pipeline.jars
+     [java] pipeline.max-parallelism
+     [java] pipeline.name
+     [java] pipeline.object-reuse
+     [java] pipeline.operator-chaining
+     [java] pipeline.registered-kryo-types
+     [java] pipeline.registered-pojo-types
+     [java] pipeline.time-characteristic
+     [java] pipeline.vertex-description-mode
+     [java] pipeline.vertex-name-include-index-prefix
+     [java] pipeline.watermark-alignment.allow-unaligned-source-splits
+     [java] port
+     [java] process.jobmanager.working-dir
+     [java] process.taskmanager.working-dir
+     [java] process.working-dir
+     [java] pulsar.admin.adminUrl
+     [java] pulsar.admin.autoCertRefreshTime
+     [java] pulsar.admin.connectTimeout
+     [java] pulsar.admin.readTimeout
+     [java] pulsar.admin.requestTimeout
+     [java] pulsar.client.authParamMap
+     [java] pulsar.client.authParams
+     [java] pulsar.client.authPluginClassName
+     [java] pulsar.client.concurrentLookupRequest
+     [java] pulsar.client.connectionTimeoutMs
+     [java] pulsar.client.connectionsPerBroker
+     [java] pulsar.client.enableBusyWait
+     [java] pulsar.client.enableTransaction
+     [java] pulsar.client.initialBackoffIntervalNanos
+     [java] pulsar.client.keepAliveIntervalSeconds
+     [java] pulsar.client.listenerName
+     [java] pulsar.client.maxBackoffIntervalNanos
+     [java] pulsar.client.maxLookupRedirects
+     [java] pulsar.client.maxLookupRequest
+     [java] pulsar.client.maxNumberOfRejectedRequestPerConnection
+     [java] pulsar.client.memoryLimitBytes
+     [java] pulsar.client.numIoThreads
+     [java] pulsar.client.numListenerThreads
+     [java] pulsar.client.operationTimeoutMs
+     [java] pulsar.client.proxyProtocol
+     [java] pulsar.client.proxyServiceUrl
+     [java] pulsar.client.requestTimeoutMs
+     [java] pulsar.client.serviceUrl
+     [java] pulsar.client.sslProvider
+     [java] pulsar.client.statsIntervalSeconds
+     [java] pulsar.client.tlsAllowInsecureConnection
+     [java] pulsar.client.tlsCiphers
+     [java] pulsar.client.tlsHostnameVerificationEnable
+     [java] pulsar.client.tlsProtocols
+     [java] pulsar.client.tlsTrustCertsFilePath
+     [java] pulsar.client.tlsTrustStorePassword
+     [java] pulsar.client.tlsTrustStorePath
+     [java] pulsar.client.tlsTrustStoreType
+     [java] pulsar.client.useKeyStoreTls
+     [java] pulsar.client.useTcpNoDelay
+     [java] pulsar.consumer.ackReceiptEnabled
+     [java] pulsar.consumer.ackTimeoutMillis
+     [java] pulsar.consumer.acknowledgementsGroupTimeMicros
+     [java] pulsar.consumer.autoAckOldestChunkedMessageOnQueueFull
+     [java] pulsar.consumer.autoUpdatePartitionsIntervalSeconds
+     [java] pulsar.consumer.consumerName
+     [java] pulsar.consumer.cryptoFailureAction
+     [java] pulsar.consumer.deadLetterPolicy.deadLetterTopic
+     [java] pulsar.consumer.deadLetterPolicy.maxRedeliverCount
+     [java] pulsar.consumer.deadLetterPolicy.retryLetterTopic
+     [java] pulsar.consumer.expireTimeOfIncompleteChunkedMessageMillis
+     [java] pulsar.consumer.maxPendingChunkedMessage
+     [java] pulsar.consumer.maxTotalReceiverQueueSizeAcrossPartitions
+     [java] pulsar.consumer.negativeAckRedeliveryDelayMicros
+     [java] pulsar.consumer.poolMessages
+     [java] pulsar.consumer.priorityLevel
+     [java] pulsar.consumer.properties
+     [java] pulsar.consumer.readCompacted
+     [java] pulsar.consumer.receiverQueueSize
+     [java] pulsar.consumer.replicateSubscriptionState
+     [java] pulsar.consumer.retryEnable
+     [java] pulsar.consumer.subscriptionMode
+     [java] pulsar.consumer.subscriptionName
+     [java] pulsar.consumer.subscriptionType
+     [java] pulsar.consumer.tickDurationMillis
+     [java] pulsar.producer.batchingEnabled
+     [java] pulsar.producer.batchingMaxBytes
+     [java] pulsar.producer.batchingMaxMessages
+     [java] pulsar.producer.batchingMaxPublishDelayMicros
+     [java] pulsar.producer.batchingPartitionSwitchFrequencyByPublishDelay
+     [java] pulsar.producer.chunkingEnabled
+     [java] pulsar.producer.compressionType
+     [java] pulsar.producer.initialSequenceId
+     [java] pulsar.producer.producerName
+     [java] pulsar.producer.properties
+     [java] pulsar.producer.sendTimeoutMs
+     [java] pulsar.sink.deliveryGuarantee
+     [java] pulsar.sink.enableSchemaEvolution
+     [java] pulsar.sink.maxPendingMessages
+     [java] pulsar.sink.maxRecommitTimes
+     [java] pulsar.sink.messageKeyHash
+     [java] pulsar.sink.topicMetadataRefreshInterval
+     [java] pulsar.sink.transactionTimeoutMillis
+     [java] pulsar.source.autoCommitCursorInterval
+     [java] pulsar.source.enableAutoAcknowledgeMessage
+     [java] pulsar.source.maxFetchRecords
+     [java] pulsar.source.maxFetchTime
+     [java] pulsar.source.partitionDiscoveryIntervalMs
+     [java] pulsar.source.transactionTimeoutMillis
+     [java] pulsar.source.verifyInitialOffsets
+     [java] python.archives
+     [java] python.client.executable
+     [java] python.executable
+     [java] python.execution-mode
+     [java] python.files
+     [java] python.fn-execution.arrow.batch.size
+     [java] python.fn-execution.bundle.size
+     [java] python.fn-execution.bundle.time
+     [java] python.fn-execution.memory.managed
+     [java] python.map-state.iterate-response-batch-size
+     [java] python.map-state.read-cache-size
+     [java] python.map-state.write-cache-size
+     [java] python.metric.enabled
+     [java] python.operator-chaining.enabled
+     [java] python.profile.enabled
+     [java] python.requirements
+     [java] python.state.cache-size
+     [java] queryable-state.client.network-threads
+     [java] queryable-state.enable
+     [java] queryable-state.proxy.network-threads
+     [java] queryable-state.proxy.ports
+     [java] queryable-state.proxy.query-threads
+     [java] queryable-state.server.network-threads
+     [java] queryable-state.server.ports
+     [java] queryable-state.server.query-threads
+     [java] randomJobNameSuffix
+     [java] resourcemanager.job.timeout
+     [java] resourcemanager.previous-worker.recovery.timeout
+     [java] resourcemanager.rpc.port
+     [java] resourcemanager.standalone.start-up-time
+     [java] resourcemanager.start-worker.max-failure-rate
+     [java] resourcemanager.start-worker.retry-interval
+     [java] resourcemanager.taskmanager-registration.timeout
+     [java] resourcemanager.taskmanager-timeout
+     [java] rest.address
+     [java] rest.async.store-duration
+     [java] rest.await-leader-timeout
+     [java] rest.bind-address
+     [java] rest.bind-port
+     [java] rest.client.max-content-length
+     [java] rest.connection-timeout
+     [java] rest.flamegraph.cleanup-interval
+     [java] rest.flamegraph.delay-between-samples
+     [java] rest.flamegraph.enabled
+     [java] rest.flamegraph.num-samples
+     [java] rest.flamegraph.refresh-interval
+     [java] rest.flamegraph.stack-depth
+     [java] rest.idleness-timeout
+     [java] rest.port
+     [java] rest.retry.delay
+     [java] rest.retry.max-attempts
+     [java] rest.server.max-content-length
+     [java] rest.server.numThreads
+     [java] rest.server.thread-priority
+     [java] restart-strategy
+     [java] restart-strategy.exponential-delay.backoff-multiplier
+     [java] restart-strategy.exponential-delay.initial-backoff
+     [java] restart-strategy.exponential-delay.jitter-factor
+     [java] restart-strategy.exponential-delay.max-backoff
+     [java] restart-strategy.exponential-delay.reset-backoff-threshold
+     [java] restart-strategy.failure-rate.delay
+     [java] restart-strategy.failure-rate.failure-rate-interval
+     [java] restart-strategy.failure-rate.max-failures-per-interval
+     [java] restart-strategy.fixed-delay.attempts
+     [java] restart-strategy.fixed-delay.delay
+     [java] retentionPolicy
+     [java] scheduler-mode
+     [java] scheme
+     [java] scope.delimiter
+     [java] scope.variables.additional
+     [java] scope.variables.excludes
+     [java] security.context.factory.classes
+     [java] security.kerberos.access.hadoopFileSystems
+     [java] security.kerberos.fetch.delegation-token
+     [java] security.kerberos.krb5-conf.path
+     [java] security.kerberos.login.contexts
+     [java] security.kerberos.login.keytab
+     [java] security.kerberos.login.principal
+     [java] security.kerberos.login.use-ticket-cache
+     [java] security.kerberos.relogin.period
+     [java] security.kerberos.tokens.renewal.retry.backoff
+     [java] security.kerberos.tokens.renewal.time-ratio
+     [java] security.module.factory.classes
+     [java] security.ssl.algorithms
+     [java] security.ssl.internal.cert.fingerprint
+     [java] security.ssl.internal.close-notify-flush-timeout
+     [java] security.ssl.internal.enabled
+     [java] security.ssl.internal.handshake-timeout
+     [java] security.ssl.internal.key-password
+     [java] security.ssl.internal.keystore
+     [java] security.ssl.internal.keystore-password
+     [java] security.ssl.internal.session-cache-size
+     [java] security.ssl.internal.session-timeout
+     [java] security.ssl.internal.truststore
+     [java] security.ssl.internal.truststore-password
+     [java] security.ssl.protocol
+     [java] security.ssl.provider
+     [java] security.ssl.rest.authentication-enabled
+     [java] security.ssl.rest.cert.fingerprint
+     [java] security.ssl.rest.enabled
+     [java] security.ssl.rest.key-password
+     [java] security.ssl.rest.keystore
+     [java] security.ssl.rest.keystore-password
+     [java] security.ssl.rest.truststore
+     [java] security.ssl.rest.truststore-password
+     [java] security.ssl.verify-hostname
+     [java] shuffle-service-factory.class
+     [java] slot.idle.timeout
+     [java] slot.request.timeout
+     [java] slotmanager.max-total-resource.cpu
+     [java] slotmanager.max-total-resource.memory
+     [java] slotmanager.number-of-slots.max
+     [java] slotmanager.redundant-taskmanager-num
+     [java] slow-task-detector.check-interval
+     [java] slow-task-detector.execution-time.baseline-lower-bound
+     [java] slow-task-detector.execution-time.baseline-multiplier
+     [java] slow-task-detector.execution-time.baseline-ratio
+     [java] sql-client.display.max-column-width
+     [java] sql-client.execution.max-table-result.rows
+     [java] sql-client.execution.result-mode
+     [java] sql-client.verbose
+     [java] state.backend
+     [java] state.backend.changelog.enabled
+     [java] state.backend.changelog.max-failures-allowed
+     [java] state.backend.changelog.periodic-materialize.interval
+     [java] state.backend.changelog.storage
+     [java] state.backend.incremental
+     [java] state.backend.latency-track.history-size
+     [java] state.backend.latency-track.keyed-state-enabled
+     [java] state.backend.latency-track.sample-interval
+     [java] state.backend.latency-track.state-name-as-variable
+     [java] state.backend.local-recovery
+     [java] state.backend.rocksdb.block.blocksize
+     [java] state.backend.rocksdb.block.cache-size
+     [java] state.backend.rocksdb.block.metadata-blocksize
+     [java] state.backend.rocksdb.bloom-filter.bits-per-key
+     [java] state.backend.rocksdb.bloom-filter.block-based-mode
+     [java] state.backend.rocksdb.checkpoint.transfer.thread.num
+     [java] state.backend.rocksdb.compaction.level.max-size-level-base
+     [java] state.backend.rocksdb.compaction.level.target-file-size-base
+     [java] state.backend.rocksdb.compaction.level.use-dynamic-size
+     [java] state.backend.rocksdb.compaction.style
+     [java] state.backend.rocksdb.files.open
+     [java] state.backend.rocksdb.localdir
+     [java] state.backend.rocksdb.log.dir
+     [java] state.backend.rocksdb.log.file-num
+     [java] state.backend.rocksdb.log.level
+     [java] state.backend.rocksdb.log.max-file-size
+     [java] state.backend.rocksdb.memory.fixed-per-slot
+     [java] state.backend.rocksdb.memory.high-prio-pool-ratio
+     [java] state.backend.rocksdb.memory.managed
+     [java] state.backend.rocksdb.memory.partitioned-index-filters
+     [java] state.backend.rocksdb.memory.write-buffer-ratio
+     [java] state.backend.rocksdb.metrics.actual-delayed-write-rate
+     [java] state.backend.rocksdb.metrics.background-errors
+     [java] state.backend.rocksdb.metrics.block-cache-capacity
+     [java] state.backend.rocksdb.metrics.block-cache-hit
+     [java] state.backend.rocksdb.metrics.block-cache-miss
+     [java] state.backend.rocksdb.metrics.block-cache-pinned-usage
+     [java] state.backend.rocksdb.metrics.block-cache-usage
+     [java] state.backend.rocksdb.metrics.bytes-read
+     [java] state.backend.rocksdb.metrics.bytes-written
+     [java] state.backend.rocksdb.metrics.column-family-as-variable
+     [java] state.backend.rocksdb.metrics.compaction-pending
+     [java] state.backend.rocksdb.metrics.compaction-read-bytes
+     [java] state.backend.rocksdb.metrics.compaction-write-bytes
+     [java] state.backend.rocksdb.metrics.cur-size-active-mem-table
+     [java] state.backend.rocksdb.metrics.cur-size-all-mem-tables
+     [java] state.backend.rocksdb.metrics.estimate-live-data-size
+     [java] state.backend.rocksdb.metrics.estimate-num-keys
+     [java] state.backend.rocksdb.metrics.estimate-pending-compaction-bytes
+     [java] state.backend.rocksdb.metrics.estimate-table-readers-mem
+     [java] state.backend.rocksdb.metrics.is-write-stopped
+     [java] state.backend.rocksdb.metrics.iter-bytes-read
+     [java] state.backend.rocksdb.metrics.live-sst-files-size
+     [java] state.backend.rocksdb.metrics.mem-table-flush-pending
+     [java] state.backend.rocksdb.metrics.num-deletes-active-mem-table
+     [java] state.backend.rocksdb.metrics.num-deletes-imm-mem-tables
+     [java] state.backend.rocksdb.metrics.num-entries-active-mem-table
+     [java] state.backend.rocksdb.metrics.num-entries-imm-mem-tables
+     [java] state.backend.rocksdb.metrics.num-immutable-mem-table
+     [java] state.backend.rocksdb.metrics.num-live-versions
+     [java] state.backend.rocksdb.metrics.num-running-compactions
+     [java] state.backend.rocksdb.metrics.num-running-flushes
+     [java] state.backend.rocksdb.metrics.num-snapshots
+     [java] state.backend.rocksdb.metrics.size-all-mem-tables
+     [java] state.backend.rocksdb.metrics.stall-micros
+     [java] state.backend.rocksdb.metrics.total-sst-files-size
+     [java] state.backend.rocksdb.options-factory
+     [java] state.backend.rocksdb.predefined-options
+     [java] state.backend.rocksdb.restore-overlap-fraction-threshold
+     [java] state.backend.rocksdb.thread.num
+     [java] state.backend.rocksdb.timer-service.factory
+     [java] state.backend.rocksdb.use-bloom-filter
+     [java] state.backend.rocksdb.write-batch-size
+     [java] state.backend.rocksdb.writebuffer.count
+     [java] state.backend.rocksdb.writebuffer.number-to-merge
+     [java] state.backend.rocksdb.writebuffer.size
+     [java] state.checkpoint-storage
+     [java] state.checkpoints.dir
+     [java] state.checkpoints.num-retained
+     [java] state.savepoints.dir
+     [java] state.storage.fs.memory-threshold
+     [java] state.storage.fs.write-buffer-size
+     [java] table.builtin-catalog-name
+     [java] table.builtin-database-name
+     [java] table.dml-sync
+     [java] table.dynamic-table-options.enabled
+     [java] table.exec.async-lookup.buffer-capacity
+     [java] table.exec.async-lookup.output-mode
+     [java] table.exec.async-lookup.timeout
+     [java] table.exec.deduplicate.insert-update-after-sensitive-enabled
+     [java] table.exec.deduplicate.mini-batch.compact-changes-enabled
+     [java] table.exec.disabled-operators
+     [java] table.exec.legacy-cast-behaviour
+     [java] table.exec.mini-batch.allow-latency
+     [java] table.exec.mini-batch.enabled
+     [java] table.exec.mini-batch.size
+     [java] table.exec.rank.topn-cache-size
+     [java] table.exec.resource.default-parallelism
+     [java] table.exec.simplify-operator-name-enabled
+     [java] table.exec.sink.keyed-shuffle
+     [java] table.exec.sink.not-null-enforcer
+     [java] table.exec.sink.type-length-enforcer
+     [java] table.exec.sink.upsert-materialize
+     [java] table.exec.sort.async-merge-enabled
+     [java] table.exec.sort.default-limit
+     [java] table.exec.sort.max-num-file-handles
+     [java] table.exec.source.cdc-events-duplicate
+     [java] table.exec.source.idle-timeout
+     [java] table.exec.spill-compression.block-size
+     [java] table.exec.spill-compression.enabled
+     [java] table.exec.state.ttl
+     [java] table.exec.uid.format
+     [java] table.exec.uid.generation
+     [java] table.exec.window-agg.buffer-size-limit
+     [java] table.generated-code.max-length
+     [java] table.local-time-zone
+     [java] table.optimizer.agg-phase-strategy
+     [java] table.optimizer.distinct-agg.split.bucket-num
+     [java] table.optimizer.distinct-agg.split.enabled
+     [java] table.optimizer.dynamic-filtering.enabled
+     [java] table.optimizer.join-reorder-enabled
+     [java] table.optimizer.join.broadcast-threshold
+     [java] table.optimizer.multiple-input-enabled
+     [java] table.optimizer.non-deterministic-update.strategy
+     [java] table.optimizer.reuse-source-enabled
+     [java] table.optimizer.reuse-sub-plan-enabled
+     [java] table.optimizer.source.aggregate-pushdown-enabled
+     [java] table.optimizer.source.predicate-pushdown-enabled
+     [java] table.optimizer.source.report-statistics-enabled
+     [java] table.plan.compile.catalog-objects
+     [java] table.plan.force-recompile
+     [java] table.plan.restore.catalog-objects
+     [java] table.resources.download-dir
+     [java] table.sql-dialect
+     [java] task.cancellation.interval
+     [java] task.cancellation.timeout
+     [java] task.cancellation.timers.timeout
+     [java] taskmanager.bind-host
+     [java] taskmanager.data.bind-port
+     [java] taskmanager.data.port
+     [java] taskmanager.data.ssl.enabled
+     [java] taskmanager.debug.memory.log
+     [java] taskmanager.debug.memory.log-interval
+     [java] taskmanager.host
+     [java] taskmanager.jvm-exit-on-oom
+     [java] taskmanager.memory.flink.size
+     [java] taskmanager.memory.framework.heap.size
+     [java] taskmanager.memory.framework.off-heap.batch-shuffle.size
+     [java] taskmanager.memory.framework.off-heap.size
+     [java] taskmanager.memory.jvm-metaspace.size
+     [java] taskmanager.memory.jvm-overhead.fraction
+     [java] taskmanager.memory.jvm-overhead.max
+     [java] taskmanager.memory.jvm-overhead.min
+     [java] taskmanager.memory.managed.consumer-weights
+     [java] taskmanager.memory.managed.fraction
+     [java] taskmanager.memory.managed.size
+     [java] taskmanager.memory.min-segment-size
+     [java] taskmanager.memory.network.fraction
+     [java] taskmanager.memory.network.max
+     [java] taskmanager.memory.network.min
+     [java] taskmanager.memory.process.size
+     [java] taskmanager.memory.segment-size
+     [java] taskmanager.memory.task.heap.size
+     [java] taskmanager.memory.task.off-heap.size
+     [java] taskmanager.network.batch-shuffle.compression.enabled
+     [java] taskmanager.network.bind-policy
+     [java] taskmanager.network.blocking-shuffle.type
+     [java] taskmanager.network.compression.codec
+     [java] taskmanager.network.detailed-metrics
+     [java] taskmanager.network.max-num-tcp-connections
+     [java] taskmanager.network.memory.buffer-debloat.enabled
+     [java] taskmanager.network.memory.buffer-debloat.period
+     [java] taskmanager.network.memory.buffer-debloat.samples
+     [java] taskmanager.network.memory.buffer-debloat.target
+     [java] taskmanager.network.memory.buffer-debloat.threshold-percentages
+     [java] taskmanager.network.memory.buffers-per-channel
+     [java] taskmanager.network.memory.floating-buffers-per-gate
+     [java] taskmanager.network.memory.max-buffers-per-channel
+     [java] taskmanager.network.memory.max-overdraft-buffers-per-gate
+     [java] taskmanager.network.netty.client.connectTimeoutSec
+     [java] taskmanager.network.netty.client.numThreads
+     [java] taskmanager.network.netty.num-arenas
+     [java] taskmanager.network.netty.sendReceiveBufferSize
+     [java] taskmanager.network.netty.server.backlog
+     [java] taskmanager.network.netty.server.numThreads
+     [java] taskmanager.network.netty.transport
+     [java] taskmanager.network.request-backoff.initial
+     [java] taskmanager.network.request-backoff.max
+     [java] taskmanager.network.retries
+     [java] taskmanager.network.sort-shuffle.min-buffers
+     [java] taskmanager.network.sort-shuffle.min-parallelism
+     [java] taskmanager.network.tcp-connection.enable-reuse-across-jobs
+     [java] taskmanager.numberOfTaskSlots
+     [java] taskmanager.registration.timeout
+     [java] taskmanager.resource-id
+     [java] taskmanager.rpc.bind-port
+     [java] taskmanager.rpc.port
+     [java] taskmanager.runtime.hashjoin-bloom-filters
+     [java] taskmanager.runtime.large-record-handler
+     [java] taskmanager.runtime.max-fan
+     [java] taskmanager.runtime.sort-spilling-threshold
+     [java] taskmanager.slot.timeout
+     [java] taskmanager.state.local.root-dirs
+     [java] username
+     [java] web.access-control-allow-origin
+     [java] web.cancel.enable
+     [java] web.checkpoints.history
+     [java] web.exception-history-size
+     [java] web.history
+     [java] web.log.path
+     [java] web.refresh-interval
+     [java] web.submit.enable
+     [java] web.timeout
+     [java] web.tmpdir
+     [java] web.upload.dir
+     [java] writeTimeout
+     [java] yarn.application-attempt-failures-validity-interval
+     [java] yarn.application-attempts
+     [java] yarn.application-master.port
+     [java] yarn.application.id
+     [java] yarn.application.name
+     [java] yarn.application.node-label
+     [java] yarn.application.priority
+     [java] yarn.application.queue
+     [java] yarn.application.type
+     [java] yarn.appmaster.vcores
+     [java] yarn.classpath.include-user-jar
+     [java] yarn.containers.vcores
+     [java] yarn.file-replication
+     [java] yarn.flink-dist-jar
+     [java] yarn.heartbeat.container-request-interval
+     [java] yarn.heartbeat.interval
+     [java] yarn.properties-file.location
+     [java] yarn.provided.lib.dirs
+     [java] yarn.provided.usrlib.dir
+     [java] yarn.security.kerberos.localized-keytab-path
+     [java] yarn.security.kerberos.ship-local-keytab
+     [java] yarn.ship-archives
+     [java] yarn.ship-files
+     [java] yarn.staging-directory
+     [java] yarn.tags
+     [java] yarn.taskmanager.node-label
+     [java] zookeeper.sasl.disable
+     [java] zookeeper.sasl.login-context-name
+     [java] zookeeper.sasl.service-name
+[INFO] Executed tasks
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.997 s
+[INFO] Finished at: 2022-09-21T00:55:51+02:00
+[INFO] ------------------------------------------------------------------------
