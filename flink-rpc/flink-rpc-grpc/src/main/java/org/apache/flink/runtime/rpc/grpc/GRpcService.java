@@ -74,6 +74,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -564,10 +565,29 @@ public class GRpcService implements RpcService, BindableService {
 
         final RpcInvocation rpcInvocation = message.getPayload();
 
-        final GRpcServer rpcServer = targets.get(target);
+        GRpcServer rpcServer = targets.get(target);
         if (rpcServer == null) {
-            return FutureUtils.completedExceptionally(
-                    new RecipientUnreachableException("unknown", target, rpcInvocation.toString()));
+            // check for wildcard endpoint name
+            if (target.endsWith("*")) {
+                String targetWithoutWildcard = target.substring(0, target.length() - 1);
+
+                Optional<String> first =
+                        targets.keySet().stream()
+                                .filter(t -> t.startsWith(targetWithoutWildcard))
+                                .findFirst();
+
+                if (first.isPresent()) {
+                    rpcServer = targets.get(first.get());
+                } else {
+                    return FutureUtils.completedExceptionally(
+                            new RecipientUnreachableException(
+                                    "unknown", target, rpcInvocation.toString()));
+                }
+            } else {
+                return FutureUtils.completedExceptionally(
+                        new RecipientUnreachableException(
+                                "unknown", target, rpcInvocation.toString()));
+            }
         }
 
         return rpcServer.handleRpcInvocation(message.getFencingToken(), message.getPayload());
