@@ -38,7 +38,7 @@ public class AkkaOptions {
     public static final ConfigOption<Boolean> FORCE_RPC_INVOCATION_SERIALIZATION =
             ConfigOptions.key("akka.rpc.force-invocation-serialization")
                     .booleanType()
-                    .defaultValue(false)
+                    .defaultValue(true)
                     .withDescription(
                             Description.builder()
                                     .text(

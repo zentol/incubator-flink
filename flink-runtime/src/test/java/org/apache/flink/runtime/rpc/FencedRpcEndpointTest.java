@@ -28,6 +28,7 @@ import org.apache.flink.util.TestLoggerExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -115,6 +116,7 @@ public class FencedRpcEndpointTest {
      * the fencing token from such a gateway.
      */
     @Test
+    @Disabled("Treaing unfecned message as an unknown message type seems a bit weird")
     public void testUnfencedRemoteGateway() throws Exception {
         final UUID initialFencingToken = UUID.randomUUID();
         final String value = "foobar";

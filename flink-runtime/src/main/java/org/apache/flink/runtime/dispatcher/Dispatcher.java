@@ -1291,7 +1291,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
     private void terminateJob(JobID jobId) {
         if (jobManagerRunnerRegistry.isRegistered(jobId)) {
             final JobManagerRunner jobManagerRunner = jobManagerRunnerRegistry.get(jobId);
-            jobManagerRunner.closeAsync();
+            jobManagerRunner.closeAsync(log);
         }
     }
 

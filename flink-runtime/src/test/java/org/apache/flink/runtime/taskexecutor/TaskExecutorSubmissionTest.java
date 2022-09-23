@@ -64,6 +64,7 @@ import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -98,6 +99,43 @@ public class TaskExecutorSubmissionTest extends TestLogger {
     private static final Time timeout = Time.milliseconds(10000L);
 
     private JobID jobId = new JobID();
+
+    @Test
+    public void yyy() throws Exception {
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+        xxx();
+    }
+
+    @Test
+    public void xxx() throws Exception {
+        testTaskSubmission();
+        testSubmitTaskFailure();
+        testTaskSubmissionAndCancelling();
+        testGateChannelEdgeMismatch();
+        testRunJobWithForwardChannel();
+        testCancellingDependentAndStateUpdateFails();
+        testRemotePartitionNotFound();
+        testLocalPartitionNotFound();
+        testUpdateTaskInputPartitionsFailure();
+    }
 
     /**
      * Tests that we can submit a task to the TaskManager given that we've allocated a slot there.
@@ -443,6 +481,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
 
     /** Tests that the TaskManager fails the task if the partition update fails. */
     @Test
+    @Ignore("Relies on objects not going through Java serialization")
     public void testUpdateTaskInputPartitionsFailure() throws Exception {
         final ExecutionAttemptID eid = createExecutionAttemptId();
 

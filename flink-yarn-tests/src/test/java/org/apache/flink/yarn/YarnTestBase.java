@@ -161,6 +161,10 @@ public abstract class YarnTestBase {
         // this can happen in Akka 2.4 on shutdown.
         Pattern.compile(
                 "java\\.util\\.concurrent\\.RejectedExecutionException: Worker has already been shutdown"),
+        // this can happen if a message was in-flight while an endpoint was shutting down
+        Pattern.compile("java\\.util\\.concurrent\\.RejectedExecutionException: Task"),
+        Pattern.compile(
+                "org\\.apache\\.flink\\.runtime\\.rpc\\.exceptions\\.RecipientUnreachableException"),
         Pattern.compile("org\\.apache\\.flink.util\\.FlinkException: Stopping JobMaster"),
         Pattern.compile(
                 "org\\.apache\\.flink.util\\.FlinkException: JobManager is shutting down\\."),
@@ -179,7 +183,12 @@ public abstract class YarnTestBase {
         Pattern.compile("ClassNotFoundException : \"org.apache.hadoop.hbase.HBaseConfiguration\""),
 
         // This happens in YARN shutdown
-        Pattern.compile("Rejected TaskExecutor registration at the ResourceManager")
+        Pattern.compile("Rejected TaskExecutor registration at the ResourceManager"),
+
+        // grpc logging
+        Pattern.compile("TRACE org.apache.flink.runtime.rpc.grpc"),
+        Pattern.compile("DEBUG org.apache.flink.runtime.rpc.grpc"),
+        Pattern.compile(", Exception\\)")
     };
 
     // Temp directory which is deleted after the unit test.

@@ -683,7 +683,12 @@ public class MiniCluster implements AutoCloseableAsync {
 
                     final CompletableFuture<Void> rpcServicesTerminationFuture =
                             FutureUtils.composeAfterwards(
-                                    metricSystemTerminationFuture, this::terminateRpcServices);
+                                    metricSystemTerminationFuture,
+                                    () ->
+                                            ShutdownLog.logShutdown(
+                                                    LOG,
+                                                    "rpcServices",
+                                                    this::terminateRpcServices));
 
                     final CompletableFuture<Void> remainingServicesTerminationFuture =
                             FutureUtils.runAfterwards(

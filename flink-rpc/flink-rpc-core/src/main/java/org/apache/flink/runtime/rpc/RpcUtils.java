@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.AutoCloseableAsync;
+import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import javax.annotation.Nullable;
@@ -117,16 +118,14 @@ public class RpcUtils {
 
     /**
      * Returns the hostname onto which the given {@link RpcService} has been bound. If the {@link
-     * RpcService} has been started in local mode, then the hostname is {@code "hostname"}.
+     * RpcService} has been started in local mode, then the hostname is {@code "localhost"}.
      *
      * @param rpcService to retrieve the hostname for
      * @return hostname onto which the given {@link RpcService} has been bound or localhost
      */
     public static String getHostname(RpcService rpcService) {
-        final String rpcServiceAddress = rpcService.getAddress();
-        return rpcServiceAddress != null && rpcServiceAddress.isEmpty()
-                ? "localhost"
-                : rpcServiceAddress;
+        final String rpcServiceAddress = Preconditions.checkNotNull(rpcService.getAddress());
+        return rpcServiceAddress.isEmpty() ? "localhost" : rpcServiceAddress;
     }
 
     public static RpcSystem.ForkJoinExecutorConfiguration getTestForkJoinExecutorConfiguration() {

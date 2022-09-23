@@ -70,6 +70,12 @@ under the License.
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-rpc-grpc-loader</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<!-- provides fallback AkkaRpcSystem loader for the IDE -->
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-rpc-akka-loader</artifactId>

@@ -45,7 +45,7 @@ import java.util.UUID;
  */
 public class AkkaRpcSystemLoader implements RpcSystemLoader {
 
-    static final int LOAD_PRIORITY = 0;
+    static final int LOAD_PRIORITY = 1;
 
     /** The name of the akka dependency jar, bundled with flink-rpc-akka-loader module artifact. */
     private static final String FLINK_RPC_AKKA_FAT_JAR = "flink-rpc-akka.jar";

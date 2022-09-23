@@ -48,6 +48,10 @@ export USER_LIB=${FLINK_DIR}/examples/batch
 kubectl create -f ${CONTAINER_SCRIPTS}/job-cluster-service.yaml
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB} ${FLINK_JOB_PARALLELISM} ${FLINK_JOB_ARGUMENTS} ${USER_LIB}' < ${CONTAINER_SCRIPTS}/job-cluster-job.yaml.template | kubectl create -f -
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB_PARALLELISM} ${USER_LIB}' < ${CONTAINER_SCRIPTS}/task-manager-deployment.yaml.template | kubectl create -f -
+sleep 30
+debug_and_show_logs
+sleep 600
+debug_and_show_logs
 kubectl wait --for=condition=complete job/flink-job-cluster --timeout=1h
 kubectl cp `kubectl get pods | awk '/task-manager/ {print $1}'`:/cache/${OUTPUT_FILE} ${OUTPUT_VOLUME}/${OUTPUT_FILE}
 

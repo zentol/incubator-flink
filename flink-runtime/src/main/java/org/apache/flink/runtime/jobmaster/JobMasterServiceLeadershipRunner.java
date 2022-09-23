@@ -143,7 +143,7 @@ public class JobMasterServiceLeadershipRunner implements JobManagerRunner, Leade
                     JobManagerRunnerResult.forSuccess(
                             createExecutionGraphInfoWithJobStatus(JobStatus.SUSPENDED)));
 
-            processTerminationFuture = jobMasterServiceProcess.closeAsync();
+            processTerminationFuture = jobMasterServiceProcess.closeAsync(LOG);
         }
 
         final CompletableFuture<Void> serviceTerminationFuture =
