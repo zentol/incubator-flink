@@ -54,10 +54,10 @@ class MessageSerializationTest {
         configuration.setString(AkkaOptions.FRAMESIZE, maxFrameSize + "b");
 
         akkaRpcService1 =
-                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", 0)
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
                         .createAndStart();
         akkaRpcService2 =
-                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", 0)
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
                         .createAndStart();
     }
 

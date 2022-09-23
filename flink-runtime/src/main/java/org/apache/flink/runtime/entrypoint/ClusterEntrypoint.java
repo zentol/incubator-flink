@@ -76,6 +76,7 @@ import org.apache.flink.util.FileUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.Reference;
 import org.apache.flink.util.ShutdownHookUtil;
+import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
@@ -512,7 +513,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             }
 
             if (metricRegistry != null) {
-                terminationFutures.add(metricRegistry.closeAsync());
+                terminationFutures.add(metricRegistry.closeAsync(LOG));
             }
 
             if (ioExecutor != null) {
@@ -522,7 +523,7 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
             }
 
             if (commonRpcService != null) {
-                terminationFutures.add(commonRpcService.closeAsync());
+                terminationFutures.add(commonRpcService.closeAsync(LOG));
             }
 
             try {
@@ -579,8 +580,13 @@ public abstract class ClusterEntrypoint implements AutoCloseableAsync, FatalErro
                     closeClusterComponent(applicationStatus, shutdownBehaviour, diagnostics);
 
             final CompletableFuture<Void> serviceShutdownFuture =
-                    FutureUtils.composeAfterwards(
-                            shutDownApplicationFuture, () -> stopClusterServices(cleanupHaData));
+                    ShutdownLog.logShutdown(
+                            LOG,
+                            "clusterServices",
+                            () ->
+                                    FutureUtils.composeAfterwards(
+                                            shutDownApplicationFuture,
+                                            () -> stopClusterServices(cleanupHaData)));
 
             final CompletableFuture<Void> rpcSystemClassLoaderCloseFuture =
                     FutureUtils.runAfterwards(serviceShutdownFuture, rpcSystem::close);

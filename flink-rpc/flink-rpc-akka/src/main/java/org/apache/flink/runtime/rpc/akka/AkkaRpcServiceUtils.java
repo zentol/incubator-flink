@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.rpc.akka;
 
-import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.SecurityOptions;
@@ -69,37 +68,11 @@ public class AkkaRpcServiceUtils {
     //  RPC instantiation
     // ------------------------------------------------------------------------
 
-    static AkkaRpcService createRemoteRpcService(
-            Configuration configuration,
-            @Nullable String externalAddress,
-            String externalPortRange,
-            @Nullable String bindAddress,
-            @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<Integer> bindPort)
-            throws Exception {
-        final AkkaRpcServiceBuilder akkaRpcServiceBuilder =
-                AkkaRpcServiceUtils.remoteServiceBuilder(
-                        configuration, externalAddress, externalPortRange);
-
-        if (bindAddress != null) {
-            akkaRpcServiceBuilder.withBindAddress(bindAddress);
-        }
-
-        bindPort.ifPresent(akkaRpcServiceBuilder::withBindPort);
-
-        return akkaRpcServiceBuilder.createAndStart();
-    }
-
     static AkkaRpcServiceBuilder remoteServiceBuilder(
             Configuration configuration,
             @Nullable String externalAddress,
             String externalPortRange) {
         return new AkkaRpcServiceBuilder(configuration, LOG, externalAddress, externalPortRange);
-    }
-
-    @VisibleForTesting
-    static AkkaRpcServiceBuilder remoteServiceBuilder(
-            Configuration configuration, @Nullable String externalAddress, int externalPort) {
-        return remoteServiceBuilder(configuration, externalAddress, String.valueOf(externalPort));
     }
 
     static AkkaRpcServiceBuilder localServiceBuilder(Configuration configuration) {

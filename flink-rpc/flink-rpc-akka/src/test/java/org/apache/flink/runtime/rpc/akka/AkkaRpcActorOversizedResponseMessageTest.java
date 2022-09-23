@@ -62,10 +62,10 @@ class AkkaRpcActorOversizedResponseMessageTest {
         configuration.setString(AkkaOptions.FRAMESIZE, FRAMESIZE + " b");
 
         rpcService1 =
-                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", 0)
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
                         .createAndStart();
         rpcService2 =
-                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", 0)
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
                         .createAndStart();
     }
 

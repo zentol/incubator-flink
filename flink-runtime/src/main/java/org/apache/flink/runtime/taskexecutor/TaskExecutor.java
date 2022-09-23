@@ -1501,6 +1501,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             ResourceManagerGateway resourceManagerGateway =
                     establishedResourceManagerConnection.getResourceManagerGateway();
             resourceManagerGateway.disconnectTaskManager(getResourceID(), cause);
+            resourceManagerGateway.closeAsync(log);
 
             establishedResourceManagerConnection = null;
 
@@ -1839,7 +1840,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         }
 
         JobMasterGateway jobManagerGateway = jobManagerConnection.getJobManagerGateway();
-        jobManagerGateway.disconnectTaskManager(getResourceID(), cause);
+        jobManagerGateway
+                .disconnectTaskManager(getResourceID(), cause)
+                .thenCompose(ignored -> jobManagerGateway.closeAsync(log));
     }
 
     private void handleRejectedJobManagerConnection(

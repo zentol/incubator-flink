@@ -28,7 +28,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -47,12 +46,12 @@ class RemoteAkkaRpcActorTest {
     @BeforeAll
     static void setupClass() throws Exception {
         rpcService =
-                AkkaRpcServiceUtils.createRemoteRpcService(
-                        configuration, "localhost", "0", null, Optional.empty());
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
+                        .createAndStart();
 
         otherRpcService =
-                AkkaRpcServiceUtils.createRemoteRpcService(
-                        configuration, "localhost", "0", null, Optional.empty());
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
+                        .createAndStart();
     }
 
     @AfterAll
@@ -147,8 +146,8 @@ class RemoteAkkaRpcActorTest {
     @Test
     void failsRpcResultImmediatelyIfRemoteRpcServiceIsNotAvailable() throws Exception {
         final AkkaRpcService toBeClosedRpcService =
-                AkkaRpcServiceUtils.createRemoteRpcService(
-                        configuration, "localhost", "0", null, Optional.empty());
+                AkkaRpcServiceUtils.remoteServiceBuilder(configuration, "localhost", "0")
+                        .createAndStart();
         try (final AkkaRpcActorTest.SerializedValueRespondingEndpoint endpoint =
                 new AkkaRpcActorTest.SerializedValueRespondingEndpoint(toBeClosedRpcService)) {
             endpoint.start();

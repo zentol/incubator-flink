@@ -238,6 +238,11 @@ public class AdaptiveSchedulerClusterITCase extends TestLogger {
         }
 
         @Override
+        public Future<Void> notifyCheckpointSubsumedAsync(long checkpointId) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
         public Future<Void> notifyCheckpointCompleteAsync(long checkpointId) {
             return CompletableFuture.completedFuture(null);
         }

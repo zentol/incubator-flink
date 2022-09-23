@@ -37,6 +37,13 @@ public class JobGraphTestUtils {
         return JobGraphBuilder.newStreamingJobGraphBuilder().addJobVertex(jobVertex).build();
     }
 
+    public static JobGraph streamingJobGraph(String jobName, JobVertex... jobVertices) {
+        return JobGraphBuilder.newStreamingJobGraphBuilder()
+                .setJobName(jobName)
+                .addJobVertices(Arrays.asList(jobVertices))
+                .build();
+    }
+
     public static JobGraph streamingJobGraph(JobVertex... jobVertices) {
         return JobGraphBuilder.newStreamingJobGraphBuilder()
                 .addJobVertices(Arrays.asList(jobVertices))

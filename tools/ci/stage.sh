@@ -43,6 +43,8 @@ flink-rpc,\
 flink-rpc/flink-rpc-core,\
 flink-rpc/flink-rpc-akka,\
 flink-rpc/flink-rpc-akka-loader,\
+flink-rpc/flink-rpc-grpc,\
+flink-rpc/flink-rpc-grpc-loader,\
 flink-runtime,\
 flink-runtime-web,\
 flink-scala,\

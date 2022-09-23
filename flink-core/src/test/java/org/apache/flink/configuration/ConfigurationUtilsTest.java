@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 /** Tests for the {@link ConfigurationUtils}. */
@@ -123,6 +124,18 @@ public class ConfigurationUtilsTest extends TestLogger {
         mapElements.put("A:,B", "C:,D");
         mapElements.put(10, 20);
         assertEquals("'''A:,B'':''C:,D''',10:20", ConfigurationUtils.convertToString(mapElements));
+    }
+
+    @Test
+    public void testConvertToPropertiesRejectsEmptyKey() {
+        assertThatThrownBy(() -> ConfigurationUtils.convertToProperties(":V"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void testConvertToPropertiesRejectsEmptyValue() {
+        assertThatThrownBy(() -> ConfigurationUtils.convertToProperties("K:"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

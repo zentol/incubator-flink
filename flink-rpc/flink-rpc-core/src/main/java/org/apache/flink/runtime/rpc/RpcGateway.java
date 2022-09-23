@@ -18,8 +18,17 @@
 
 package org.apache.flink.runtime.rpc;
 
+import org.apache.flink.util.AutoCloseableAsync;
+
+import java.util.concurrent.CompletableFuture;
+
 /** Rpc gateway interface which has to be implemented by Rpc gateways. */
-public interface RpcGateway {
+public interface RpcGateway extends AutoCloseableAsync {
+
+    @Override
+    default CompletableFuture<Void> closeAsync() {
+        return CompletableFuture.completedFuture(null);
+    }
 
     /**
      * Returns the fully qualified address under which the associated rpc endpoint is reachable.
