@@ -348,13 +348,12 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
+        final String endpointAddress =
+                getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId();
+        LOG.info("Starting RPC server {}.", endpointAddress);
         try {
             GRpcServer gRpcServer =
-                    new GRpcServer(
-                            getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId(),
-                            getAddress(),
-                            rpcEndpoint,
-                            flinkClassLoader);
+                    new GRpcServer(endpointAddress, getAddress(), rpcEndpoint, flinkClassLoader);
             targets.put(rpcEndpoint.getEndpointId(), gRpcServer);
             return gRpcServer;
         } catch (IOException e) {
@@ -364,6 +363,7 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public void stopServer(RpcServer server) {
+        LOG.info("Stopping RPC server {}.", server.getAddress());
         server.stop();
         server.getTerminationFuture()
                 .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()));
