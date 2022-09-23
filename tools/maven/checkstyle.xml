@@ -193,10 +193,6 @@ This file is based on the checkstyle file of Apache Beam.
 			<message key="import.illegal" value="{0}; Use flink-shaded-asm instead."/>
 		</module>
 		<module name="IllegalImport">
-			<property name="illegalPkgs" value="io.netty"/>
-			<message key="import.illegal" value="{0}; Use flink-shaded-netty instead."/>
-		</module>
-		<module name="IllegalImport">
 			<property name="illegalPkgs" value="com.google.common"/>
 			<message key="import.illegal" value="{0}; Use flink-shaded-guava instead."/>
 		</module>
