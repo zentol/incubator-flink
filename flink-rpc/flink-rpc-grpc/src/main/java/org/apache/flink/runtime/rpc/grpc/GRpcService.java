@@ -507,13 +507,25 @@ public class GRpcService implements RpcService, BindableService {
                                     .exceptionally(
                                             e -> {
                                                 synchronized (lock) {
-                                                    LOG.error(
-                                                            "RPC ({}) failed{}.",
-                                                            request.getPayload(),
-                                                            isStopped
-                                                                    ? " while server was stopped."
-                                                                    : "",
-                                                            e);
+                                                    if (e.getCause()
+                                                            instanceof
+                                                            RecipientUnreachableException) {
+                                                        LOG.debug(
+                                                                "RPC ({}) failed{}.",
+                                                                request.getPayload(),
+                                                                isStopped
+                                                                        ? " while server was stopped."
+                                                                        : "",
+                                                                e);
+                                                    } else {
+                                                        LOG.error(
+                                                                "RPC ({}) failed{}.",
+                                                                request.getPayload(),
+                                                                isStopped
+                                                                        ? " while server was stopped."
+                                                                        : "",
+                                                                e);
+                                                    }
                                                     if (!isStopped) {
                                                         responseObserver.onNext(
                                                                 new RemoteResponseWithID(
