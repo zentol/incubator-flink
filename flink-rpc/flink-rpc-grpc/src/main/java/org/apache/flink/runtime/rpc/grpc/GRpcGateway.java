@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -140,8 +141,16 @@ public class GRpcGateway<F extends Serializable>
         return ShutdownLog.logShutdown(log, "Gateway to " + getAddress(), this::closeAsync);
     }
 
+    private final Object lock = new Object();
+
+    @GuardedBy("lock")
+    private boolean isClosing = false;
+
     @Override
     public CompletableFuture<Void> closeAsync() {
+        synchronized (this) {
+            isClosing = true;
+        }
         return CompletableFuture.supplyAsync(
                 () -> {
                     close();
@@ -284,15 +293,26 @@ public class GRpcGateway<F extends Serializable>
      * @param message to send to the RPC endpoint.
      */
     private synchronized void tell(RemoteRpcInvocation message) {
+        synchronized (lock) {
+            if (isClosing) {
+                LOG.debug(
+                        "Ignoring ask to '{}' (RPC={}) because shutdown is in progress.",
+                        address,
+                        message);
+                return;
+            }
+        }
         final long id = nextId++;
 
         LOG.info("Sending tell #{} to '{}' (RPC={})", id, address, message);
 
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
-                    call.sendMessage(
-                            new RemoteRequestWithID(
-                                    fencingToken, message, endpointId, id, Type.TELL));
+                    synchronized (lock) {
+                        call.sendMessage(
+                                new RemoteRequestWithID(
+                                        fencingToken, message, endpointId, id, Type.TELL));
+                    }
                 },
                 flinkClassLoader);
     }
@@ -306,6 +326,16 @@ public class GRpcGateway<F extends Serializable>
      * @return Response future
      */
     private synchronized CompletableFuture<?> ask(RemoteRpcInvocation message, Duration timeout) {
+        synchronized (lock) {
+            if (isClosing) {
+                LOG.debug(
+                        "Ignoring ask to '{}' (RPC={}) because shutdown is in progress.",
+                        address,
+                        message);
+                return FutureUtils.completedExceptionally(
+                        new RpcException("Gateway has been closed."));
+            }
+        }
         final long id = nextId++;
 
         LOG.info("Sending ask #{} to '{}' (RPC={})", id, address, message);
