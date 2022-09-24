@@ -270,26 +270,28 @@ public class GRpcService implements RpcService, BindableService {
                 connectFuture,
                 Duration.ZERO);
 
-        return connectFuture.thenApply(
-                ignored -> {
-                    final GRpcGateway<F> invocationHandler =
-                            new GRpcGateway<>(
-                                    fencingToken,
-                                    address,
-                                    getAddress(),
-                                    address.substring(address.indexOf("@") + 1),
-                                    captureAskCallStack,
-                                    rpcTimeout,
-                                    false,
-                                    true,
-                                    flinkClassLoader,
-                                    channel,
-                                    callFunction);
+        return ClassLoadingUtils.guardCompletionWithContextClassLoader(
+                connectFuture.thenApply(
+                        ignored -> {
+                            final GRpcGateway<F> invocationHandler =
+                                    new GRpcGateway<>(
+                                            fencingToken,
+                                            address,
+                                            getAddress(),
+                                            address.substring(address.indexOf("@") + 1),
+                                            captureAskCallStack,
+                                            rpcTimeout,
+                                            false,
+                                            true,
+                                            flinkClassLoader,
+                                            channel,
+                                            callFunction);
 
-                    gateways.add(invocationHandler);
+                            gateways.add(invocationHandler);
 
-                    return createProxy(clazz, invocationHandler);
-                });
+                            return createProxy(clazz, invocationHandler);
+                        }),
+                flinkClassLoader);
     }
 
     @SuppressWarnings("unchecked")
