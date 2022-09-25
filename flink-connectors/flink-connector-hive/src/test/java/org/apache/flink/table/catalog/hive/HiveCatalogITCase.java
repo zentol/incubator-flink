@@ -50,6 +50,7 @@ import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -87,6 +88,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * IT case for HiveCatalog. TODO: move to flink-connector-hive-test end-to-end test module once it's
  * setup
  */
+@Ignore
 public class HiveCatalogITCase {
 
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();

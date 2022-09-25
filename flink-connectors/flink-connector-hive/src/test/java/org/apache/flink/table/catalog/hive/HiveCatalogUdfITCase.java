@@ -50,6 +50,7 @@ import org.apache.hadoop.hive.ql.udf.UDFYear;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFSum;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -75,6 +76,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * IT case for HiveCatalog. TODO: move to flink-connector-hive-test end-to-end test module once it's
  * setup
  */
+@Ignore("Unstable; see FLINK-29408")
 public class HiveCatalogUdfITCase extends AbstractTestBase {
 
     @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
