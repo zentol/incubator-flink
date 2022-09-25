@@ -168,7 +168,7 @@ public class GRpcServer implements RpcServer {
                                 terminationFuture.thenRun(mainThread::shutdown);
                             },
                             flinkClassLoader));
-        } else {
+        } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
             terminationFuture.complete(null);
         }
     }
