@@ -25,7 +25,6 @@ import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -51,7 +50,6 @@ public class RpcSSLAuthITCase extends TestLogger {
             RpcSSLAuthITCase.class.getResource("/untrusted.keystore").getFile();
 
     @Test
-    @Ignore("SSL currently not supported")
     public void testConnectFailure() throws Exception {
         final Configuration baseConfig = new Configuration();
         baseConfig.setString(AkkaOptions.TCP_TIMEOUT, "1 s");

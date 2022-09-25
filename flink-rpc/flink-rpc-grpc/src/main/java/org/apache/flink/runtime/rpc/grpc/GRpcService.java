@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc.grpc;
 
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.net.SSLUtils;
 import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
@@ -50,11 +51,14 @@ import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelOption;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +107,7 @@ public class GRpcService implements RpcService, BindableService {
     @Nullable private final Integer externalPort;
 
     private final Duration rpcTimeout;
+    private final Configuration configuration;
     private final ScheduledExecutorService executorService;
     private final ClassLoader flinkClassLoader;
     private final boolean captureAskCallStack;
@@ -119,6 +124,7 @@ public class GRpcService implements RpcService, BindableService {
             ScheduledExecutorService executorService,
             ClassLoader flinkClassLoader)
             throws IOException {
+        this.configuration = configuration;
         this.executorService = executorService;
         this.flinkClassLoader = flinkClassLoader;
 
@@ -133,9 +139,13 @@ public class GRpcService implements RpcService, BindableService {
         if (bindPort != null) {
             this.server =
                     startServerOnOpenPort(
-                            bindAddress, Collections.singleton(bindPort).iterator(), this);
+                            bindAddress,
+                            Collections.singleton(bindPort).iterator(),
+                            this,
+                            configuration);
         } else {
-            this.server = startServerOnOpenPort(bindAddress, externalPortRange, this);
+            this.server =
+                    startServerOnOpenPort(bindAddress, externalPortRange, this, configuration);
         }
         this.externalPort =
                 bindPort != null && externalPortRange.hasNext()
@@ -149,15 +159,32 @@ public class GRpcService implements RpcService, BindableService {
     }
 
     private static Server startServerOnOpenPort(
-            String bindAddress, Iterator<Integer> bindPorts, BindableService service)
+            String bindAddress,
+            Iterator<Integer> bindPorts,
+            BindableService service,
+            Configuration configuration)
             throws IOException {
+
+        final SslContext sslContext;
+        try {
+            SslContextBuilder nettySslContextBuilder =
+                    SSLUtils.createInternalNettySSLContext(configuration, false);
+            sslContext =
+                    nettySslContextBuilder != null
+                            ? GrpcSslContexts.configure(nettySslContextBuilder).build()
+                            : null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         while (bindPorts.hasNext()) {
             int bindPort = bindPorts.next();
             try {
+
                 return NettyServerBuilder.forAddress(new InetSocketAddress(bindAddress, bindPort))
                         .addService(service)
                         .withOption(ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(true))
+                        .sslContext(sslContext)
                         .maxInboundMessageSize(1024 * 1024 * 128) // 128 mb
                         .build()
                         .start();
@@ -223,7 +250,7 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
         return internalConnect(
-                address, null, clazz, GRpcService::forNetty, serverSpec::prepareConnection);
+                address, null, clazz, forNetty(configuration), serverSpec::prepareConnection);
     }
 
     @Override
@@ -233,13 +260,37 @@ public class GRpcService implements RpcService, BindableService {
                 address,
                 Preconditions.checkNotNull(fencingToken),
                 clazz,
-                GRpcService::forNetty,
+                forNetty(configuration),
                 serverSpec::prepareConnection);
     }
 
-    private static NettyChannelBuilder forNetty(String address) {
-        return NettyChannelBuilder.forTarget(address)
-                .withOption(ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(true));
+    private static Function<String, ManagedChannelBuilder<?>> forNetty(
+            Configuration configuration) {
+
+        final SslContext sslContext;
+        try {
+            SslContextBuilder nettySslContextBuilder =
+                    SSLUtils.createInternalNettySSLContext(configuration, true);
+            sslContext =
+                    nettySslContextBuilder != null
+                            ? GrpcSslContexts.configure(nettySslContextBuilder).build()
+                            : null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return address -> {
+            NettyChannelBuilder nettyChannelBuilder =
+                    NettyChannelBuilder.forTarget(address)
+                            .sslContext(sslContext)
+                            .withOption(
+                                    ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(true));
+            if (sslContext == null) {
+                // need to explicitly opt-in to use plain text
+                nettyChannelBuilder.usePlaintext();
+            }
+            return nettyChannelBuilder;
+        };
     }
 
     private final Map<Integer, ManagedChannel> channelIndex = new ConcurrentHashMap<>();
@@ -259,7 +310,7 @@ public class GRpcService implements RpcService, BindableService {
         final int channelId =
                 (getAddress() + ":" + getPort()).hashCode() + actualAddress.hashCode();
 
-        final ManagedChannel channel = channelBuilder.apply(actualAddress).usePlaintext().build();
+        final ManagedChannel channel = channelBuilder.apply(actualAddress).build();
         channelIndex.put(channelId, channel);
 
         final CompletableFuture<Void> connectFuture = new CompletableFuture<>();
