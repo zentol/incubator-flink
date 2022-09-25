@@ -79,6 +79,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -508,8 +509,11 @@ public class GRpcService implements RpcService, BindableService {
                                             e -> {
                                                 synchronized (lock) {
                                                     if (e.getCause()
-                                                            instanceof
-                                                            RecipientUnreachableException) {
+                                                                    instanceof
+                                                                    RecipientUnreachableException
+                                                            || e.getCause()
+                                                                    instanceof
+                                                                    RejectedExecutionException) {
                                                         LOG.debug(
                                                                 "RPC ({}) failed{}.",
                                                                 request.getPayload(),
