@@ -35,6 +35,7 @@ import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /** Integration tests for interval joins. */
+@Ignore("Unstable; see FLINK-29387")
 public class IntervalJoinITCase {
 
     private static List<String> testResults;

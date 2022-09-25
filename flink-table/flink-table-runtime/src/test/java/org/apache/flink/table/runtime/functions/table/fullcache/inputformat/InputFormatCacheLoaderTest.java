@@ -40,6 +40,7 @@ import org.apache.flink.types.Row;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -59,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Unit test for {@link InputFormatCacheLoader}. */
+@Disabled("Unstable; see FLINK-29405")
 class InputFormatCacheLoaderTest {
 
     private static final int DEFAULT_NUM_SPLITS = 2;
