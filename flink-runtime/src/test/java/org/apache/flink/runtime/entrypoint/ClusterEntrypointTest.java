@@ -212,12 +212,7 @@ public class ClusterEntrypointTest extends TestLogger {
 
             TestJvmProcess.killProcessWithSigTerm(pid);
 
-            final boolean exited =
-                    clusterEntrypointProcess.waitFor(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            assertThat(
-                    String.format("Process %s does not exit within %s ms", pid, TIMEOUT_MS),
-                    exited,
-                    is(true));
+            clusterEntrypointProcess.waitFor();
             assertThat(
                     "markerFile should be deleted in closeAsync shutdownHook",
                     markerFile.exists(),
