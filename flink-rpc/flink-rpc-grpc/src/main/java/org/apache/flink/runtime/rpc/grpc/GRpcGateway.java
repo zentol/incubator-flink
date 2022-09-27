@@ -304,7 +304,7 @@ public class GRpcGateway<F extends Serializable>
         }
         final long id = nextId++;
 
-        LOG.info("Sending tell #{} to '{}' (RPC={})", id, address, message);
+        LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
 
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
@@ -338,11 +338,11 @@ public class GRpcGateway<F extends Serializable>
         }
         final long id = nextId++;
 
-        LOG.info("Sending ask #{} to '{}' (RPC={})", id, address, message);
+        LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
 
         CompletableFuture<Object> response = new CompletableFuture<>();
         response.thenAccept(
-                resp -> LOG.info("Received ask #{} response {} (RPC={})", id, resp, message));
+                resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
 
         pendingResponses.put(id, response);
 

@@ -524,7 +524,7 @@ public class GRpcService implements RpcService, BindableService {
 
             @Override
             public void onNext(RemoteRequestWithID request) {
-                LOG.debug(
+                LOG.trace(
                         "Received {} #{} to '{}:{}@{} (RPC={})",
                         request.getType().name().toLowerCase(Locale.ROOT),
                         request.getId(),
