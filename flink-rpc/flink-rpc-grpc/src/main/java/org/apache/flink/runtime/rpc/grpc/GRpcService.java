@@ -152,7 +152,7 @@ public class GRpcService implements RpcService, BindableService {
                         ? externalPortRange.next()
                         : this.server.getPort();
         this.localServer =
-                InProcessServerBuilder.forName(getAddress() + ":" + getPort())
+                InProcessServerBuilder.forName(getInternalAddress() + ":" + getPort())
                         .addService(this)
                         .build()
                         .start();
@@ -200,6 +200,10 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public String getAddress() {
+        return externalAddress != null ? externalAddress : "";
+    }
+
+    public String getInternalAddress() {
         return externalAddress != null
                 ? externalAddress
                 : InetAddress.getLoopbackAddress().getHostAddress();
@@ -308,7 +312,7 @@ public class GRpcService implements RpcService, BindableService {
         final String actualAddress = address.substring(0, address.indexOf("@"));
 
         final int channelId =
-                (getAddress() + ":" + getPort()).hashCode() + actualAddress.hashCode();
+                (getInternalAddress() + ":" + getPort()).hashCode() + actualAddress.hashCode();
 
         final ManagedChannel channel = channelBuilder.apply(actualAddress).build();
         channelIndex.put(channelId, channel);
@@ -329,7 +333,7 @@ public class GRpcService implements RpcService, BindableService {
                                     new GRpcGateway<>(
                                             fencingToken,
                                             address,
-                                            getAddress(),
+                                            getInternalAddress(),
                                             address.substring(address.indexOf("@") + 1),
                                             captureAskCallStack,
                                             rpcTimeout,
@@ -403,11 +407,12 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
         final String endpointAddress =
-                getAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId();
+                getInternalAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId();
         LOG.info("Starting RPC server {}.", endpointAddress);
         try {
             GRpcServer gRpcServer =
-                    new GRpcServer(endpointAddress, getAddress(), rpcEndpoint, flinkClassLoader);
+                    new GRpcServer(
+                            endpointAddress, getInternalAddress(), rpcEndpoint, flinkClassLoader);
             targets.put(rpcEndpoint.getEndpointId(), gRpcServer);
             return gRpcServer;
         } catch (IOException e) {
@@ -528,7 +533,7 @@ public class GRpcService implements RpcService, BindableService {
                         "Received {} #{} to '{}:{}@{} (RPC={})",
                         request.getType().name().toLowerCase(Locale.ROOT),
                         request.getId(),
-                        getAddress(),
+                        getInternalAddress(),
                         getPort(),
                         request.getTarget(),
                         request.getPayload());
@@ -606,7 +611,7 @@ public class GRpcService implements RpcService, BindableService {
 
             @Override
             public void onError(Throwable t) {
-                LOG.debug("Server ({}:{}) side onError", getAddress(), getPort(), t);
+                LOG.debug("Server ({}:{}) side onError", getInternalAddress(), getPort(), t);
                 synchronized (lock) {
                     responseObserver.onError(t);
                 }
@@ -614,7 +619,7 @@ public class GRpcService implements RpcService, BindableService {
 
             @Override
             public void onCompleted() {
-                LOG.debug("Server ({}:{}) side onCompleted", getAddress(), getPort());
+                LOG.debug("Server ({}:{}) side onCompleted", getInternalAddress(), getPort());
                 synchronized (lock) {
                     isStopped = true;
                     responseObserver.onCompleted();
