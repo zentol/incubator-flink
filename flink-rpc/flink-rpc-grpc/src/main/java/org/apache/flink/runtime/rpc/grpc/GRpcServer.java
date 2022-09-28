@@ -24,7 +24,6 @@ import org.apache.flink.runtime.rpc.MainThreadValidatorUtil;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
-import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.FatalExitExceptionHandler;
@@ -63,20 +62,14 @@ public class GRpcServer implements RpcServer {
     private ScheduledExecutorService mainThread;
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
-    private final GRpcService gRpcService;
     private final String address;
     private final String hostName;
     private final RpcEndpoint rpcEndpoint;
     private final ClassLoader flinkClassLoader;
 
     public GRpcServer(
-            GRpcService gRpcService,
-            String address,
-            String hostName,
-            RpcEndpoint rpcEndpoint,
-            ClassLoader flinkClassLoader)
+            String address, String hostName, RpcEndpoint rpcEndpoint, ClassLoader flinkClassLoader)
             throws IOException {
-        this.gRpcService = gRpcService;
         this.address = address;
         this.hostName = hostName;
         this.rpcEndpoint = rpcEndpoint;
@@ -162,10 +155,7 @@ public class GRpcServer implements RpcServer {
                         },
                         flinkClassLoader));
         isRunning.set(TernaryBoolean.TRUE);
-        gRpcService.addTarget(this);
     }
-
-    private boolean isReallyShutDown = false;
 
     @Override
     public void stop() {
@@ -174,12 +164,8 @@ public class GRpcServer implements RpcServer {
                     ClassLoadingUtils.withContextClassLoader(
                             () -> {
                                 FutureUtils.forward(
-                                        rpcEndpoint
-                                                .internalCallOnStop()
-                                                .thenRun(() -> gRpcService.removeTarget(this))
-                                                .thenRun(mainThread::shutdown)
-                                                .thenRun(() -> isReallyShutDown = true),
-                                        terminationFuture);
+                                        rpcEndpoint.internalCallOnStop(), terminationFuture);
+                                terminationFuture.thenRun(mainThread::shutdown);
                             },
                             flinkClassLoader));
         } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
@@ -248,18 +234,14 @@ public class GRpcServer implements RpcServer {
                 // No return value to send back
                 mainThread.execute(
                         () -> {
-                            if (isReallyShutDown) {
-                                try {
-                                    runWithContextClassLoader(
-                                            () ->
-                                                    rpcMethod.invoke(
-                                                            rpcEndpoint, rpcInvocation.getArgs()),
-                                            flinkClassLoader);
-                                } catch (ReflectiveOperationException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            } else {
-                                LOG.debug("Dropping RPC because already shut down.");
+                            try {
+                                runWithContextClassLoader(
+                                        () ->
+                                                rpcMethod.invoke(
+                                                        rpcEndpoint, rpcInvocation.getArgs()),
+                                        flinkClassLoader);
+                            } catch (ReflectiveOperationException e) {
+                                throw new RuntimeException(e);
                             }
                         });
                 return CompletableFuture.completedFuture(null);
@@ -267,12 +249,6 @@ public class GRpcServer implements RpcServer {
                 final CompletableFuture<Object> result = new CompletableFuture<>();
                 mainThread.execute(
                         () -> {
-                            if (isReallyShutDown) {
-                                result.completeExceptionally(
-                                        new RecipientUnreachableException(
-                                                "unknown", "who knows?", "bruh I'm already gone"));
-                                return;
-                            }
                             try {
                                 runWithContextClassLoader(
                                         () -> {

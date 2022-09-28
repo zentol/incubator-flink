@@ -410,25 +410,22 @@ public class GRpcService implements RpcService, BindableService {
                 getInternalAddress() + ":" + getPort() + "@" + rpcEndpoint.getEndpointId();
         LOG.info("Starting RPC server {}.", endpointAddress);
         try {
-            return new GRpcServer(
-                    this, endpointAddress, getInternalAddress(), rpcEndpoint, flinkClassLoader);
+            GRpcServer gRpcServer =
+                    new GRpcServer(
+                            endpointAddress, getInternalAddress(), rpcEndpoint, flinkClassLoader);
+            targets.put(rpcEndpoint.getEndpointId(), gRpcServer);
+            return gRpcServer;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    void addTarget(GRpcServer gRpcServer) {
-        targets.put(gRpcServer.getRpcEndpoint().getEndpointId(), gRpcServer);
-    }
-
-    void removeTarget(GRpcServer gRpcServer) {
-        targets.remove(gRpcServer.getRpcEndpoint().getEndpointId());
     }
 
     @Override
     public void stopServer(RpcServer server) {
         LOG.info("Stopping RPC server {}.", server.getAddress());
         server.stop();
+        server.getTerminationFuture()
+                .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()));
     }
 
     private final AtomicReference<CompletableFuture<Void>> terminationFuture =
