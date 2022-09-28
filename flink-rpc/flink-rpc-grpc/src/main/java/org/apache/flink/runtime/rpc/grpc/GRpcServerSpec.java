@@ -32,7 +32,7 @@ import io.grpc.ServiceDescriptor;
 import io.grpc.stub.ServerCalls;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
-import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 
 /** This class contains the gRPC spec for the transport layer. */
 class GRpcServerSpec {
@@ -45,14 +45,14 @@ class GRpcServerSpec {
     public GRpcServerSpec(ClassLoader flinkClassLoader) {
         methodSetupConnectionLocal =
                 MethodDescriptor.<RemoteRequestWithID, RemoteResponseWithID>newBuilder()
-                        .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
+                        .setType(MethodDescriptor.MethodType.UNARY)
                         .setFullMethodName(generateFullMethodName("Server", "setupLocalConnection"))
                         .setRequestMarshaller(new LocalObjectMarshaller<>())
                         .setResponseMarshaller(new LocalObjectMarshaller<>())
                         .build();
         methodSetupConnection =
                 MethodDescriptor.<RemoteRequestWithID, RemoteResponseWithID>newBuilder()
-                        .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
+                        .setType(MethodDescriptor.MethodType.UNARY)
                         .setFullMethodName(generateFullMethodName("Server", "setupConnection"))
                         .setRequestMarshaller(new ObjectMarshaller<>(flinkClassLoader))
                         .setResponseMarshaller(new ObjectMarshaller<>(flinkClassLoader))
@@ -61,15 +61,14 @@ class GRpcServerSpec {
 
     public ServerServiceDefinition createService(
             final String serverName,
-            final ServerCalls.BidiStreamingMethod<RemoteRequestWithID, RemoteResponseWithID>
-                    ltrFunction) {
+            final ServerCalls.UnaryMethod<RemoteRequestWithID, RemoteResponseWithID> ltrFunction) {
         return ServerServiceDefinition.builder(
                         ServiceDescriptor.newBuilder(serverName)
                                 .addMethod(methodSetupConnection)
                                 .addMethod(methodSetupConnectionLocal)
                                 .build())
-                .addMethod(methodSetupConnection, asyncBidiStreamingCall(ltrFunction))
-                .addMethod(methodSetupConnectionLocal, asyncBidiStreamingCall(ltrFunction))
+                .addMethod(methodSetupConnection, asyncUnaryCall(ltrFunction))
+                .addMethod(methodSetupConnectionLocal, asyncUnaryCall(ltrFunction))
                 .build();
     }
 
