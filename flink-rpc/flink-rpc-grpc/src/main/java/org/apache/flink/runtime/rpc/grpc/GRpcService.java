@@ -578,7 +578,7 @@ public class GRpcService implements RpcService, BindableService {
                                                                         : "",
                                                                 e);
                                                     } else {
-                                                        LOG.error(
+                                                        LOG.debug(
                                                                 "RPC ({}) failed{}.",
                                                                 request.getPayload(),
                                                                 isStopped
