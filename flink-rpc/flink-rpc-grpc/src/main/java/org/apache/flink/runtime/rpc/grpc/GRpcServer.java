@@ -320,6 +320,7 @@ public class GRpcServer implements RpcServer {
                 return result;
             }
         } catch (Throwable e) {
+            LOG.trace("Fatal server-side error", e);
             return FutureUtils.completedExceptionally(e);
         }
     }
