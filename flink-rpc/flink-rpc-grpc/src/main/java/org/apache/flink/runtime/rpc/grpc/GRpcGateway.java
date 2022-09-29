@@ -119,18 +119,23 @@ public class GRpcGateway<F extends Serializable>
                 new ClientCall.Listener<RemoteResponseWithID>() {
                     @Override
                     public void onMessage(RemoteResponseWithID response) {
-                        CompletableFuture<Object> responseFuture =
-                                pendingResponses.remove(response.getId());
-                        if (responseFuture != null) {
-                            responseFuture.complete(response.getPayload());
-                        } else {
-                            System.out.println("Unexpected response with ID " + response.getId());
+                        synchronized (lock) {
+                            CompletableFuture<Object> responseFuture =
+                                    pendingResponses.remove(response.getId());
+                            if (responseFuture != null) {
+                                responseFuture.complete(response.getPayload());
+                            } else {
+                                System.out.println(
+                                        "Unexpected response with ID " + response.getId());
+                            }
                         }
                     }
 
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        channel.shutdown();
+                        synchronized (lock) {
+                            channel.shutdown();
+                        }
                     }
                 },
                 new Metadata());
