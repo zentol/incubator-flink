@@ -551,6 +551,7 @@ public class GRpcService implements RpcService, BindableService {
                                             s -> {
                                                 synchronized (lock) {
                                                     if (!isStopped) {
+                                                        LOG.trace("Sending response {}.", s);
                                                         responseObserver.onNext(
                                                                 new RemoteResponseWithID(
                                                                         (Serializable) s,
