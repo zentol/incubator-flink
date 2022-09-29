@@ -287,6 +287,7 @@ public class GRpcService implements RpcService, BindableService {
             NettyChannelBuilder nettyChannelBuilder =
                     NettyChannelBuilder.forTarget(address)
                             .sslContext(sslContext)
+                            .maxInboundMessageSize(1024 * 1024 * 128) // 128 mb
                             .withOption(
                                     ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(true));
             if (sslContext == null) {
