@@ -262,6 +262,10 @@ public class GRpcServer implements RpcServer {
                                                         ((CompletableFuture<Object>) rpcResult)
                                                                 .exceptionally(
                                                                         throwable -> {
+                                                                            LOG.debug(
+                                                                                    "rpc failed at {} with ",
+                                                                                    getAddress(),
+                                                                                    throwable);
                                                                             if (throwable
                                                                                     instanceof
                                                                                     RejectedExecutionException) {
