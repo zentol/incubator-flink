@@ -354,10 +354,12 @@ public class GRpcGateway<F extends Serializable>
 
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
-                    call.sendMessage(
-                            new RemoteRequestWithID(
-                                    fencingToken, message, endpointId, id, Type.ASK));
-                    call.request(1);
+                    synchronized (lock) {
+                        call.sendMessage(
+                                new RemoteRequestWithID(
+                                        fencingToken, message, endpointId, id, Type.ASK));
+                        call.request(1);
+                    }
                 },
                 flinkClassLoader);
 
