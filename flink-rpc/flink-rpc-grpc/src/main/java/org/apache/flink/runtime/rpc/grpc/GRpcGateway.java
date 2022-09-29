@@ -298,7 +298,7 @@ public class GRpcGateway<F extends Serializable>
      *
      * @param message to send to the RPC endpoint.
      */
-    private synchronized void tell(RemoteRpcInvocation message) {
+    private void tell(RemoteRpcInvocation message) {
         synchronized (lock) {
             if (isClosing) {
                 LOG.debug(
@@ -331,7 +331,7 @@ public class GRpcGateway<F extends Serializable>
      *     TimeoutException}
      * @return Response future
      */
-    private synchronized CompletableFuture<?> ask(RemoteRpcInvocation message, Duration timeout) {
+    private CompletableFuture<?> ask(RemoteRpcInvocation message, Duration timeout) {
         synchronized (lock) {
             if (isClosing) {
                 LOG.debug(
