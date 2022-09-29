@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.rpc.grpc;
 
 import org.apache.flink.runtime.rpc.FencedRpcEndpoint;
-import org.apache.flink.runtime.rpc.Local;
 import org.apache.flink.runtime.rpc.MainThreadValidatorUtil;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcServer;
@@ -304,9 +303,6 @@ public class GRpcServer implements RpcServer {
                                         "unknown", getAddress(), "dude SERIOUSLY please stop"));
                     }
                 }
-
-                final String methodName = rpcMethod.getName();
-                final boolean isLocalRpcInvocation = rpcMethod.getAnnotation(Local.class) != null;
 
                 return result;
             }
