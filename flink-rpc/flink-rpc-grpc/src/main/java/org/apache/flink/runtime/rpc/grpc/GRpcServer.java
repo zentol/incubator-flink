@@ -43,7 +43,6 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -134,44 +133,51 @@ public class GRpcServer implements RpcServer {
     private final AtomicReference<TernaryBoolean> isRunning =
             new AtomicReference<>(TernaryBoolean.UNDEFINED);
 
+    private final Object lock = new Object();
+
     @Override
     public void start() {
-        mainThread =
-                Executors.newSingleThreadScheduledExecutor(
-                        new ExecutorThreadFactory.Builder()
-                                .setPoolName("flink-grpc-service-" + rpcEndpoint.getEndpointId())
-                                .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
-                                .build());
-        final MainThreadValidatorUtil mainThreadValidator =
-                new MainThreadValidatorUtil(rpcEndpoint);
-        mainThread.submit(mainThreadValidator::enterMainThread);
+        synchronized (lock) {
+            mainThread =
+                    Executors.newSingleThreadScheduledExecutor(
+                            new ExecutorThreadFactory.Builder()
+                                    .setPoolName(
+                                            "flink-grpc-service-" + rpcEndpoint.getEndpointId())
+                                    .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
+                                    .build());
+            final MainThreadValidatorUtil mainThreadValidator =
+                    new MainThreadValidatorUtil(rpcEndpoint);
+            mainThread.submit(mainThreadValidator::enterMainThread);
 
-        mainThread.submit(
-                ClassLoadingUtils.withContextClassLoader(
-                        () -> {
-                            try {
-                                rpcEndpoint.internalCallOnStart();
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        },
-                        flinkClassLoader));
-        isRunning.set(TernaryBoolean.TRUE);
+            mainThread.submit(
+                    ClassLoadingUtils.withContextClassLoader(
+                            () -> {
+                                try {
+                                    rpcEndpoint.internalCallOnStart();
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            flinkClassLoader));
+            isRunning.set(TernaryBoolean.TRUE);
+        }
     }
 
     @Override
     public void stop() {
-        if (isRunning.compareAndSet(TernaryBoolean.TRUE, TernaryBoolean.FALSE)) {
-            mainThread.submit(
-                    ClassLoadingUtils.withContextClassLoader(
-                            () -> {
-                                FutureUtils.forward(
-                                        rpcEndpoint.internalCallOnStop(), terminationFuture);
-                                terminationFuture.thenRun(mainThread::shutdown);
-                            },
-                            flinkClassLoader));
-        } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
-            terminationFuture.complete(null);
+        synchronized (lock) {
+            if (isRunning.compareAndSet(TernaryBoolean.TRUE, TernaryBoolean.FALSE)) {
+                mainThread.submit(
+                        ClassLoadingUtils.withContextClassLoader(
+                                () -> {
+                                    FutureUtils.forward(
+                                            rpcEndpoint.internalCallOnStop(), terminationFuture);
+                                    terminationFuture.thenRun(mainThread::shutdown);
+                                },
+                                flinkClassLoader));
+            } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
+                terminationFuture.complete(null);
+            }
         }
     }
 
@@ -234,70 +240,70 @@ public class GRpcServer implements RpcServer {
 
             if (rpcMethod.getReturnType().equals(Void.TYPE)) {
                 // No return value to send back
-                mainThread.execute(
-                        () -> {
-                            try {
-                                runWithContextClassLoader(
-                                        () ->
-                                                rpcMethod.invoke(
-                                                        rpcEndpoint, rpcInvocation.getArgs()),
-                                        flinkClassLoader);
-                            } catch (ReflectiveOperationException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
+                synchronized (lock) {
+                    if (!mainThread.isShutdown()) {
+                        mainThread.execute(
+                                () -> {
+                                    try {
+                                        runWithContextClassLoader(
+                                                () ->
+                                                        rpcMethod.invoke(
+                                                                rpcEndpoint,
+                                                                rpcInvocation.getArgs()),
+                                                flinkClassLoader);
+                                    } catch (ReflectiveOperationException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    } else {
+                        LOG.debug("Dropping RPC because server is shutting down.");
+                    }
+                }
                 return CompletableFuture.completedFuture(null);
             } else {
                 final CompletableFuture<Object> result = new CompletableFuture<>();
-                mainThread.execute(
-                        () -> {
-                            try {
-                                runWithContextClassLoader(
-                                        () -> {
-                                            Object rpcResult =
-                                                    rpcMethod.invoke(
-                                                            rpcEndpoint, rpcInvocation.getArgs());
-                                            if (rpcResult instanceof CompletableFuture) {
-                                                FutureUtils.forward(
-                                                        ((CompletableFuture<Object>) rpcResult)
-                                                                .exceptionally(
-                                                                        throwable -> {
-                                                                            LOG.debug(
-                                                                                    "rpc failed at {} with ",
-                                                                                    getAddress(),
-                                                                                    throwable);
-                                                                            if (throwable
-                                                                                    instanceof
-                                                                                    RejectedExecutionException) {
-                                                                                throw new CompletionException(
-                                                                                        new RecipientUnreachableException(
-                                                                                                "unknown",
-                                                                                                getAddress(),
-                                                                                                "dude please stop"));
-                                                                            }
-                                                                            throw new CompletionException(
-                                                                                    throwable);
-                                                                        }),
-                                                        result);
-                                            } else {
-                                                result.complete(rpcResult);
-                                            }
-                                        },
-                                        flinkClassLoader);
-                            } catch (InvocationTargetException e) {
-                                LOG.debug(
-                                        "Reporting back error thrown in remote procedure {}",
-                                        rpcMethod,
-                                        e.getTargetException());
-                                result.completeExceptionally(e.getTargetException());
-                            } catch (ReflectiveOperationException e) {
-                                LOG.debug(
-                                        "Reporting back error thrown in remote procedure {}",
-                                        rpcMethod,
-                                        e);
-                                result.completeExceptionally(e);
-                            }
-                        });
+                synchronized (lock) {
+                    if (!mainThread.isShutdown()) {
+                        mainThread.execute(
+                                () -> {
+                                    try {
+                                        runWithContextClassLoader(
+                                                () -> {
+                                                    Object rpcResult =
+                                                            rpcMethod.invoke(
+                                                                    rpcEndpoint,
+                                                                    rpcInvocation.getArgs());
+                                                    if (rpcResult instanceof CompletableFuture) {
+                                                        FutureUtils.forward(
+                                                                (CompletableFuture<Object>)
+                                                                        rpcResult,
+                                                                result);
+                                                    } else {
+                                                        result.complete(rpcResult);
+                                                    }
+                                                },
+                                                flinkClassLoader);
+                                    } catch (InvocationTargetException e) {
+                                        LOG.debug(
+                                                "Reporting back error thrown in remote procedure {}",
+                                                rpcMethod,
+                                                e.getTargetException());
+                                        result.completeExceptionally(e.getTargetException());
+                                    } catch (ReflectiveOperationException e) {
+                                        LOG.debug(
+                                                "Reporting back error thrown in remote procedure {}",
+                                                rpcMethod,
+                                                e);
+                                        result.completeExceptionally(e);
+                                    }
+                                });
+                    } else {
+                        LOG.debug("Dropping RPC because server is shutting down.");
+                        result.completeExceptionally(
+                                new RecipientUnreachableException(
+                                        "unknown", getAddress(), "dude SERIOUSLY please stop"));
+                    }
+                }
 
                 final String methodName = rpcMethod.getName();
                 final boolean isLocalRpcInvocation = rpcMethod.getAnnotation(Local.class) != null;
