@@ -24,6 +24,7 @@ import org.apache.flink.runtime.rpc.MainThreadValidatorUtil;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.exceptions.FencingTokenException;
+import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.util.FatalExitExceptionHandler;
@@ -42,6 +43,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -257,7 +259,21 @@ public class GRpcServer implements RpcServer {
                                                             rpcEndpoint, rpcInvocation.getArgs());
                                             if (rpcResult instanceof CompletableFuture) {
                                                 FutureUtils.forward(
-                                                        (CompletableFuture<Object>) rpcResult,
+                                                        ((CompletableFuture<Object>) rpcResult)
+                                                                .exceptionally(
+                                                                        throwable -> {
+                                                                            if (throwable
+                                                                                    instanceof
+                                                                                    RejectedExecutionException) {
+                                                                                throw new CompletionException(
+                                                                                        new RecipientUnreachableException(
+                                                                                                "unknown",
+                                                                                                getAddress(),
+                                                                                                "dude please stop"));
+                                                                            }
+                                                                            throw new CompletionException(
+                                                                                    throwable);
+                                                                        }),
                                                         result);
                                             } else {
                                                 result.complete(rpcResult);
