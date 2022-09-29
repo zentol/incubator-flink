@@ -54,6 +54,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -85,10 +87,10 @@ public class GRpcGateway<F extends Serializable>
 
     private final ClassLoader flinkClassLoader;
 
+    private final ClientCall<RemoteRequestWithID, RemoteResponseWithID> call;
     private final ManagedChannel channel;
-    private final Function<Channel, ClientCall<RemoteRequestWithID, RemoteResponseWithID>>
-            callFunction;
     private long nextId = 0;
+    private final Map<Long, CompletableFuture<Object>> pendingResponses = new HashMap<>();
 
     public GRpcGateway(
             @Nullable F fencingToken,
@@ -112,7 +114,26 @@ public class GRpcGateway<F extends Serializable>
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
         this.channel = channel;
-        this.callFunction = callFunction;
+        this.call = callFunction.apply(channel);
+        this.call.start(
+                new ClientCall.Listener<RemoteResponseWithID>() {
+                    @Override
+                    public void onMessage(RemoteResponseWithID response) {
+                        CompletableFuture<Object> responseFuture =
+                                pendingResponses.remove(response.getId());
+                        if (responseFuture != null) {
+                            responseFuture.complete(response.getPayload());
+                        } else {
+                            System.out.println("Unexpected response with ID " + response.getId());
+                        }
+                    }
+
+                    @Override
+                    public void onClose(Status status, Metadata trailers) {
+                        channel.shutdown();
+                    }
+                },
+                new Metadata());
     }
 
     @Override
@@ -139,7 +160,13 @@ public class GRpcGateway<F extends Serializable>
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        try {
+            call.halfClose();
+        } catch (IllegalStateException ise) {
+            // just means the call was already closed/cancelled
+        }
+    }
 
     @Override
     public String getAddress() {
@@ -282,15 +309,9 @@ public class GRpcGateway<F extends Serializable>
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
                     synchronized (lock) {
-                        final ClientCall<RemoteRequestWithID, RemoteResponseWithID> call =
-                                callFunction.apply(channel);
-                        call.start(
-                                new ClientCall.Listener<RemoteResponseWithID>() {}, new Metadata());
-
                         call.sendMessage(
                                 new RemoteRequestWithID(
                                         fencingToken, message, endpointId, id, Type.TELL));
-                        call.halfClose();
                     }
                 },
                 flinkClassLoader);
@@ -323,30 +344,14 @@ public class GRpcGateway<F extends Serializable>
         response.thenAccept(
                 resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
 
+        pendingResponses.put(id, response);
+
         ClassLoadingUtils.runWithContextClassLoader(
                 () -> {
-                    final ClientCall<RemoteRequestWithID, RemoteResponseWithID> call =
-                            callFunction.apply(channel);
-                    call.start(
-                            new ClientCall.Listener<RemoteResponseWithID>() {
-                                @Override
-                                public void onMessage(RemoteResponseWithID message) {
-                                    response.complete(message.getPayload());
-                                }
-
-                                @Override
-                                public void onClose(Status status, Metadata trailers) {
-                                    if (!status.isOk()) {
-                                        response.completeExceptionally(status.asException());
-                                    }
-                                }
-                            },
-                            new Metadata());
                     call.sendMessage(
                             new RemoteRequestWithID(
                                     fencingToken, message, endpointId, id, Type.ASK));
                     call.request(1);
-                    call.halfClose();
                 },
                 flinkClassLoader);
 

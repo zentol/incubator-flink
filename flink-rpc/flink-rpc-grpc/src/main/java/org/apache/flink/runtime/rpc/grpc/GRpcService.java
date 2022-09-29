@@ -63,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -513,76 +514,118 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return serverSpec.createService("Server", this::handleMessage);
+        return serverSpec.createService("Server", this::setupConnection);
     }
 
-    private final Object lock = new Object();
+    private StreamObserver<RemoteRequestWithID> setupConnection(
+            StreamObserver<RemoteResponseWithID> responseObserver) {
 
-    private void handleMessage(
-            RemoteRequestWithID request, StreamObserver<RemoteResponseWithID> responseObserver) {
+        return new StreamObserver<RemoteRequestWithID>() {
 
-        LOG.trace(
-                "Received {} #{} to '{}:{}@{} (RPC={})",
-                request.getType().name().toLowerCase(Locale.ROOT),
-                request.getId(),
-                getInternalAddress(),
-                getPort(),
-                request.getTarget(),
-                request.getPayload());
-        try {
-            switch (request.getType()) {
-                case TELL:
-                    handleRpcInvocation(request.getTarget(), request);
-                    break;
-                case ASK:
-                    CompletableFuture<?> resp = handleRpcInvocation(request.getTarget(), request);
+            private final Object lock = new Object();
 
-                    resp.thenAccept(
-                                    s -> {
-                                        synchronized (lock) {
-                                            responseObserver.onNext(
-                                                    new RemoteResponseWithID(
-                                                            (Serializable) s, request.getId()));
-                                            responseObserver.onCompleted();
-                                        }
-                                    })
-                            .exceptionally(
-                                    e -> {
-                                        synchronized (lock) {
-                                            if (e.getCause()
-                                                            instanceof RecipientUnreachableException
-                                                    || e.getCause()
-                                                            instanceof RejectedExecutionException) {
-                                                LOG.debug(
-                                                        "RPC ({}) failed.",
-                                                        request.getPayload(),
-                                                        e);
-                                            } else {
-                                                LOG.debug(
-                                                        "RPC ({}) failed.",
-                                                        request.getPayload(),
-                                                        e);
-                                            }
-                                            responseObserver.onNext(
-                                                    new RemoteResponseWithID(
-                                                            new SerializedThrowable(
-                                                                    ExceptionUtils
-                                                                            .stripCompletionException(
-                                                                                    e)),
-                                                            request.getId()));
-                                            responseObserver.onCompleted();
-                                            return null;
-                                        }
-                                    });
-                    break;
+            @GuardedBy("lock")
+            private boolean isStopped = false;
+
+            @Override
+            public void onNext(RemoteRequestWithID request) {
+                LOG.trace(
+                        "Received {} #{} to '{}:{}@{} (RPC={})",
+                        request.getType().name().toLowerCase(Locale.ROOT),
+                        request.getId(),
+                        getInternalAddress(),
+                        getPort(),
+                        request.getTarget(),
+                        request.getPayload());
+                try {
+                    switch (request.getType()) {
+                        case TELL:
+                            handleRpcInvocation(request.getTarget(), request);
+                            break;
+                        case ASK:
+                            CompletableFuture<?> resp =
+                                    handleRpcInvocation(request.getTarget(), request);
+
+                            resp.thenAccept(
+                                            s -> {
+                                                synchronized (lock) {
+                                                    if (!isStopped) {
+                                                        responseObserver.onNext(
+                                                                new RemoteResponseWithID(
+                                                                        (Serializable) s,
+                                                                        request.getId()));
+                                                    } else {
+                                                        LOG.debug(
+                                                                "Dropping RPC ({}) result because server was stopped.",
+                                                                request.getPayload());
+                                                    }
+                                                }
+                                            })
+                                    .exceptionally(
+                                            e -> {
+                                                synchronized (lock) {
+                                                    if (e.getCause()
+                                                                    instanceof
+                                                                    RecipientUnreachableException
+                                                            || e.getCause()
+                                                                    instanceof
+                                                                    RejectedExecutionException) {
+                                                        LOG.debug(
+                                                                "RPC ({}) failed{}.",
+                                                                request.getPayload(),
+                                                                isStopped
+                                                                        ? " while server was stopped."
+                                                                        : "",
+                                                                e);
+                                                    } else {
+                                                        LOG.debug(
+                                                                "RPC ({}) failed{}.",
+                                                                request.getPayload(),
+                                                                isStopped
+                                                                        ? " while server was stopped."
+                                                                        : "",
+                                                                e);
+                                                    }
+                                                    if (!isStopped) {
+                                                        responseObserver.onNext(
+                                                                new RemoteResponseWithID(
+                                                                        new SerializedThrowable(
+                                                                                ExceptionUtils
+                                                                                        .stripCompletionException(
+                                                                                                e)),
+                                                                        request.getId()));
+                                                    }
+                                                    return null;
+                                                }
+                                            });
+                            break;
+                    }
+
+                } catch (Exception e) {
+                    synchronized (lock) {
+                        LOG.error("Fatal RPC failed.", e);
+                        responseObserver.onError(e);
+                    }
+                }
             }
 
-        } catch (Exception e) {
-            synchronized (lock) {
-                LOG.error("Fatal RPC failed.", e);
-                responseObserver.onError(e);
+            @Override
+            public void onError(Throwable t) {
+                LOG.debug("Server ({}:{}) side onError", getInternalAddress(), getPort(), t);
+                synchronized (lock) {
+                    responseObserver.onError(t);
+                }
             }
-        }
+
+            @Override
+            public void onCompleted() {
+                LOG.debug("Server ({}:{}) side onCompleted", getInternalAddress(), getPort());
+                synchronized (lock) {
+                    isStopped = true;
+                    responseObserver.onCompleted();
+                }
+            }
+        };
     }
 
     /**
