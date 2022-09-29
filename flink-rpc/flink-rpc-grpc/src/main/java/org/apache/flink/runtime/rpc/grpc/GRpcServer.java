@@ -243,6 +243,10 @@ public class GRpcServer implements RpcServer {
                     if (!mainThread.isShutdown()) {
                         mainThread.execute(
                                 () -> {
+                                    if (mainThread.isShutdown()) {
+                                        LOG.debug("Dropping RPC because server is shutting down.");
+                                        return;
+                                    }
                                     try {
                                         runWithContextClassLoader(
                                                 () ->
@@ -265,6 +269,15 @@ public class GRpcServer implements RpcServer {
                     if (!mainThread.isShutdown()) {
                         mainThread.execute(
                                 () -> {
+                                    if (mainThread.isShutdown()) {
+                                        LOG.debug("Dropping RPC because server is shutting down.");
+                                        result.completeExceptionally(
+                                                new RecipientUnreachableException(
+                                                        "unknown",
+                                                        getAddress(),
+                                                        "dude SERIOUSLY please stop"));
+                                        return;
+                                    }
                                     try {
                                         runWithContextClassLoader(
                                                 () -> {
