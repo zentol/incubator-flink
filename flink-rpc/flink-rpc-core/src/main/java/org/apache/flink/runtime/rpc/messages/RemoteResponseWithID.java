@@ -40,6 +40,6 @@ public class RemoteResponseWithID implements Serializable {
 
     @Override
     public String toString() {
-        return payload.toString();
+        return payload == null ? "null" : payload.getClass().getSimpleName() + ": " + payload;
     }
 }
