@@ -89,7 +89,7 @@ public class GRpcSystem implements RpcSystem {
         @Nullable private final String externalAddress;
         private final Iterator<Integer> externalPortRange;
 
-        private String componentName = "Flink";
+        private String componentName = "flink";
         private String bindAddress = NetUtils.getWildcardIPAddress();
         @Nullable private Integer bindPort = null;
 
@@ -149,7 +149,7 @@ public class GRpcSystem implements RpcSystem {
                             Executors.newScheduledThreadPool(
                                     executorConfiguration.getMaxNumThreads(),
                                     new ExecutorThreadFactory.Builder()
-                                            .setPoolName("flink-" + componentName)
+                                            .setPoolName(componentName + "-rpc-pool")
                                             .setExceptionHandler(FatalExitExceptionHandler.INSTANCE)
                                             .setThreadPriority(
                                                     executorConfiguration.getThreadPriority())
