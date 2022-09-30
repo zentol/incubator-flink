@@ -120,7 +120,7 @@ public class GRpcGateway<F extends Serializable>
                     @Override
                     public void onMessage(RemoteResponseWithID response) {
                         synchronized (lock) {
-                            LOG.info("Receiver response #{} {}", response.getId(), response);
+                            LOG.trace("Receiver response #{} {}", response.getId(), response);
                             CompletableFuture<Object> responseFuture =
                                     pendingResponses.remove(response.getId());
                             if (responseFuture != null) {
