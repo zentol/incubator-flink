@@ -307,20 +307,20 @@ public class GRpcGateway<F extends Serializable>
                         message);
                 return;
             }
+            final long id = nextId++;
+
+            LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
+
+            ClassLoadingUtils.runWithContextClassLoader(
+                    () -> {
+                        synchronized (lock) {
+                            call.sendMessage(
+                                    new RemoteRequestWithID(
+                                            fencingToken, message, endpointId, id, Type.TELL));
+                        }
+                    },
+                    flinkClassLoader);
         }
-        final long id = nextId++;
-
-        LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
-
-        ClassLoadingUtils.runWithContextClassLoader(
-                () -> {
-                    synchronized (lock) {
-                        call.sendMessage(
-                                new RemoteRequestWithID(
-                                        fencingToken, message, endpointId, id, Type.TELL));
-                    }
-                },
-                flinkClassLoader);
     }
 
     /**
@@ -341,31 +341,29 @@ public class GRpcGateway<F extends Serializable>
                 return FutureUtils.completedExceptionally(
                         new RpcException("Gateway has been closed."));
             }
-        }
-        final long id = nextId++;
+            final long id = nextId++;
 
-        LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
+            LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
 
-        CompletableFuture<Object> response = new CompletableFuture<>();
-        response.thenAccept(
-                resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
+            CompletableFuture<Object> response = new CompletableFuture<>();
+            response.thenAccept(
+                    resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
 
-        pendingResponses.put(id, response);
+            pendingResponses.put(id, response);
 
-        ClassLoadingUtils.runWithContextClassLoader(
-                () -> {
-                    synchronized (lock) {
+            ClassLoadingUtils.runWithContextClassLoader(
+                    () -> {
                         call.sendMessage(
                                 new RemoteRequestWithID(
                                         fencingToken, message, endpointId, id, Type.ASK));
                         call.request(1);
-                    }
-                },
-                flinkClassLoader);
+                    },
+                    flinkClassLoader);
 
-        return ClassLoadingUtils.guardCompletionWithContextClassLoader(
-                FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
-                flinkClassLoader);
+            return ClassLoadingUtils.guardCompletionWithContextClassLoader(
+                    FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
+                    flinkClassLoader);
+        }
     }
 
     static Throwable resolveTimeoutException(
