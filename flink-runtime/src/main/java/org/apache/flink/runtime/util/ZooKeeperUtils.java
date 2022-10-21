@@ -123,20 +123,8 @@ public class ZooKeeperUtils {
         return getLeaderPath(RESOURCE_MANAGER_LEADER);
     }
 
-    public static String getLeaderPathForDispatcher() {
-        return getLeaderPath(DISPATCHER_LEADER);
-    }
-
     public static String getLeaderPathForRestServer() {
         return getLeaderPath(REST_SERVER_LEADER);
-    }
-
-    public static String getLeaderPathForJobManager(JobID jobId) {
-        return generateZookeeperPath(getLeaderPathForJob(jobId), LEADER_NODE);
-    }
-
-    public static String getSingleLeaderElectionPathForJobManager(JobID jobID) {
-        return getLeaderPath(jobID.toString());
     }
 
     @Nonnull
@@ -548,9 +536,6 @@ public class ZooKeeperUtils {
 
         // All operations will have the path as root
         CuratorFramework facade = client.usingNamespace(client.getNamespace() + zooKeeperJobsPath);
-
-        final String zooKeeperFullJobsPath = client.getNamespace() + zooKeeperJobsPath;
-
         final ZooKeeperStateHandleStore<JobGraph> zooKeeperStateHandleStore =
                 new ZooKeeperStateHandleStore<>(facade, stateStorage);
 
