@@ -21,12 +21,11 @@ package org.apache.flink.runtime.leaderelection;
 import org.apache.flink.runtime.util.ZooKeeperUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.concurrent.Executors;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCacheSelector;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.state.ConnectionState;
@@ -51,7 +50,7 @@ public class ZooKeeperMultipleComponentLeaderElectionDriver
 
     private final LeaderLatch leaderLatch;
 
-    private final TreeCache treeCache;
+    private final CuratorCache treeCache;
 
     private final ConnectionStateListener listener =
             (client, newState) -> handleStateChange(newState);
@@ -66,35 +65,26 @@ public class ZooKeeperMultipleComponentLeaderElectionDriver
         this.leaderElectionListener = Preconditions.checkNotNull(leaderElectionListener);
 
         this.leaderLatch = new LeaderLatch(curatorFramework, ZooKeeperUtils.getLeaderLatchPath());
-        this.treeCache =
-                TreeCache.newBuilder(curatorFramework, "/")
-                        .setCacheData(true)
-                        .setCreateParentNodes(false)
-                        .setSelector(
-                                new ZooKeeperMultipleComponentLeaderElectionDriver
-                                        .ConnectionInfoNodeSelector())
-                        .setExecutor(Executors.newDirectExecutorService())
-                        .build();
+        this.treeCache = CuratorCache.build(curatorFramework, "/");
         treeCache
-                .getListenable()
+                .listenable()
                 .addListener(
-                        (client, event) -> {
-                            switch (event.getType()) {
-                                case NODE_ADDED:
-                                case NODE_UPDATED:
-                                    Preconditions.checkNotNull(
-                                            event.getData(),
-                                            "The ZooKeeper event data must not be null.");
-                                    handleChangedLeaderInformation(event.getData());
-                                    break;
-                                case NODE_REMOVED:
-                                    Preconditions.checkNotNull(
-                                            event.getData(),
-                                            "The ZooKeeper event data must not be null.");
-                                    handleRemovedLeaderInformation(event.getData().getPath());
-                                    break;
-                            }
-                        });
+                        CuratorCacheListener.builder()
+                                .forCreatesAndChanges(
+                                        (ignored, newData) -> {
+                                            Preconditions.checkNotNull(
+                                                    newData,
+                                                    "The ZooKeeper event data must not be null.");
+                                            handleChangedLeaderInformation(newData);
+                                        })
+                                .forDeletes(
+                                        deletedNode -> {
+                                            Preconditions.checkNotNull(
+                                                    deletedNode,
+                                                    "The ZooKeeper event data must not be null.");
+                                            handleRemovedLeaderInformation(deletedNode.getPath());
+                                        })
+                                .build());
 
         leaderLatch.addListener(this);
         curatorFramework.getConnectionStateListenable().addListener(listener);
@@ -246,23 +236,6 @@ public class ZooKeeperMultipleComponentLeaderElectionDriver
         }
 
         return leaderInformation;
-    }
-
-    /**
-     * This selector finds all connection info nodes. See {@link
-     * org.apache.flink.runtime.highavailability.zookeeper.ZooKeeperMultipleComponentLeaderElectionHaServices}
-     * for more details on the Znode layout.
-     */
-    private static class ConnectionInfoNodeSelector implements TreeCacheSelector {
-        @Override
-        public boolean traverseChildren(String fullPath) {
-            return true;
-        }
-
-        @Override
-        public boolean acceptChild(String fullPath) {
-            return !fullPath.endsWith(ZooKeeperUtils.getLeaderLatchPath());
-        }
     }
 
     @Override

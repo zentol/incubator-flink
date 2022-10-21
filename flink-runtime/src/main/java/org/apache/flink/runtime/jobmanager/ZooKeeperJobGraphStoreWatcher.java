@@ -20,10 +20,9 @@ package org.apache.flink.runtime.jobmanager;
 
 import org.apache.flink.api.common.JobID;
 
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.flink.shaded.curator5.org.apache.curator.utils.ZKPaths;
 
 import org.slf4j.Logger;
@@ -56,15 +55,15 @@ public class ZooKeeperJobGraphStoreWatcher implements JobGraphStoreWatcher {
      * Cache to monitor all children. This is used to detect races with other instances working on
      * the same state.
      */
-    private final PathChildrenCache pathCache;
+    private final CuratorCache pathCache;
 
     private JobGraphStore.JobGraphListener jobGraphListener;
 
     private volatile boolean running;
 
-    public ZooKeeperJobGraphStoreWatcher(PathChildrenCache pathCache) {
+    public ZooKeeperJobGraphStoreWatcher(CuratorCache pathCache) {
         this.pathCache = checkNotNull(pathCache);
-        this.pathCache.getListenable().addListener(new JobGraphsPathCacheListener());
+        this.pathCache.listenable().addListener(createListener());
         running = false;
     }
 
@@ -86,90 +85,31 @@ public class ZooKeeperJobGraphStoreWatcher implements JobGraphStoreWatcher {
         pathCache.close();
     }
 
-    /**
-     * Monitors ZooKeeper for changes.
-     *
-     * <p>Detects modifications from other job managers in corner situations. The event
-     * notifications fire for changes from this job manager as well.
-     */
-    private final class JobGraphsPathCacheListener implements PathChildrenCacheListener {
+    private CuratorCacheListener createListener() {
+        return CuratorCacheListener.builder()
+                .forInitialized(() -> LOG.info("JobGraphsPathCacheListener initialized"))
+                .forCreates(
+                        newNode -> {
+                            JobID jobId = fromEvent(newNode);
 
-        @Override
-        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) {
+                            LOG.debug("Received CHILD_ADDED event notification for job {}", jobId);
 
-            if (LOG.isDebugEnabled()) {
-                if (event.getData() != null) {
-                    LOG.debug(
-                            "Received {} event (path: {})",
-                            event.getType(),
-                            event.getData().getPath());
-                } else {
-                    LOG.debug("Received {} event", event.getType());
-                }
-            }
+                            jobGraphListener.onAddedJobGraph(jobId);
+                        })
+                .forDeletes(
+                        deletedNode -> {
+                            JobID jobId = fromEvent(deletedNode);
 
-            switch (event.getType()) {
-                case CHILD_ADDED:
-                    {
-                        JobID jobId = fromEvent(event);
+                            LOG.debug(
+                                    "Received CHILD_REMOVED event notification for job {}", jobId);
 
-                        LOG.debug("Received CHILD_ADDED event notification for job {}", jobId);
+                            jobGraphListener.onRemovedJobGraph(jobId);
+                        })
+                .build();
+    }
 
-                        jobGraphListener.onAddedJobGraph(jobId);
-                    }
-                    break;
-
-                case CHILD_UPDATED:
-                    {
-                        // Nothing to do
-                    }
-                    break;
-
-                case CHILD_REMOVED:
-                    {
-                        JobID jobId = fromEvent(event);
-
-                        LOG.debug("Received CHILD_REMOVED event notification for job {}", jobId);
-
-                        jobGraphListener.onRemovedJobGraph(jobId);
-                    }
-                    break;
-
-                case CONNECTION_SUSPENDED:
-                    {
-                        LOG.warn(
-                                "ZooKeeper connection SUSPENDING. Changes to the submitted job "
-                                        + "graphs are not monitored (temporarily).");
-                    }
-                    break;
-
-                case CONNECTION_LOST:
-                    {
-                        LOG.warn(
-                                "ZooKeeper connection LOST. Changes to the submitted job "
-                                        + "graphs are not monitored (permanently).");
-                    }
-                    break;
-
-                case CONNECTION_RECONNECTED:
-                    {
-                        LOG.info(
-                                "ZooKeeper connection RECONNECTED. Changes to the submitted job "
-                                        + "graphs are monitored again.");
-                    }
-                    break;
-
-                case INITIALIZED:
-                    {
-                        LOG.info("JobGraphsPathCacheListener initialized");
-                    }
-                    break;
-            }
-        }
-
-        /** Returns a JobID for the event's path. */
-        private JobID fromEvent(PathChildrenCacheEvent event) {
-            return JobID.fromHexString(ZKPaths.getNodeFromPath(event.getData().getPath()));
-        }
+    /** Returns a JobID for the event's path. */
+    private static JobID fromEvent(ChildData event) {
+        return JobID.fromHexString(ZKPaths.getNodeFromPath(event.getPath()));
     }
 }

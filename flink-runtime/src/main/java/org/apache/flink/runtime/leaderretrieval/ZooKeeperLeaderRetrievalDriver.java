@@ -27,7 +27,7 @@ import org.apache.flink.util.ExceptionUtils;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.state.ConnectionState;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.state.ConnectionStateListener;
 
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -53,7 +54,7 @@ public class ZooKeeperLeaderRetrievalDriver implements LeaderRetrievalDriver {
     private final CuratorFramework client;
 
     /** Curator recipe to watch changes of a specific ZooKeeper node. */
-    private final TreeCache cache;
+    private final CuratorCache cache;
 
     private final String connectionInformationPath;
 
@@ -123,10 +124,10 @@ public class ZooKeeperLeaderRetrievalDriver implements LeaderRetrievalDriver {
         try {
             LOG.debug("Leader node has changed.");
 
-            final ChildData childData = cache.getCurrentData(connectionInformationPath);
+            final Optional<ChildData> childData = cache.get(connectionInformationPath);
 
-            if (childData != null) {
-                final byte[] data = childData.getData();
+            if (childData.isPresent()) {
+                final byte[] data = childData.get().getData();
                 if (data != null && data.length > 0) {
                     ByteArrayInputStream bais = new ByteArrayInputStream(data);
                     ObjectInputStream ois = new ObjectInputStream(bais);

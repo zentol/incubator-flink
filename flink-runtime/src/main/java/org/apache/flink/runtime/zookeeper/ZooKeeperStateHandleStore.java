@@ -207,20 +207,20 @@ public class ZooKeeperStateHandleStore<T extends Serializable>
         // small, because ZooKeeper is designed for data in the KB range, but the state can be
         // larger. Create the lock node in a transaction with the actual state node. That way we can
         // prevent race conditions with a concurrent delete operation.
-        client.inTransaction()
-                .create()
-                .withMode(CreateMode.PERSISTENT)
-                .forPath(path, serializedStoreHandle)
-                .and()
-                .create()
-                .withMode(CreateMode.PERSISTENT)
-                .forPath(getRootLockPath(path))
-                .and()
-                .create()
-                .withMode(CreateMode.EPHEMERAL)
-                .forPath(getInstanceLockPath(path))
-                .and()
-                .commit();
+        client.transaction()
+                .forOperations(
+                        client.transactionOp()
+                                .create()
+                                .withMode(CreateMode.PERSISTENT)
+                                .forPath(path, serializedStoreHandle),
+                        client.transactionOp()
+                                .create()
+                                .withMode(CreateMode.PERSISTENT)
+                                .forPath(getRootLockPath(path)),
+                        client.transactionOp()
+                                .create()
+                                .withMode(CreateMode.EPHEMERAL)
+                                .forPath(getInstanceLockPath(path)));
     }
 
     /**

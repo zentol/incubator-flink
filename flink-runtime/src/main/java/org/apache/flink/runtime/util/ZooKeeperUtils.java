@@ -54,7 +54,6 @@ import org.apache.flink.runtime.persistence.filesystem.FileSystemStateStorageHel
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.state.SharedStateRegistryFactory;
 import org.apache.flink.runtime.zookeeper.ZooKeeperStateHandleStore;
-import org.apache.flink.util.concurrent.Executors;
 import org.apache.flink.util.function.RunnableWithException;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
@@ -62,10 +61,8 @@ import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFram
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.api.ACLProvider;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.imps.DefaultACLProvider;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCacheListener;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCacheSelector;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
 import org.apache.flink.shaded.curator5.org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.flink.shaded.zookeeper3.org.apache.zookeeper.CreateMode;
@@ -532,14 +529,14 @@ public class ZooKeeperUtils {
                 configuration.getString(HighAvailabilityOptions.HA_ZOOKEEPER_JOBGRAPHS_PATH);
 
         // Ensure that the job graphs path exists
-        client.newNamespaceAwareEnsurePath(zooKeeperJobsPath).ensure(client.getZookeeperClient());
+        client.checkExists().creatingParentContainersIfNeeded().forPath(zooKeeperJobsPath);
 
         // All operations will have the path as root
         CuratorFramework facade = client.usingNamespace(client.getNamespace() + zooKeeperJobsPath);
         final ZooKeeperStateHandleStore<JobGraph> zooKeeperStateHandleStore =
                 new ZooKeeperStateHandleStore<>(facade, stateStorage);
 
-        final PathChildrenCache pathCache = new PathChildrenCache(facade, "/", false);
+        final CuratorCache pathCache = CuratorCache.builder(client, "/").build();
 
         return new DefaultJobGraphStore<>(
                 zooKeeperStateHandleStore,
@@ -711,7 +708,7 @@ public class ZooKeeperUtils {
         checkNotNull(path, "path must not be null");
 
         // Ensure that the checkpoints path exists
-        client.newNamespaceAwareEnsurePath(path).ensure(client.getZookeeperClient());
+        client.checkExists().creatingParentContainersIfNeeded().forPath(path);
 
         // All operations will have the path as root
         final String newNamespace = generateZookeeperPath(client.getNamespace(), path);
@@ -722,60 +719,34 @@ public class ZooKeeperUtils {
     }
 
     /**
-     * Creates a {@link TreeCache} that only observes a specific node.
+     * Creates a {@link CuratorCache} that only observes a specific node.
      *
      * @param client ZK client
      * @param pathToNode full path of the node to observe
      * @param nodeChangeCallback callback to run if the node has changed
      * @return tree cache
      */
-    public static TreeCache createTreeCache(
+    public static CuratorCache createTreeCache(
             final CuratorFramework client,
             final String pathToNode,
             final RunnableWithException nodeChangeCallback) {
-        final TreeCache cache =
-                TreeCache.newBuilder(client, pathToNode)
-                        .setCacheData(true)
-                        .setCreateParentNodes(false)
-                        .setSelector(ZooKeeperUtils.treeCacheSelectorForPath(pathToNode))
-                        .setExecutor(Executors.newDirectExecutorService())
+        final CuratorCache cache =
+                CuratorCache.builder(client, pathToNode)
+                        .withOptions(CuratorCache.Options.SINGLE_NODE_CACHE)
                         .build();
 
-        cache.getListenable().addListener(createTreeCacheListener(nodeChangeCallback));
+        cache.listenable().addListener(createTreeCacheListener(nodeChangeCallback));
 
         return cache;
     }
 
     @VisibleForTesting
-    static TreeCacheListener createTreeCacheListener(RunnableWithException nodeChangeCallback) {
-        return (ignored, event) -> {
-            // only notify listener if nodes have changed
-            // connection issues are handled separately from the cache
-            switch (event.getType()) {
-                case NODE_ADDED:
-                case NODE_UPDATED:
-                case NODE_REMOVED:
-                    nodeChangeCallback.run();
-            }
-        };
-    }
-
-    /**
-     * Returns a {@link TreeCacheSelector} that only accepts a specific node.
-     *
-     * @param fullPath node to accept
-     * @return tree cache selector
-     */
-    private static TreeCacheSelector treeCacheSelectorForPath(String fullPath) {
-        return new TreeCacheSelector() {
-            @Override
-            public boolean traverseChildren(String childPath) {
-                return false;
-            }
-
-            @Override
-            public boolean acceptChild(String childPath) {
-                return fullPath.equals(childPath);
+    static CuratorCacheListener createTreeCacheListener(RunnableWithException nodeChangeCallback) {
+        return (type, ignored1, ignored2) -> {
+            try {
+                nodeChangeCallback.run();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         };
     }
