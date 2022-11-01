@@ -33,7 +33,7 @@ import org.apache.flink.runtime.zookeeper.ZooKeeperStateHandleStore;
 import org.apache.flink.util.TestLogger;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -99,7 +99,7 @@ public class ZooKeeperJobGraphStoreWatcherTest extends TestLogger {
     private JobGraphStoreWatcher createAndStartJobGraphStoreWatcher(CuratorFramework client)
             throws Exception {
         final ZooKeeperJobGraphStoreWatcher jobGraphStoreWatcher =
-                new ZooKeeperJobGraphStoreWatcher(new PathChildrenCache(client, "/", false));
+                new ZooKeeperJobGraphStoreWatcher(CuratorCache.build(client, "/"));
         jobGraphStoreWatcher.start(testingJobGraphListener);
         return jobGraphStoreWatcher;
     }

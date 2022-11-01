@@ -27,9 +27,8 @@ import org.apache.flink.runtime.testutils.ZooKeeperTestUtils;
 import org.apache.flink.util.TestLogger;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.flink.shaded.guava30.com.google.common.io.Closer;
 
 import org.apache.curator.test.TestingServer;
@@ -76,7 +75,7 @@ public class ZooKeeperUtilsTreeCacheTest extends TestLogger {
 
         client = curatorFrameworkWrapper.asCuratorFramework();
 
-        final TreeCache cache =
+        final CuratorCache cache =
                 closer.register(
                         ZooKeeperUtils.createTreeCache(
                                 client,
@@ -149,20 +148,13 @@ public class ZooKeeperUtilsTreeCacheTest extends TestLogger {
     }
 
     @Test
-    public void testCallbackNotCalledOnConnectionOrInitializationEvents() throws Exception {
-        final TreeCacheListener treeCacheListener =
+    public void testCallbackNotCalledOnInitializationEvents() {
+        final CuratorCacheListener treeCacheListener =
                 ZooKeeperUtils.createTreeCacheListener(
                         () -> {
                             throw new AssertionError("Should not be called.");
                         });
 
-        treeCacheListener.childEvent(
-                client, new TreeCacheEvent(TreeCacheEvent.Type.INITIALIZED, null));
-        treeCacheListener.childEvent(
-                client, new TreeCacheEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED, null));
-        treeCacheListener.childEvent(
-                client, new TreeCacheEvent(TreeCacheEvent.Type.CONNECTION_LOST, null));
-        treeCacheListener.childEvent(
-                client, new TreeCacheEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED, null));
+        treeCacheListener.initialized();
     }
 }

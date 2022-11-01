@@ -35,7 +35,7 @@ import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.concurrent.Executors;
 
 import org.apache.flink.shaded.curator5.org.apache.curator.framework.CuratorFramework;
-import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.flink.shaded.curator5.org.apache.curator.framework.recipes.cache.CuratorCache;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -151,7 +151,7 @@ public class ZooKeeperJobGraphsStoreITCase extends TestLogger {
     private JobGraphStore createZooKeeperJobGraphStore(String fullPath) throws Exception {
         final CuratorFramework client = ZooKeeper.getClient();
         // Ensure that the job graphs path exists
-        client.newNamespaceAwareEnsurePath(fullPath).ensure(client.getZookeeperClient());
+        client.checkExists().creatingParentContainersIfNeeded().forPath(fullPath);
 
         // All operations will have the path as root
         CuratorFramework facade = client.usingNamespace(client.getNamespace() + fullPath);
@@ -159,7 +159,7 @@ public class ZooKeeperJobGraphsStoreITCase extends TestLogger {
                 new ZooKeeperStateHandleStore<>(facade, localStateStorage);
         return new DefaultJobGraphStore<>(
                 zooKeeperStateHandleStore,
-                new ZooKeeperJobGraphStoreWatcher(new PathChildrenCache(facade, "/", false)),
+                new ZooKeeperJobGraphStoreWatcher(CuratorCache.build(facade, "/")),
                 ZooKeeperJobGraphStoreUtil.INSTANCE);
     }
 

@@ -84,7 +84,7 @@ public class ZooKeeperTestEnvironment {
 
             client = curatorFrameworkWrapper.asCuratorFramework();
 
-            client.newNamespaceAwareEnsurePath("/").ensure(client.getZookeeperClient());
+            client.checkExists().creatingParentContainersIfNeeded().forPath("/");
         } catch (Exception e) {
             throw new RuntimeException("Error setting up ZooKeeperTestEnvironment", e);
         }
