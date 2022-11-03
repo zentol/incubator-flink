@@ -33,7 +33,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<properties>
-		<zookeeper.optional.version>3.6.3</zookeeper.optional.version>
+		<zookeeper.optional.version>3.8.0</zookeeper.optional.version>
 		<japicmp.skip>true</japicmp.skip>
 	</properties>
 
