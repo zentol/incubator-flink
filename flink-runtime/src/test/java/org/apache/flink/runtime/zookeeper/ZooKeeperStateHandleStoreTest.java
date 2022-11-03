@@ -314,7 +314,7 @@ public class ZooKeeperStateHandleStoreTest extends TestLogger {
         final TestingLongStateHandleHelper stateHandleProvider = new TestingLongStateHandleHelper();
 
         CuratorFramework client = spy(ZOOKEEPER.getClient());
-        when(client.inTransaction()).thenThrow(new RuntimeException("Expected test Exception."));
+        when(client.transaction()).thenThrow(new RuntimeException("Expected test Exception."));
 
         ZooKeeperStateHandleStore<TestingLongStateHandleHelper.LongStateHandle> store =
                 new ZooKeeperStateHandleStore<>(client, stateHandleProvider);
