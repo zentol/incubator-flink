@@ -18,6 +18,7 @@
 
 package org.apache.flink.state.api;
 
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.InvalidTypesException;
@@ -30,6 +31,8 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.runtime.checkpoint.OperatorState;
+import org.apache.flink.runtime.checkpoint.OperatorSubtaskState;
+import org.apache.flink.runtime.checkpoint.StateObjectCollection;
 import org.apache.flink.runtime.checkpoint.metadata.CheckpointMetadata;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.VoidNamespace;
@@ -52,11 +55,78 @@ import org.apache.flink.util.Preconditions;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** The entry point for reading state from a Flink savepoint. */
 @PublicEvolving
 public class SavepointReader {
+
+    /**
+     * Prints a best-effort description of the given savepoint to {@link System#out}.
+     *
+     * <p>The behavior of this method is undefined. No guarantees are provided w.r.t. the format,
+     * content or stability.
+     */
+    @Experimental
+    public static void printSavepointDescription(String path) throws IOException {
+        final CheckpointMetadata metadata = SavepointLoader.loadSavepointMetadata(path);
+
+        final StringBuilder builder = new StringBuilder();
+        builder.append("checkpointId: ").append(metadata.getCheckpointId());
+        builder.append("\n");
+
+        builder.append("operators: \n");
+        for (OperatorState operatorState : metadata.getOperatorStates()) {
+            builder.append("- ")
+                    .append("uidHash: ")
+                    .append(operatorState.getOperatorID().toHexString())
+                    .append("\n");
+            builder.append("  ")
+                    .append("parallelism: ")
+                    .append(operatorState.getParallelism())
+                    .append("\n");
+            builder.append("  ")
+                    .append("maxParallelism: ")
+                    .append(operatorState.getMaxParallelism())
+                    .append("\n");
+            builder.append("  ")
+                    .append("stateSize: ")
+                    .append(operatorState.getStateSize())
+                    .append("\n");
+            builder.append("  ")
+                    .append("hasKeyedState: ")
+                    .append(
+                            operatorState.getStates().stream()
+                                    .map(OperatorSubtaskState::getManagedKeyedState)
+                                    .anyMatch(StateObjectCollection::hasState))
+                    .append("\n");
+            final boolean hasOperatorState =
+                    operatorState.getStates().stream()
+                            .map(OperatorSubtaskState::getManagedOperatorState)
+                            .anyMatch(StateObjectCollection::hasState);
+            builder.append("  ").append("hasOperatorState: ").append(hasOperatorState).append("\n");
+            if (hasOperatorState) {
+                builder.append("  operatorStateNames: ").append("\n");
+
+                final Stream<String> operatorStateNames =
+                        operatorState.getStates().stream()
+                                .map(OperatorSubtaskState::getManagedOperatorState)
+                                .flatMap(Collection::stream)
+                                .flatMap(s -> s.getStateNameToPartitionOffsets().keySet().stream());
+
+                final List<String> stateNames =
+                        operatorStateNames.distinct().collect(Collectors.toList());
+                for (String stateName : stateNames) {
+                    builder.append("  - ").append(stateName).append("\n");
+                }
+            }
+        }
+        System.out.println(builder);
+    }
 
     /**
      * Loads an existing savepoint. Useful if you want to query the state of an existing
