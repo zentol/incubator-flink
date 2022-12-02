@@ -31,8 +31,6 @@ import org.apache.flink.testutils.DeeplyEqualsChecker;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.TestLoggerExtension;
 
-import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -437,8 +435,8 @@ public abstract class SerializerTestBase<T> {
             TypeSerializer<T> ser1 = getSerializer();
             TypeSerializer<T> ser2;
             try {
-                ser2 = SerializationUtils.clone(ser1);
-            } catch (SerializationException e) {
+                ser2 = InstantiationUtil.clone(ser1);
+            } catch (Exception e) {
                 fail("The serializer is not serializable: " + e);
                 return;
             }
