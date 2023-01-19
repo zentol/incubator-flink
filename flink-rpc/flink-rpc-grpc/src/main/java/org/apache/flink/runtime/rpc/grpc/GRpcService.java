@@ -102,7 +102,6 @@ public class GRpcService implements RpcService, BindableService {
     private final Server server;
     private final Server localServer;
 
-    private final String bindAddress;
     @Nullable private final String externalAddress;
     @Nullable private final Integer externalPort;
 
@@ -128,7 +127,6 @@ public class GRpcService implements RpcService, BindableService {
         this.executorService = executorService;
         this.flinkClassLoader = flinkClassLoader;
 
-        this.bindAddress = bindAddress;
         this.externalAddress = externalAddress;
 
         this.rpcTimeout = configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION);
