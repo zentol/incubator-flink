@@ -40,7 +40,6 @@ import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
-import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,13 +130,6 @@ public class GRpcGateway<F extends Serializable>
                             }
                         }
                     }
-
-                    @Override
-                    public void onClose(Status status, Metadata trailers) {
-                        synchronized (lock) {
-                            channel.shutdown();
-                        }
-                    }
                 },
                 new Metadata());
     }
@@ -158,11 +150,14 @@ public class GRpcGateway<F extends Serializable>
             isClosing = true;
         }
         return CompletableFuture.supplyAsync(
-                () -> {
-                    close();
-                    GRpcService.awaitShutdown(channel::awaitTermination, channel::isTerminated);
-                    return null;
-                });
+                        () -> {
+                            close();
+                            return null;
+                        })
+                .thenCompose(
+                        ignored ->
+                                FutureUtils.combineAll(pendingResponses.values())
+                                        .thenApply(x -> null));
     }
 
     @Override

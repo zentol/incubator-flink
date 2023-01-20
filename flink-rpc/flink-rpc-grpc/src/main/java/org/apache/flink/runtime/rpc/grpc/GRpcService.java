@@ -223,6 +223,7 @@ public class GRpcService implements RpcService, BindableService {
                                 ? ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken()
                                 : null;
                 return internalConnect(
+                                true,
                                 rpcServer.getAddress(),
                                 fencingToken,
                                 selfGatewayType,
@@ -243,13 +244,19 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
         return internalConnect(
-                address, null, clazz, forNetty(configuration), serverSpec::prepareConnection);
+                false,
+                address,
+                null,
+                clazz,
+                forNetty(configuration),
+                serverSpec::prepareConnection);
     }
 
     @Override
     public <F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(
             String address, F fencingToken, Class<C> clazz) {
         return internalConnect(
+                false,
                 address,
                 Preconditions.checkNotNull(fencingToken),
                 clazz,
@@ -287,9 +294,10 @@ public class GRpcService implements RpcService, BindableService {
         };
     }
 
-    private final Map<Integer, ManagedChannel> channelIndex = new ConcurrentHashMap<>();
+    private final Map<String, ManagedChannel> channelIndex = new ConcurrentHashMap<>();
 
     private <F extends Serializable, C> CompletableFuture<C> internalConnect(
+            boolean isLocal,
             String address,
             @Nullable F fencingToken,
             Class<C> clazz,
@@ -301,11 +309,10 @@ public class GRpcService implements RpcService, BindableService {
         }
         final String actualAddress = address.substring(0, address.indexOf("@"));
 
-        final int channelId =
-                (getInternalAddress() + ":" + getPort()).hashCode() + actualAddress.hashCode();
-
-        final ManagedChannel channel = channelBuilder.apply(actualAddress).build();
-        channelIndex.put(channelId, channel);
+        final ManagedChannel channel =
+                channelIndex.computeIfAbsent(
+                        actualAddress + (isLocal ? "(local)" : "(remote)"),
+                        ignored -> channelBuilder.apply(actualAddress).build());
 
         final CompletableFuture<Void> connectFuture = new CompletableFuture<>();
         waitUntilConnectionEstablished(
@@ -455,6 +462,7 @@ public class GRpcService implements RpcService, BindableService {
                                                         + Thread.currentThread().isInterrupted());
                                         LOG.debug("Closing channels");
                                         for (ManagedChannel value : channelIndex.values()) {
+                                            value.shutdown();
                                             awaitShutdown(
                                                     value::awaitTermination, value::isTerminated);
                                         }
