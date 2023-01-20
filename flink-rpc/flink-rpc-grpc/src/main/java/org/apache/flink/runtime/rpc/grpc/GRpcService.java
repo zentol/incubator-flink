@@ -218,26 +218,17 @@ public class GRpcService implements RpcService, BindableService {
         final RpcEndpoint rpcEndpoint = ((GRpcServer) rpcServer).getRpcEndpoint();
         if (selfGatewayType.isInstance(rpcEndpoint)) {
             try {
-                if (rpcEndpoint instanceof FencedRpcEndpoint) {
-                    Serializable fencingToken =
-                            ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken();
-                    return (C)
-                            internalConnect(
-                                            rpcServer.getAddress(),
-                                            fencingToken,
-                                            (Class<FencedRpcGateway<Serializable>>) selfGatewayType,
-                                            InProcessChannelBuilder::forName,
-                                            serverSpec::prepareLocalConnection)
-                                    .get();
-                } else {
-                    return internalConnect(
-                                    rpcServer.getAddress(),
-                                    null,
-                                    selfGatewayType,
-                                    InProcessChannelBuilder::forName,
-                                    serverSpec::prepareLocalConnection)
-                            .get();
-                }
+                final Serializable fencingToken =
+                        rpcEndpoint instanceof FencedRpcEndpoint
+                                ? ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken()
+                                : null;
+                return internalConnect(
+                                rpcServer.getAddress(),
+                                fencingToken,
+                                selfGatewayType,
+                                InProcessChannelBuilder::forName,
+                                serverSpec::prepareLocalConnection)
+                        .get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
