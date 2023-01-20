@@ -337,8 +337,7 @@ public class GRpcService implements RpcService, BindableService {
                                             false,
                                             true,
                                             flinkClassLoader,
-                                            channel,
-                                            callFunction);
+                                            callFunction.apply(channel));
 
                             gateways.add(invocationHandler);
 

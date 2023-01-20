@@ -36,9 +36,7 @@ import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import io.grpc.Channel;
 import io.grpc.ClientCall;
-import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +58,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 /**
  * A gRPC-based {@link RpcGateway}. Submits requests against a {@link GRpcService} and processes the
@@ -87,7 +84,6 @@ public class GRpcGateway<F extends Serializable>
     private final ClassLoader flinkClassLoader;
 
     private final ClientCall<RemoteRequestWithID, RemoteResponseWithID> call;
-    private final ManagedChannel channel;
     private long nextId = 0;
     private final Map<Long, CompletableFuture<Object>> pendingResponses = new HashMap<>();
 
@@ -101,8 +97,7 @@ public class GRpcGateway<F extends Serializable>
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
-            ManagedChannel channel,
-            Function<Channel, ClientCall<RemoteRequestWithID, RemoteResponseWithID>> callFunction) {
+            ClientCall<RemoteRequestWithID, RemoteResponseWithID> call) {
         this.fencingToken = fencingToken;
         this.address = address;
         this.hostname = hostname;
@@ -112,8 +107,7 @@ public class GRpcGateway<F extends Serializable>
         this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
-        this.channel = channel;
-        this.call = callFunction.apply(channel);
+        this.call = call;
         this.call.start(
                 new ClientCall.Listener<RemoteResponseWithID>() {
                     @Override
