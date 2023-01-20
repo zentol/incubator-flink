@@ -86,6 +86,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -104,6 +105,7 @@ public class GRpcService implements RpcService, BindableService {
 
     @Nullable private final String externalAddress;
     @Nullable private final Integer externalPort;
+    private final AtomicLong atomicLong = new AtomicLong();
 
     private final Duration rpcTimeout;
     private final Configuration configuration;
@@ -295,6 +297,7 @@ public class GRpcService implements RpcService, BindableService {
     }
 
     private final Map<String, ManagedChannel> channelIndex = new ConcurrentHashMap<>();
+    private final Map<Long, CompletableFuture<Object>> pendingResponses = new ConcurrentHashMap<>();
 
     private <F extends Serializable, C> CompletableFuture<C> internalConnect(
             boolean isLocal,
@@ -326,6 +329,7 @@ public class GRpcService implements RpcService, BindableService {
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 connectFuture.thenApply(
                         ignored -> {
+                            CNTN cntn = new CNTN(callFunction.apply(channel), pendingResponses);
                             final GRpcGateway<F> invocationHandler =
                                     new GRpcGateway<>(
                                             fencingToken,
@@ -337,7 +341,8 @@ public class GRpcService implements RpcService, BindableService {
                                             false,
                                             true,
                                             flinkClassLoader,
-                                            callFunction.apply(channel));
+                                            cntn,
+                                            atomicLong);
 
                             gateways.add(invocationHandler);
 
@@ -447,7 +452,14 @@ public class GRpcService implements RpcService, BindableService {
                                                             .collect(Collectors.toList())))
                             .thenRun(
                                     () -> {
-                                        gateways.forEach(GRpcGateway::close);
+                                        for (GRpcGateway<?> gateway : gateways) {
+                                            try {
+                                                gateway.close();
+                                            } catch (Exception e) {
+                                                // TODO: fix
+                                                throw new RuntimeException(e);
+                                            }
+                                        }
                                         channelIndex.values().stream()
                                                 .filter(c -> !c.isShutdown() || !c.isTerminated())
                                                 .forEach(ManagedChannel::shutdown);

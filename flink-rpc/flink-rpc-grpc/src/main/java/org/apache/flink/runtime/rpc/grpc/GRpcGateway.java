@@ -26,7 +26,6 @@ import org.apache.flink.runtime.rpc.RpcGatewayUtils;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcException;
 import org.apache.flink.runtime.rpc.messages.RemoteRequestWithID;
-import org.apache.flink.runtime.rpc.messages.RemoteResponseWithID;
 import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.runtime.rpc.messages.Type;
@@ -36,8 +35,6 @@ import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import io.grpc.ClientCall;
-import io.grpc.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,13 +48,12 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A gRPC-based {@link RpcGateway}. Submits requests against a {@link GRpcService} and processes the
@@ -83,9 +79,8 @@ public class GRpcGateway<F extends Serializable>
 
     private final ClassLoader flinkClassLoader;
 
-    private final ClientCall<RemoteRequestWithID, RemoteResponseWithID> call;
-    private long nextId = 0;
-    private final Map<Long, CompletableFuture<Object>> pendingResponses = new HashMap<>();
+    private final CNTN connection;
+    private final AtomicLong atomicLong;
 
     public GRpcGateway(
             @Nullable F fencingToken,
@@ -97,7 +92,8 @@ public class GRpcGateway<F extends Serializable>
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
-            ClientCall<RemoteRequestWithID, RemoteResponseWithID> call) {
+            CNTN connection,
+            AtomicLong atomicLong) {
         this.fencingToken = fencingToken;
         this.address = address;
         this.hostname = hostname;
@@ -107,25 +103,8 @@ public class GRpcGateway<F extends Serializable>
         this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
-        this.call = call;
-        this.call.start(
-                new ClientCall.Listener<RemoteResponseWithID>() {
-                    @Override
-                    public void onMessage(RemoteResponseWithID response) {
-                        synchronized (lock) {
-                            LOG.trace("Receiver response #{} {}", response.getId(), response);
-                            CompletableFuture<Object> responseFuture =
-                                    pendingResponses.remove(response.getId());
-                            if (responseFuture != null) {
-                                responseFuture.complete(response.getPayload());
-                            } else {
-                                System.out.println(
-                                        "Unexpected response with ID " + response.getId());
-                            }
-                        }
-                    }
-                },
-                new Metadata());
+        this.connection = connection;
+        this.atomicLong = atomicLong;
     }
 
     @Override
@@ -143,24 +122,7 @@ public class GRpcGateway<F extends Serializable>
         synchronized (this) {
             isClosing = true;
         }
-        return CompletableFuture.supplyAsync(
-                        () -> {
-                            close();
-                            return null;
-                        })
-                .thenCompose(
-                        ignored ->
-                                FutureUtils.combineAll(pendingResponses.values())
-                                        .thenApply(x -> null));
-    }
-
-    @Override
-    public void close() {
-        try {
-            call.halfClose();
-        } catch (IllegalStateException ise) {
-            // just means the call was already closed/cancelled
-        }
+        return connection.closeAsync();
     }
 
     @Override
@@ -296,14 +258,14 @@ public class GRpcGateway<F extends Serializable>
                         message);
                 return;
             }
-            final long id = nextId++;
+            final long id = atomicLong.getAndIncrement();
 
             LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
 
             ClassLoadingUtils.runWithContextClassLoader(
                     () -> {
                         synchronized (lock) {
-                            call.sendMessage(
+                            connection.tell(
                                     new RemoteRequestWithID(
                                             fencingToken, message, endpointId, id, Type.TELL));
                         }
@@ -330,7 +292,7 @@ public class GRpcGateway<F extends Serializable>
                 return FutureUtils.completedExceptionally(
                         new RpcException("Gateway has been closed."));
             }
-            final long id = nextId++;
+            final long id = atomicLong.getAndIncrement();
 
             LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
 
@@ -338,14 +300,13 @@ public class GRpcGateway<F extends Serializable>
             response.thenAccept(
                     resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
 
-            pendingResponses.put(id, response);
-
             ClassLoadingUtils.runWithContextClassLoader(
                     () -> {
-                        call.sendMessage(
-                                new RemoteRequestWithID(
-                                        fencingToken, message, endpointId, id, Type.ASK));
-                        call.request(1);
+                        FutureUtils.forward(
+                                connection.ask(
+                                        new RemoteRequestWithID(
+                                                fencingToken, message, endpointId, id, Type.ASK)),
+                                response);
                     },
                     flinkClassLoader);
 
