@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc.grpc;
 
 import org.apache.flink.runtime.rpc.messages.RemoteRequestWithID;
 import org.apache.flink.runtime.rpc.messages.RemoteResponseWithID;
+import org.apache.flink.runtime.rpc.messages.Type;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import io.grpc.ClientCall;
@@ -39,10 +40,12 @@ public class CNTN {
 
     public CNTN(
             ClientCall<RemoteRequestWithID, RemoteResponseWithID> call,
-            Map<Long, CompletableFuture<Object>> pendingResponses) {
+            Map<Long, CompletableFuture<Object>> pendingResponses,
+            String actualAddress) {
         this.pendingResponses = pendingResponses;
         this.call = call;
         this.call.start(new ClientCall.Listener<RemoteResponseWithID>() {}, new Metadata());
+        this.call.sendMessage(new RemoteRequestWithID(null, null, actualAddress, 0, Type.TELL));
     }
 
     public void tell(RemoteRequestWithID req) {

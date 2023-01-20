@@ -54,6 +54,7 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelOption;
@@ -329,7 +330,11 @@ public class GRpcService implements RpcService, BindableService {
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 connectFuture.thenApply(
                         ignored -> {
-                            CNTN cntn = new CNTN(callFunction.apply(channel), pendingResponses);
+                            CNTN cntn =
+                                    new CNTN(
+                                            callFunction.apply(channel),
+                                            pendingResponses,
+                                            actualAddress);
                             final GRpcGateway<F> invocationHandler =
                                     new GRpcGateway<>(
                                             fencingToken,
@@ -526,6 +531,8 @@ public class GRpcService implements RpcService, BindableService {
         return serverSpec.createService("Server", this::setupConnection);
     }
 
+    private final Map<String, CallStreamObserver<RemoteResponseWithID>> connections = new ConcurrentHashMap<>();
+
     private StreamObserver<RemoteRequestWithID> setupConnection(
             StreamObserver<RemoteResponseWithID> responseObserver) {
 
@@ -535,6 +542,8 @@ public class GRpcService implements RpcService, BindableService {
 
             @GuardedBy("lock")
             private boolean isStopped = false;
+
+            private boolean first = true;
 
             @Override
             public void onNext(RemoteRequestWithID request) {
@@ -546,6 +555,19 @@ public class GRpcService implements RpcService, BindableService {
                         getPort(),
                         request.getTarget(),
                         request.getPayload());
+                if (first) {
+                    System.out.println(
+                            request.getTarget()
+                                    + " connected to "
+                                    + getInternalAddress()
+                                    + ":"
+                                    + getPort());
+                    first = false;
+                    connections.put(request.getTarget(),
+                            (CallStreamObserver<RemoteResponseWithID>) responseObserver);
+                    return;
+                }
+
                 try {
                     switch (request.getType()) {
                         case TELL:
