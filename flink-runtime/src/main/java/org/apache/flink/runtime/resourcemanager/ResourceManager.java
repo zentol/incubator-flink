@@ -1103,7 +1103,6 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
             // tell the job manager about the disconnect
             jobMasterGateway.disconnectResourceManager(getFencingToken(), cause);
-            jobMasterGateway.closeAsync(log);
         } else {
             log.debug("There was no registered job manager for job {}.", jobId);
         }
@@ -1136,7 +1135,6 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             clusterPartitionTracker.processTaskExecutorShutdown(resourceID);
 
             workerRegistration.getTaskExecutorGateway().disconnectResourceManager(cause);
-            workerRegistration.getTaskExecutorGateway().closeAsync(log);
         } else {
             log.debug(
                     "No open TaskExecutor connection {}. Ignoring close TaskExecutor connection. Closing reason was: {}",

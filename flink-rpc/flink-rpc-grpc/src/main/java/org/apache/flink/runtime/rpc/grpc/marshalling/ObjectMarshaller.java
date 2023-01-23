@@ -21,6 +21,8 @@ package org.apache.flink.runtime.rpc.grpc.marshalling;
 import org.apache.flink.util.InstantiationUtil;
 
 import io.grpc.MethodDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -28,6 +30,8 @@ import java.io.InputStream;
 
 /** A {@link MethodDescriptor.Marshaller} for objects using Java serialization. */
 public class ObjectMarshaller<T> implements MethodDescriptor.Marshaller<T> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ObjectMarshaller.class);
 
     private final ClassLoader flinkClassLoader;
 
@@ -42,6 +46,7 @@ public class ObjectMarshaller<T> implements MethodDescriptor.Marshaller<T> {
             // KnownLength
             return new ByteArrayInputStream(InstantiationUtil.serializeObject(value));
         } catch (IOException e) {
+            LOG.error("Serialization failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -52,6 +57,7 @@ public class ObjectMarshaller<T> implements MethodDescriptor.Marshaller<T> {
         try {
             return InstantiationUtil.deserializeObject(stream, flinkClassLoader);
         } catch (IOException | ClassNotFoundException e) {
+            LOG.error("Deserialization failed", e);
             throw new RuntimeException(e);
         }
     }

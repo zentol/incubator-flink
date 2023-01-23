@@ -29,13 +29,13 @@ import org.apache.flink.runtime.rpc.RpcServer;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcConnectionException;
-import org.apache.flink.runtime.rpc.messages.RemoteFencedMessage;
-import org.apache.flink.runtime.rpc.messages.RemoteRequestWithID;
-import org.apache.flink.runtime.rpc.messages.RemoteResponseWithID;
+import org.apache.flink.runtime.rpc.grpc.connection.ClientConnection;
+import org.apache.flink.runtime.rpc.grpc.connection.Connection;
+import org.apache.flink.runtime.rpc.grpc.connection.ServerConnection;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
-import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.runtime.rpc.messages.grpc.Message;
+import org.apache.flink.runtime.rpc.messages.grpc.Request;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.concurrent.ScheduledExecutor;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
@@ -47,15 +47,16 @@ import io.grpc.ClientCall;
 import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
 import io.grpc.Server;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
-import io.grpc.stub.CallStreamObserver;
-import io.grpc.stub.StreamObserver;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
@@ -64,7 +65,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -74,17 +74,13 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -297,44 +293,59 @@ public class GRpcService implements RpcService, BindableService {
         };
     }
 
-    private final Map<String, ManagedChannel> channelIndex = new ConcurrentHashMap<>();
-    private final Map<Long, CompletableFuture<Object>> pendingResponses = new ConcurrentHashMap<>();
-
     private <F extends Serializable, C> CompletableFuture<C> internalConnect(
             boolean isLocal,
             String address,
             @Nullable F fencingToken,
             Class<C> clazz,
             Function<String, ManagedChannelBuilder<?>> channelBuilder,
-            Function<Channel, ClientCall<RemoteRequestWithID, RemoteResponseWithID>> callFunction) {
+            Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction) {
         if (!address.contains("@")) {
             return FutureUtils.completedExceptionally(
                     new IllegalArgumentException("Invalid address: " + address));
         }
         final String actualAddress = address.substring(0, address.indexOf("@"));
 
-        final ManagedChannel channel =
-                channelIndex.computeIfAbsent(
-                        actualAddress + (isLocal ? "(local)" : "(remote)"),
-                        ignored -> channelBuilder.apply(actualAddress).build());
+        final String pseudoAddress = actualAddress + (isLocal ? "(local)" : "(remote)");
 
-        final CompletableFuture<Void> connectFuture = new CompletableFuture<>();
-        waitUntilConnectionEstablished(
-                getScheduledExecutor(),
-                channel,
-                channel.getState(true),
-                address,
-                connectFuture,
-                Duration.ZERO);
+        final CompletableFuture<Connection> connectionFuture;
+        Connection serverConnection = connectionsAsServer.get(pseudoAddress);
+        if (serverConnection == null) {
+            connectionFuture =
+                    connectionsAsClient.computeIfAbsent(
+                            pseudoAddress,
+                            ignored -> {
+                                final ManagedChannel channel =
+                                        channelBuilder.apply(actualAddress).build();
+
+                                final CompletableFuture<Void> connectFuture =
+                                        new CompletableFuture<>();
+                                waitUntilConnectionEstablished(
+                                        getScheduledExecutor(),
+                                        channel,
+                                        channel.getState(true),
+                                        address,
+                                        connectFuture,
+                                        Duration.ZERO);
+
+                                return connectFuture.thenApply(
+                                        i ->
+                                                new ClientConnection(
+                                                        channel,
+                                                        callFunction.apply(channel),
+                                                        pseudoAddress,
+                                                        this::handleRpcInvocation,
+                                                        () ->
+                                                                connectionsAsClient.remove(
+                                                                        pseudoAddress)));
+                            });
+        } else {
+            connectionFuture = CompletableFuture.completedFuture(serverConnection);
+        }
 
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
-                connectFuture.thenApply(
-                        ignored -> {
-                            CNTN cntn =
-                                    new CNTN(
-                                            callFunction.apply(channel),
-                                            pendingResponses,
-                                            actualAddress);
+                connectionFuture.thenApply(
+                        conn -> {
                             final GRpcGateway<F> invocationHandler =
                                     new GRpcGateway<>(
                                             fencingToken,
@@ -346,10 +357,8 @@ public class GRpcService implements RpcService, BindableService {
                                             false,
                                             true,
                                             flinkClassLoader,
-                                            cntn,
+                                            conn,
                                             atomicLong);
-
-                            gateways.add(invocationHandler);
 
                             return createProxy(clazz, invocationHandler);
                         }),
@@ -361,8 +370,6 @@ public class GRpcService implements RpcService, BindableService {
         return (C)
                 Proxy.newProxyInstance(flinkClassLoader, new Class<?>[] {clazz}, invocationHandler);
     }
-
-    private final Collection<GRpcGateway<?>> gateways = new ConcurrentLinkedDeque<>();
 
     private static void waitUntilConnectionEstablished(
             ScheduledExecutor scheduledExecutor,
@@ -431,7 +438,8 @@ public class GRpcService implements RpcService, BindableService {
         LOG.info("Stopping RPC server {}.", server.getAddress());
         server.stop();
         server.getTerminationFuture()
-                .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()));
+                .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()))
+                .thenRun(() -> LOG.info("Stopped RPC server {}.", server.getAddress()));
     }
 
     private final AtomicReference<CompletableFuture<Void>> terminationFuture =
@@ -455,21 +463,20 @@ public class GRpcService implements RpcService, BindableService {
                                                                                 .getTerminationFuture();
                                                                     })
                                                             .collect(Collectors.toList())))
-                            .thenRun(
-                                    () -> {
-                                        for (GRpcGateway<?> gateway : gateways) {
-                                            try {
-                                                gateway.close();
-                                            } catch (Exception e) {
-                                                // TODO: fix
-                                                throw new RuntimeException(e);
-                                            }
-                                        }
-                                        channelIndex.values().stream()
-                                                .filter(c -> !c.isShutdown() || !c.isTerminated())
-                                                .forEach(ManagedChannel::shutdown);
+                            .thenCompose(
+                                    ignored -> {
+                                        FutureUtils.ConjunctFuture<Void> voidConjunctFuture =
+                                                FutureUtils.completeAll(
+                                                        connectionsAsClient.values().stream()
+                                                                .map(
+                                                                        x ->
+                                                                                x.thenCompose(
+                                                                                        Connection
+                                                                                                ::closeAsync))
+                                                                .collect(Collectors.toList()));
                                         server.shutdown();
                                         localServer.shutdown();
+                                        return voidConjunctFuture;
                                     })
                             .thenRunAsync(
                                     () -> {
@@ -477,11 +484,6 @@ public class GRpcService implements RpcService, BindableService {
                                                 "IsCurrentThreadInterrupted:"
                                                         + Thread.currentThread().isInterrupted());
                                         LOG.debug("Closing channels");
-                                        for (ManagedChannel value : channelIndex.values()) {
-                                            value.shutdown();
-                                            awaitShutdown(
-                                                    value::awaitTermination, value::isTerminated);
-                                        }
                                         awaitShutdown(
                                                 server::awaitTermination, server::isTerminated);
                                         if (!server.isTerminated()) {
@@ -496,7 +498,6 @@ public class GRpcService implements RpcService, BindableService {
                                                 Thread.currentThread().isInterrupted());
                                     },
                                     executorService)
-                            .thenRun(channelIndex::clear)
                             .thenRun(targets::clear)
                             .thenRun(executorService::shutdown),
                     terminationFuture.get());
@@ -506,7 +507,7 @@ public class GRpcService implements RpcService, BindableService {
         return terminationFuture.get();
     }
 
-    static void awaitShutdown(
+    public static void awaitShutdown(
             BiFunctionWithException<Long, TimeUnit, Boolean, InterruptedException> value,
             Supplier<Boolean> terminatedCheck) {
         LOG.debug("Thread {} closing resource.", Thread.currentThread());
@@ -528,136 +529,30 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return serverSpec.createService("Server", this::setupConnection);
+        return serverSpec.createService("Server", new Handler());
     }
 
-    private final Map<String, CallStreamObserver<RemoteResponseWithID>> connections = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<Connection>> connectionsAsClient =
+            new ConcurrentHashMap<>();
+    private final Map<String, Connection> connectionsAsServer = new ConcurrentHashMap<>();
 
-    private StreamObserver<RemoteRequestWithID> setupConnection(
-            StreamObserver<RemoteResponseWithID> responseObserver) {
+    private class Handler implements ServerCallHandler<Message<?>, Message<?>> {
 
-        return new StreamObserver<RemoteRequestWithID>() {
+        @Override
+        public ServerCall.Listener<Message<?>> startCall(
+                ServerCall<Message<?>, Message<?>> call, Metadata headers) {
 
-            private final Object lock = new Object();
-
-            @GuardedBy("lock")
-            private boolean isStopped = false;
-
-            private boolean first = true;
-
-            @Override
-            public void onNext(RemoteRequestWithID request) {
-                LOG.trace(
-                        "Received {} #{} to '{}:{}@{} (RPC={})",
-                        request.getType().name().toLowerCase(Locale.ROOT),
-                        request.getId(),
-                        getInternalAddress(),
-                        getPort(),
-                        request.getTarget(),
-                        request.getPayload());
-                if (first) {
-                    System.out.println(
-                            request.getTarget()
-                                    + " connected to "
-                                    + getInternalAddress()
-                                    + ":"
-                                    + getPort());
-                    first = false;
-                    connections.put(request.getTarget(),
-                            (CallStreamObserver<RemoteResponseWithID>) responseObserver);
-                    return;
-                }
-
-                try {
-                    switch (request.getType()) {
-                        case TELL:
-                            handleRpcInvocation(request.getTarget(), request);
-                            break;
-                        case ASK:
-                            CompletableFuture<?> resp =
-                                    handleRpcInvocation(request.getTarget(), request);
-
-                            resp.thenAccept(
-                                            s -> {
-                                                synchronized (lock) {
-                                                    if (!isStopped) {
-                                                        LOG.trace("Sending response {}.", s);
-                                                        responseObserver.onNext(
-                                                                new RemoteResponseWithID(
-                                                                        (Serializable) s,
-                                                                        request.getId()));
-                                                    } else {
-                                                        LOG.debug(
-                                                                "Dropping RPC ({}) result because server was stopped.",
-                                                                request.getPayload());
-                                                    }
-                                                }
-                                            })
-                                    .exceptionally(
-                                            e -> {
-                                                synchronized (lock) {
-                                                    if (e.getCause()
-                                                                    instanceof
-                                                                    RecipientUnreachableException
-                                                            || e.getCause()
-                                                                    instanceof
-                                                                    RejectedExecutionException) {
-                                                        LOG.debug(
-                                                                "RPC ({}) failed{}.",
-                                                                request.getPayload(),
-                                                                isStopped
-                                                                        ? " while server was stopped."
-                                                                        : "",
-                                                                e);
-                                                    } else {
-                                                        LOG.debug(
-                                                                "RPC ({}) failed{}.",
-                                                                request.getPayload(),
-                                                                isStopped
-                                                                        ? " while server was stopped."
-                                                                        : "",
-                                                                e);
-                                                    }
-                                                    if (!isStopped) {
-                                                        responseObserver.onNext(
-                                                                new RemoteResponseWithID(
-                                                                        new SerializedThrowable(
-                                                                                ExceptionUtils
-                                                                                        .stripCompletionException(
-                                                                                                e)),
-                                                                        request.getId()));
-                                                    }
-                                                    return null;
-                                                }
-                                            });
-                            break;
-                    }
-
-                } catch (Exception e) {
-                    synchronized (lock) {
-                        LOG.error("Fatal RPC failed.", e);
-                        responseObserver.onError(e);
-                    }
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                LOG.debug("Server ({}:{}) side onError", getInternalAddress(), getPort(), t);
-                synchronized (lock) {
-                    responseObserver.onError(t);
-                }
-            }
-
-            @Override
-            public void onCompleted() {
-                LOG.debug("Server ({}:{}) side onCompleted", getInternalAddress(), getPort());
-                synchronized (lock) {
-                    isStopped = true;
-                    responseObserver.onCompleted();
-                }
-            }
-        };
+            final String clientAddress = headers.get(GRpcServerSpec.HEADER_CLIENT_ADDRESS);
+            final ServerConnection serverConnection =
+                    new ServerConnection(
+                            call,
+                            getInternalAddress() + ":" + getPort(),
+                            GRpcService.this::handleRpcInvocation,
+                            () -> connectionsAsServer.remove(clientAddress));
+            // TODO: handle duplicate connections
+            connectionsAsServer.put(clientAddress, serverConnection);
+            return serverConnection;
+        }
     }
 
     /**
@@ -665,8 +560,7 @@ public class GRpcService implements RpcService, BindableService {
      * method with the provided method arguments. If the method has a return value, it is returned
      * to the sender of the call.
      */
-    private CompletableFuture<?> handleRpcInvocation(
-            String target, RemoteFencedMessage<?, ? extends RpcInvocation> message)
+    private CompletableFuture<?> handleRpcInvocation(String target, Request message)
             throws RpcConnectionException {
 
         final RpcInvocation rpcInvocation = message.getPayload();

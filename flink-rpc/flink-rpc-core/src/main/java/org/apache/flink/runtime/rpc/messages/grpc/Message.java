@@ -16,22 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.rpc;
+package org.apache.flink.runtime.rpc.messages.grpc;
 
-/** Rpc gateway interface which has to be implemented by Rpc gateways. */
-public interface RpcGateway {
+import java.io.Serializable;
 
-    /**
-     * Returns the fully qualified address under which the associated rpc endpoint is reachable.
-     *
-     * @return Fully qualified (RPC) address under which the associated rpc endpoint is reachable
-     */
-    String getAddress();
+public abstract class Message<P> implements Serializable {
+    private final P payload;
+    private final long id;
 
-    /**
-     * Returns the fully qualified hostname under which the associated rpc endpoint is reachable.
-     *
-     * @return Fully qualified hostname under which the associated rpc endpoint is reachable
-     */
-    String getHostname();
+    public Message(P payload, long id) {
+        this.payload = payload;
+        this.id = id;
+    }
+
+    public P getPayload() {
+        return payload;
+    }
+
+    public long getId() {
+        return id;
+    }
 }

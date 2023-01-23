@@ -20,38 +20,39 @@ package org.apache.flink.runtime.rpc.grpc;
 
 import org.apache.flink.runtime.rpc.grpc.marshalling.LocalObjectMarshaller;
 import org.apache.flink.runtime.rpc.grpc.marshalling.ObjectMarshaller;
-import org.apache.flink.runtime.rpc.messages.RemoteRequestWithID;
-import org.apache.flink.runtime.rpc.messages.RemoteResponseWithID;
+import org.apache.flink.runtime.rpc.messages.grpc.Message;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
+import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.grpc.ServerCallHandler;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.ServiceDescriptor;
-import io.grpc.stub.ServerCalls;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
-import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
 
 /** This class contains the gRPC spec for the transport layer. */
-class GRpcServerSpec {
+public class GRpcServerSpec {
 
-    private final MethodDescriptor<RemoteRequestWithID, RemoteResponseWithID>
-            methodSetupConnectionLocal;
+    public static final Metadata.Key<String> HEADER_CLIENT_ADDRESS =
+            Metadata.Key.of("sender", Metadata.ASCII_STRING_MARSHALLER);
 
-    private final MethodDescriptor<RemoteRequestWithID, RemoteResponseWithID> methodSetupConnection;
+    private final MethodDescriptor<Message<?>, Message<?>> methodSetupConnectionLocal;
+
+    private final MethodDescriptor<Message<?>, Message<?>> methodSetupConnection;
 
     public GRpcServerSpec(ClassLoader flinkClassLoader) {
         methodSetupConnectionLocal =
-                MethodDescriptor.<RemoteRequestWithID, RemoteResponseWithID>newBuilder()
+                MethodDescriptor.<Message<?>, Message<?>>newBuilder()
                         .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
                         .setFullMethodName(generateFullMethodName("Server", "setupLocalConnection"))
                         .setRequestMarshaller(new LocalObjectMarshaller<>())
                         .setResponseMarshaller(new LocalObjectMarshaller<>())
                         .build();
         methodSetupConnection =
-                MethodDescriptor.<RemoteRequestWithID, RemoteResponseWithID>newBuilder()
+                MethodDescriptor.<Message<?>, Message<?>>newBuilder()
                         .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
                         .setFullMethodName(generateFullMethodName("Server", "setupConnection"))
                         .setRequestMarshaller(new ObjectMarshaller<>(flinkClassLoader))
@@ -60,26 +61,22 @@ class GRpcServerSpec {
     }
 
     public ServerServiceDefinition createService(
-            final String serverName,
-            final ServerCalls.BidiStreamingMethod<RemoteRequestWithID, RemoteResponseWithID>
-                    ltrFunction) {
+            final String serverName, final ServerCallHandler<Message<?>, Message<?>> ltrFunction) {
         return ServerServiceDefinition.builder(
                         ServiceDescriptor.newBuilder(serverName)
                                 .addMethod(methodSetupConnection)
                                 .addMethod(methodSetupConnectionLocal)
                                 .build())
-                .addMethod(methodSetupConnection, asyncBidiStreamingCall(ltrFunction))
-                .addMethod(methodSetupConnectionLocal, asyncBidiStreamingCall(ltrFunction))
+                .addMethod(methodSetupConnection, ltrFunction)
+                .addMethod(methodSetupConnectionLocal, ltrFunction)
                 .build();
     }
 
-    public ClientCall<RemoteRequestWithID, RemoteResponseWithID> prepareLocalConnection(
-            Channel channel) {
+    public ClientCall<Message<?>, Message<?>> prepareLocalConnection(Channel channel) {
         return channel.newCall(methodSetupConnectionLocal, CallOptions.DEFAULT);
     }
 
-    public ClientCall<RemoteRequestWithID, RemoteResponseWithID> prepareConnection(
-            Channel channel) {
+    public ClientCall<Message<?>, Message<?>> prepareConnection(Channel channel) {
         return channel.newCall(methodSetupConnection, CallOptions.DEFAULT);
     }
 }

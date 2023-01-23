@@ -16,40 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.rpc.messages;
-
-import javax.annotation.Nullable;
+package org.apache.flink.runtime.rpc.messages.grpc;
 
 import java.io.Serializable;
 
-/** A {@link RemoteFencedMessage} with an ID for matching the resulting response to the request. */
-public class RemoteRequestWithID extends RemoteFencedMessage<Serializable, RemoteRpcInvocation> {
+public class Response extends Message<Serializable> {
 
-    private final long id;
-    private final String target;
-    private final Type type;
+    private final long requestId;
 
-    public RemoteRequestWithID(
-            @Nullable Serializable fencingToken,
-            RemoteRpcInvocation payload,
-            String target,
-            long id,
-            Type type) {
-        super(fencingToken, payload);
-        this.target = target;
-        this.id = id;
-        this.type = type;
+    public Response(Serializable payload, long id, long requestId) {
+        super(payload, id);
+        this.requestId = requestId;
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public Type getType() {
-        return type;
+    public long getRequestId() {
+        return requestId;
     }
 }

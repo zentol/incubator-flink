@@ -78,16 +78,6 @@ under the License.
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
-			<artifactId>grpc-stub</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.errorprone</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty</artifactId>
 			<exclusions>
 				<exclusion>

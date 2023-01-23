@@ -16,30 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.rpc.messages;
+package org.apache.flink.runtime.rpc.grpc.connection;
 
-import java.io.Serializable;
+import org.apache.flink.runtime.rpc.messages.grpc.Message;
 
-/** A response with an ID for matching the response to the original request. */
-public class RemoteResponseWithID implements Serializable {
-    private final Serializable payload;
-    private final long id;
+import java.util.concurrent.CompletableFuture;
 
-    public RemoteResponseWithID(Serializable payload, long id) {
-        this.payload = payload;
-        this.id = id;
-    }
+/**
+ * Generic interface for interacting with the gRPC layer.
+ *
+ * <p>Specifically this abstracts whether we are the client or server part of a connection.
+ */
+public interface Connection {
+    void tell(Message<?> message);
 
-    public Serializable getPayload() {
-        return payload;
-    }
+    CompletableFuture<Object> ask(Message<?> message);
 
-    public long getId() {
-        return id;
-    }
-
-    @Override
-    public String toString() {
-        return payload == null ? "null" : payload.getClass().getSimpleName() + ": " + payload;
-    }
+    CompletableFuture<Void> closeAsync();
 }

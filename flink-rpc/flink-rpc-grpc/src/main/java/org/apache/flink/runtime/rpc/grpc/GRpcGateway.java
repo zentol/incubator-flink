@@ -25,21 +25,20 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 import org.apache.flink.runtime.rpc.RpcGatewayUtils;
 import org.apache.flink.runtime.rpc.exceptions.RecipientUnreachableException;
 import org.apache.flink.runtime.rpc.exceptions.RpcException;
-import org.apache.flink.runtime.rpc.messages.RemoteRequestWithID;
+import org.apache.flink.runtime.rpc.grpc.connection.Connection;
 import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.runtime.rpc.messages.Type;
+import org.apache.flink.runtime.rpc.messages.grpc.Request;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.SerializedThrowable;
-import org.apache.flink.util.ShutdownLog;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -79,7 +78,7 @@ public class GRpcGateway<F extends Serializable>
 
     private final ClassLoader flinkClassLoader;
 
-    private final CNTN connection;
+    private final Connection connection;
     private final AtomicLong atomicLong;
 
     public GRpcGateway(
@@ -92,7 +91,7 @@ public class GRpcGateway<F extends Serializable>
             boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
-            CNTN connection,
+            Connection connection,
             AtomicLong atomicLong) {
         this.fencingToken = fencingToken;
         this.address = address;
@@ -107,23 +106,7 @@ public class GRpcGateway<F extends Serializable>
         this.atomicLong = atomicLong;
     }
 
-    @Override
-    public CompletableFuture<Void> closeAsync(Logger log) {
-        return ShutdownLog.logShutdown(log, "Gateway to " + getAddress(), this::closeAsync);
-    }
-
     private final Object lock = new Object();
-
-    @GuardedBy("lock")
-    private boolean isClosing = false;
-
-    @Override
-    public CompletableFuture<Void> closeAsync() {
-        synchronized (this) {
-            isClosing = true;
-        }
-        return connection.closeAsync();
-    }
 
     @Override
     public String getAddress() {
@@ -251,13 +234,6 @@ public class GRpcGateway<F extends Serializable>
      */
     private void tell(RemoteRpcInvocation message) {
         synchronized (lock) {
-            if (isClosing) {
-                LOG.debug(
-                        "Ignoring ask to '{}' (RPC={}) because shutdown is in progress.",
-                        address,
-                        message);
-                return;
-            }
             final long id = atomicLong.getAndIncrement();
 
             LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
@@ -266,8 +242,7 @@ public class GRpcGateway<F extends Serializable>
                     () -> {
                         synchronized (lock) {
                             connection.tell(
-                                    new RemoteRequestWithID(
-                                            fencingToken, message, endpointId, id, Type.TELL));
+                                    new Request(fencingToken, message, endpointId, id, Type.TELL));
                         }
                     },
                     flinkClassLoader);
@@ -284,14 +259,6 @@ public class GRpcGateway<F extends Serializable>
      */
     private CompletableFuture<?> ask(RemoteRpcInvocation message, Duration timeout) {
         synchronized (lock) {
-            if (isClosing) {
-                LOG.debug(
-                        "Ignoring ask to '{}' (RPC={}) because shutdown is in progress.",
-                        address,
-                        message);
-                return FutureUtils.completedExceptionally(
-                        new RpcException("Gateway has been closed."));
-            }
             final long id = atomicLong.getAndIncrement();
 
             LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
@@ -304,7 +271,7 @@ public class GRpcGateway<F extends Serializable>
                     () -> {
                         FutureUtils.forward(
                                 connection.ask(
-                                        new RemoteRequestWithID(
+                                        new Request(
                                                 fencingToken, message, endpointId, id, Type.ASK)),
                                 response);
                     },

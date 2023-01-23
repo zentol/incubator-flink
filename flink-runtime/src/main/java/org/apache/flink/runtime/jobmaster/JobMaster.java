@@ -542,8 +542,6 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                     taskManagerRegistration.getTaskExecutorGateway();
 
             taskExecutorGateway.disconnectJobManager(jobGraph.getJobID(), cause);
-
-            taskExecutorGateway.closeAsync(log);
         }
 
         return CompletableFuture.completedFuture(Acknowledge.get());
@@ -1240,7 +1238,6 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                 jobGraph.getJobID(), schedulerNG.requestJobStatus(), cause);
         blocklistHandler.deregisterBlocklistListener(resourceManagerGateway);
         slotPoolService.disconnectResourceManager();
-        resourceManagerGateway.closeAsync(log);
     }
 
     private String getNodeIdOfTaskManager(ResourceID taskManagerId) {

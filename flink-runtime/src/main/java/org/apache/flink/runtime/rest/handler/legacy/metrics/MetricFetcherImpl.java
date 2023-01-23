@@ -261,8 +261,7 @@ public class MetricFetcherImpl<T extends RestfulGateway> implements MetricFetche
                             metrics.addAll(deserializer.deserialize(result));
                             return FutureUtils.completedVoidFuture();
                         },
-                        executor)
-                .thenRun(() -> queryServiceGateway.closeAsync(LOG));
+                        executor);
     }
 
     @Nonnull
