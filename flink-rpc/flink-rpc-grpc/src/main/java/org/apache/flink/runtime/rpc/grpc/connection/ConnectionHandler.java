@@ -25,7 +25,6 @@ import org.apache.flink.runtime.rpc.messages.grpc.Request;
 import org.apache.flink.runtime.rpc.messages.grpc.Response;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.SerializedThrowable;
-import org.apache.flink.util.concurrent.FutureUtils;
 import org.apache.flink.util.function.BiFunctionWithException;
 
 import org.slf4j.Logger;
@@ -39,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 class ConnectionHandler {
@@ -203,5 +203,22 @@ class ConnectionHandler {
                                 isStopped = true;
                             }
                         });
+         */
+        /* option 2: fail remaining futures; generally sound?
+         */
+        pendingResponses.forEach(
+                (key, future) ->
+                        future.completeExceptionally(
+                                new TimeoutException("rpc service is being closed.")));
+        synchronized (lock) {
+            isStopped = true;
+        }
+        return CompletableFuture.completedFuture(null);
+        /* option 3: ignore pending responses; hacky?
+        synchronized (lock) {
+            isStopped = true;
+        }
+        return CompletableFuture.completedFuture(null);
+        */
     }
 }
