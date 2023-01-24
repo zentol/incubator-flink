@@ -333,7 +333,7 @@ public class GRpcService implements RpcService, BindableService {
                                                 new ClientConnection(
                                                         channel,
                                                         callFunction.apply(channel),
-                                                        pseudoAddress,
+                                                        getInternalAddress() + ":" + getPort(),
                                                         this::handleRpcInvocation,
                                                         () ->
                                                                 connectionsAsClient.remove(
