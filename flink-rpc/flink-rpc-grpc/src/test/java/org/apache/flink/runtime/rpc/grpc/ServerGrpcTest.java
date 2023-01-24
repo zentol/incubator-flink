@@ -171,6 +171,32 @@ class ServerGrpcTest {
         }
     }
 
+    @Test
+    void testWildcard() throws Exception {
+        try (RpcSystem rpcSystem = new GRpcSystem()) {
+            try (RpcService rpcService =
+                    rpcSystem
+                            .remoteServiceBuilder(new Configuration(), null, "8000,8001")
+                            .withComponentName("test")
+                            .createAndStart()) {
+
+                try (TestEndpoint testEndpoint = new TestEndpoint(rpcService); ) {
+                    testEndpoint.start();
+
+                    String address = testEndpoint.getAddress();
+                    String wildcardAddress = address.substring(0, address.length() - 1) + "*";
+
+                    System.out.println(
+                            rpcService
+                                    .connect(wildcardAddress, TestGateway.class)
+                                    .get()
+                                    .getCount()
+                                    .get());
+                }
+            }
+        }
+    }
+
     public interface TestGateway extends RpcGateway {
         CompletableFuture<Integer> getCount();
     }
