@@ -194,7 +194,7 @@ class ConnectionHandler {
         }
     }
 
-    public CompletableFuture<Void> closeAsync() {
+    public void close() {
         System.out.println(
                 "Closing connection with pending responses for: " + pendingResponses.keySet());
         pendingResponses.forEach(
@@ -204,6 +204,5 @@ class ConnectionHandler {
         synchronized (lock) {
             isStopped = true;
         }
-        return CompletableFuture.completedFuture(null);
     }
 }

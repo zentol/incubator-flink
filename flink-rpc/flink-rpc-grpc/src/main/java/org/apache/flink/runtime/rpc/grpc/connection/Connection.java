@@ -32,5 +32,5 @@ public interface Connection {
 
     CompletableFuture<Object> ask(Message<?> message);
 
-    CompletableFuture<Void> closeAsync();
+    void close();
 }

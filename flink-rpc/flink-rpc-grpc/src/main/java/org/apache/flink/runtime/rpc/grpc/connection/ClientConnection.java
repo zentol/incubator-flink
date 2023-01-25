@@ -74,19 +74,15 @@ public class ClientConnection extends ClientCall.Listener<Message<?>> implements
     }
 
     @Override
-    public CompletableFuture<Void> closeAsync() {
+    public void close() {
         try {
             call.halfClose();
         } catch (IllegalStateException ise) {
             // just means the call was already closed/cancelled
         }
-        return connectionHandler
-                .closeAsync()
-                .thenRun(channel::shutdown)
-                .thenRun(
-                        () ->
-                                GRpcService.awaitShutdown(
-                                        channel::awaitTermination, channel::isTerminated))
-                .thenRun(cleanup);
+        connectionHandler.close();
+        channel.shutdown();
+        GRpcService.awaitShutdown(channel::awaitTermination, channel::isTerminated);
+        cleanup.run();
     }
 }

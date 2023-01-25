@@ -470,14 +470,15 @@ public class GRpcService implements RpcService, BindableService {
                                                         connectionsAsClient.values().stream()
                                                                 .map(
                                                                         x ->
-                                                                                x.thenCompose(
+                                                                                x.thenAccept(
                                                                                                 Connection
-                                                                                                        ::closeAsync)
+                                                                                                        ::close)
                                                                                         .handle(
                                                                                                 (v,
                                                                                                         e) ->
                                                                                                         null))
                                                                 .collect(Collectors.toList()));
+                                        connectionsAsServer.values().forEach(Connection::close);
                                         server.shutdown();
                                         localServer.shutdown();
                                         return voidConjunctFuture;

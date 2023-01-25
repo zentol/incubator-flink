@@ -72,12 +72,13 @@ public class ServerConnection extends ServerCall.Listener<Message<?>> implements
     }
 
     @Override
-    public CompletableFuture<Void> closeAsync() {
+    public void close() {
         try {
             call.close(Status.OK, new Metadata());
         } catch (IllegalStateException ise) {
             // just means the call was already closed/cancelled
         }
-        return connectionHandler.closeAsync().thenRun(cleanup);
+        connectionHandler.close();
+        cleanup.run();
     }
 }
