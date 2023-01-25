@@ -92,7 +92,7 @@ class ConnectionHandler {
         } else if (message instanceof Response) {
             handleResponse((Response) message);
         } else {
-            System.out.println("get fuckkkkked");
+            LOG.error("get fuckkkkked");
             throw new RuntimeException("get fucked");
         }
         synchronized (lock) {
@@ -190,13 +190,12 @@ class ConnectionHandler {
         if (responseFuture != null) {
             responseFuture.complete(response.getPayload());
         } else {
-            System.out.println("Unexpected response with ID " + response.getId());
+            LOG.warn("Unexpected response with ID " + response.getId());
         }
     }
 
     public void close() {
-        System.out.println(
-                "Closing connection with pending responses for: " + pendingResponses.keySet());
+        LOG.debug("Closing connection with pending responses for: " + pendingResponses.keySet());
         pendingResponses.forEach(
                 (key, future) ->
                         future.completeExceptionally(
