@@ -174,7 +174,12 @@ public class GRpcServer implements RpcServer {
                                     terminationFuture.thenRun(
                                             () -> {
                                                 synchronized (lock) {
-                                                    mainThread.submit(mainThread::shutdown);
+                                                    mainThread.submit(
+                                                            () -> {
+                                                                synchronized (lock) {
+                                                                    mainThread.shutdown();
+                                                                }
+                                                            });
                                                 }
                                             });
                                 },
