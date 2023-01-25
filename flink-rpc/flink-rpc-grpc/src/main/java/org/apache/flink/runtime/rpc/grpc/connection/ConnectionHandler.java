@@ -195,17 +195,8 @@ class ConnectionHandler {
     }
 
     public CompletableFuture<Void> closeAsync() {
-        return FutureUtils.combineAll(pendingResponses.values())
-                .thenApply(x -> null)
-                .thenRun(
-                        () -> {
-                            synchronized (lock) {
-                                isStopped = true;
-                            }
-                        });
-         */
-        /* option 2: fail remaining futures; generally sound?
-         */
+        System.out.println(
+                "Closing connection with pending responses for: " + pendingResponses.keySet());
         pendingResponses.forEach(
                 (key, future) ->
                         future.completeExceptionally(
@@ -214,11 +205,5 @@ class ConnectionHandler {
             isStopped = true;
         }
         return CompletableFuture.completedFuture(null);
-        /* option 3: ignore pending responses; hacky?
-        synchronized (lock) {
-            isStopped = true;
-        }
-        return CompletableFuture.completedFuture(null);
-        */
     }
 }
