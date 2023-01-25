@@ -106,8 +106,6 @@ public class GRpcGateway<F extends Serializable>
         this.atomicLong = atomicLong;
     }
 
-    private final Object lock = new Object();
-
     @Override
     public String getAddress() {
         return address;
@@ -233,20 +231,15 @@ public class GRpcGateway<F extends Serializable>
      * @param message to send to the RPC endpoint.
      */
     private void tell(RemoteRpcInvocation message) {
-        synchronized (lock) {
-            final long id = atomicLong.getAndIncrement();
+        final long id = atomicLong.getAndIncrement();
 
-            LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
+        LOG.trace("Sending tell #{} to '{}' (RPC={})", id, address, message);
 
-            ClassLoadingUtils.runWithContextClassLoader(
-                    () -> {
-                        synchronized (lock) {
-                            connection.tell(
-                                    new Request(fencingToken, message, endpointId, id, Type.TELL));
-                        }
-                    },
-                    flinkClassLoader);
-        }
+        ClassLoadingUtils.runWithContextClassLoader(
+                () -> {
+                    connection.tell(new Request(fencingToken, message, endpointId, id, Type.TELL));
+                },
+                flinkClassLoader);
     }
 
     /**
@@ -258,29 +251,26 @@ public class GRpcGateway<F extends Serializable>
      * @return Response future
      */
     private CompletableFuture<?> ask(RemoteRpcInvocation message, Duration timeout) {
-        synchronized (lock) {
-            final long id = atomicLong.getAndIncrement();
+        final long id = atomicLong.getAndIncrement();
 
-            LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
+        LOG.trace("Sending ask #{} to '{}' (RPC={})", id, address, message);
 
-            CompletableFuture<Object> response = new CompletableFuture<>();
-            response.thenAccept(
-                    resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
+        CompletableFuture<Object> response = new CompletableFuture<>();
+        response.thenAccept(
+                resp -> LOG.trace("Received ask #{} response {} (RPC={})", id, resp, message));
 
-            ClassLoadingUtils.runWithContextClassLoader(
-                    () -> {
+        ClassLoadingUtils.runWithContextClassLoader(
+                () ->
                         FutureUtils.forward(
                                 connection.ask(
                                         new Request(
                                                 fencingToken, message, endpointId, id, Type.ASK)),
-                                response);
-                    },
-                    flinkClassLoader);
+                                response),
+                flinkClassLoader);
 
-            return ClassLoadingUtils.guardCompletionWithContextClassLoader(
-                    FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
-                    flinkClassLoader);
-        }
+        return ClassLoadingUtils.guardCompletionWithContextClassLoader(
+                FutureUtils.orTimeout(response, timeout.toMillis(), TimeUnit.MILLISECONDS),
+                flinkClassLoader);
     }
 
     static Throwable resolveTimeoutException(
