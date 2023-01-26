@@ -168,21 +168,12 @@ public class GRpcServer implements RpcServer {
             if (isRunning.compareAndSet(TernaryBoolean.TRUE, TernaryBoolean.FALSE)) {
                 mainThread.submit(
                         ClassLoadingUtils.withContextClassLoader(
-                                () -> {
-                                    FutureUtils.forward(
-                                            rpcEndpoint.internalCallOnStop(), terminationFuture);
-                                    terminationFuture.thenRun(
-                                            () -> {
-                                                synchronized (lock) {
-                                                    mainThread.submit(
-                                                            () -> {
-                                                                synchronized (lock) {
-                                                                    mainThread.shutdown();
-                                                                }
-                                                            });
-                                                }
-                                            });
-                                },
+                                () ->
+                                        FutureUtils.forward(
+                                                rpcEndpoint
+                                                        .internalCallOnStop()
+                                                        .thenRun(mainThread::shutdownNow),
+                                                terminationFuture),
                                 flinkClassLoader));
             } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
                 terminationFuture.complete(null);

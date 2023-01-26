@@ -436,10 +436,10 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public void stopServer(RpcServer server) {
         LOG.info("Stopping RPC server {}.", server.getAddress());
-        server.stop();
         server.getTerminationFuture()
                 .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()))
                 .thenRun(() -> LOG.info("Stopped RPC server {}.", server.getAddress()));
+        server.stop();
     }
 
     private final AtomicReference<CompletableFuture<Void>> terminationFuture =
