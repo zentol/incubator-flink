@@ -459,7 +459,7 @@ public class GRpcService implements RpcService, BindableService {
         internalConnect(
                         server.getAddress(),
                         true,
-                        forNetty(configuration),
+                        InProcessChannelBuilder::forName,
                         serverSpec::prepareLocalConnection)
                 .thenAccept(
                         connection ->
