@@ -33,6 +33,7 @@ import org.apache.flink.runtime.rpc.grpc.connection.ClientConnection;
 import org.apache.flink.runtime.rpc.grpc.connection.Connection;
 import org.apache.flink.runtime.rpc.grpc.connection.ServerConnection;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
+import org.apache.flink.runtime.rpc.messages.Type;
 import org.apache.flink.runtime.rpc.messages.grpc.Message;
 import org.apache.flink.runtime.rpc.messages.grpc.Request;
 import org.apache.flink.util.Preconditions;
@@ -451,10 +452,24 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public void stopServer(RpcServer server) {
         LOG.info("Stopping RPC server {}.", server.getAddress());
+        GRpcServer grpcServer = (GRpcServer) server;
         server.getTerminationFuture()
-                .thenRun(() -> targets.remove(((GRpcServer) server).getEndpointId()))
+                .thenRun(() -> targets.remove(grpcServer.getEndpointId()))
                 .thenRun(() -> LOG.info("Stopped RPC server {}.", server.getAddress()));
-        server.stop();
+        internalConnect(
+                        server.getAddress(),
+                        true,
+                        forNetty(configuration),
+                        serverSpec::prepareLocalConnection)
+                .thenAccept(
+                        connection ->
+                                connection.tell(
+                                        new Request(
+                                                getFencingTaken(server),
+                                                null,
+                                                grpcServer.getEndpointId(),
+                                                -1,
+                                                Type.TELL)));
     }
 
     private final AtomicReference<CompletableFuture<Void>> terminationFuture =

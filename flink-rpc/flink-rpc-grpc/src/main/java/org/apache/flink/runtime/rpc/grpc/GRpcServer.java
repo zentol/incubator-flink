@@ -166,19 +166,17 @@ public class GRpcServer implements RpcServer {
     public void stop() {
         synchronized (lock) {
             if (isRunning.compareAndSet(TernaryBoolean.TRUE, TernaryBoolean.FALSE)) {
-                mainThread.submit(
-                        ClassLoadingUtils.withContextClassLoader(
-                                () ->
-                                        FutureUtils.forward(
-                                                rpcEndpoint
-                                                        .internalCallOnStop()
-                                                        .thenRun(
-                                                                () ->
-                                                                        mainThread.execute(
-                                                                                mainThread
-                                                                                        ::shutdownNow)),
-                                                terminationFuture),
-                                flinkClassLoader));
+                ClassLoadingUtils.runWithContextClassLoader(
+                        () ->
+                                FutureUtils.forward(
+                                        rpcEndpoint
+                                                .internalCallOnStop()
+                                                .thenRun(
+                                                        () ->
+                                                                mainThread.execute(
+                                                                        mainThread::shutdownNow)),
+                                        terminationFuture),
+                        flinkClassLoader);
             } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
                 terminationFuture.complete(null);
             }
@@ -223,6 +221,14 @@ public class GRpcServer implements RpcServer {
                                             + '.'));
                 }
             }
+        }
+
+        if (rpcInvocation == null) {
+            // shutdown signal
+            synchronized (lock) {
+                mainThread.execute(this::stop);
+            }
+            return CompletableFuture.completedFuture(null);
         }
 
         final Method rpcMethod;
