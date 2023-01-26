@@ -337,7 +337,7 @@ public abstract class TestJvmProcess {
     public static void killProcessWithSigTerm(long pid) throws Exception {
         // send it a regular kill command (SIG_TERM)
         final Process kill = Runtime.getRuntime().exec("kill " + pid);
-        kill.waitFor();
+        kill.waitFor(30, TimeUnit.SECONDS);
         if (kill.exitValue() != 0) {
             fail("failed to send SIG_TERM to process " + pid);
         }
