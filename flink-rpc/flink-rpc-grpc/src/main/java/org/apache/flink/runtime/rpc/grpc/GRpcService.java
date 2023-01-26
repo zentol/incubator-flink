@@ -217,7 +217,7 @@ public class GRpcService implements RpcService, BindableService {
         final RpcEndpoint rpcEndpoint = ((GRpcServer) rpcServer).getRpcEndpoint();
         if (selfGatewayType.isInstance(rpcEndpoint)) {
             try {
-                return internalConnect(
+                return internalConnectAndCreateGateway(
                                 true,
                                 rpcServer.getAddress(),
                                 getFencingTaken(rpcServer),
@@ -246,7 +246,7 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
-        return internalConnect(
+        return internalConnectAndCreateGateway(
                 false,
                 address,
                 null,
@@ -258,7 +258,7 @@ public class GRpcService implements RpcService, BindableService {
     @Override
     public <F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(
             String address, F fencingToken, Class<C> clazz) {
-        return internalConnect(
+        return internalConnectAndCreateGateway(
                 false,
                 address,
                 Preconditions.checkNotNull(fencingToken),
@@ -297,11 +297,9 @@ public class GRpcService implements RpcService, BindableService {
         };
     }
 
-    private <F extends Serializable, C> CompletableFuture<C> internalConnect(
-            boolean isLocal,
+    private CompletableFuture<Connection> internalConnect(
             String address,
-            @Nullable F fencingToken,
-            Class<C> clazz,
+            boolean isLocal,
             Function<String, ManagedChannelBuilder<?>> channelBuilder,
             Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction) {
         if (!address.contains("@")) {
@@ -346,6 +344,20 @@ public class GRpcService implements RpcService, BindableService {
         } else {
             connectionFuture = CompletableFuture.completedFuture(serverConnection);
         }
+
+        return connectionFuture;
+    }
+
+    private <F extends Serializable, C> CompletableFuture<C> internalConnectAndCreateGateway(
+            boolean isLocal,
+            String address,
+            @Nullable F fencingToken,
+            Class<C> clazz,
+            Function<String, ManagedChannelBuilder<?>> channelBuilder,
+            Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction) {
+
+        final CompletableFuture<Connection> connectionFuture =
+                internalConnect(address, isLocal, channelBuilder, callFunction);
 
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 connectionFuture.thenApply(
