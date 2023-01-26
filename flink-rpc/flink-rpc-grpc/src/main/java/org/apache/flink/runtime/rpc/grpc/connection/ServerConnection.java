@@ -68,7 +68,7 @@ public class ServerConnection extends ServerCall.Listener<Message<?>> implements
 
     @Override
     public void onHalfClose() {
-        call.close(Status.OK, new Metadata());
+        close();
     }
 
     @Override
