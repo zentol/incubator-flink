@@ -498,6 +498,7 @@ public class GRpcService implements RpcService, BindableService {
                                         FutureUtils.ConjunctFuture<Void> voidConjunctFuture =
                                                 FutureUtils.completeAll(
                                                         connectionsAsClient.values().stream()
+                                                                .filter(f -> f.isDone())
                                                                 .map(
                                                                         x ->
                                                                                 x.thenAccept(
