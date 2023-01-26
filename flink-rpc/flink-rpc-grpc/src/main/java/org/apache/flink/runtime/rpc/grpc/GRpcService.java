@@ -354,7 +354,6 @@ public class GRpcService implements RpcService, BindableService {
                                             address.substring(address.indexOf("@") + 1),
                                             captureAskCallStack,
                                             rpcTimeout,
-                                            false,
                                             true,
                                             flinkClassLoader,
                                             conn,

@@ -73,7 +73,6 @@ public class GRpcGateway<F extends Serializable>
     private final boolean captureAskCallStack;
     private final Duration timeout;
 
-    protected final boolean isLocal;
     protected final boolean forceRpcInvocationSerialization;
 
     private final ClassLoader flinkClassLoader;
@@ -88,7 +87,6 @@ public class GRpcGateway<F extends Serializable>
             String endpointId,
             boolean captureAskCallStack,
             Duration timeout,
-            boolean isLocal,
             boolean forceRpcInvocationSerialization,
             ClassLoader flinkClassLoader,
             Connection connection,
@@ -99,7 +97,6 @@ public class GRpcGateway<F extends Serializable>
         this.endpointId = endpointId;
         this.captureAskCallStack = captureAskCallStack;
         this.timeout = timeout;
-        this.isLocal = isLocal;
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.flinkClassLoader = flinkClassLoader;
         this.connection = connection;
