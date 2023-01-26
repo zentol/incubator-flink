@@ -172,7 +172,11 @@ public class GRpcServer implements RpcServer {
                                         FutureUtils.forward(
                                                 rpcEndpoint
                                                         .internalCallOnStop()
-                                                        .thenRun(mainThread::shutdownNow),
+                                                        .thenRun(
+                                                                () ->
+                                                                        mainThread.execute(
+                                                                                mainThread
+                                                                                        ::shutdownNow)),
                                                 terminationFuture),
                                 flinkClassLoader));
             } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
