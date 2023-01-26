@@ -161,7 +161,13 @@ function debug_and_show_logs {
     kubectl get all
     kubectl describe all
 
-    echo "Flink logs:"
+    echo "Flink service logs:"
+    kubectl get service -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | while read service;do
+        echo "Current logs for $service: "
+        kubectl logs $service;
+    done
+
+    echo "Flink pod logs:"
     kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | while read pod;do
         echo "Current logs for $pod: "
         kubectl logs $pod;
