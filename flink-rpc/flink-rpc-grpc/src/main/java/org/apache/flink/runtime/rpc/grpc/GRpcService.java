@@ -217,14 +217,10 @@ public class GRpcService implements RpcService, BindableService {
         final RpcEndpoint rpcEndpoint = ((GRpcServer) rpcServer).getRpcEndpoint();
         if (selfGatewayType.isInstance(rpcEndpoint)) {
             try {
-                final Serializable fencingToken =
-                        rpcEndpoint instanceof FencedRpcEndpoint
-                                ? ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken()
-                                : null;
                 return internalConnect(
                                 true,
                                 rpcServer.getAddress(),
-                                fencingToken,
+                                getFencingTaken(rpcServer),
                                 selfGatewayType,
                                 InProcessChannelBuilder::forName,
                                 serverSpec::prepareLocalConnection)
@@ -238,6 +234,14 @@ public class GRpcService implements RpcService, BindableService {
                             + selfGatewayType
                             + '.');
         }
+    }
+
+    private static Serializable getFencingTaken(RpcServer rpcServer) {
+        final RpcEndpoint rpcEndpoint = ((GRpcServer) rpcServer).getRpcEndpoint();
+
+        return rpcEndpoint instanceof FencedRpcEndpoint
+                ? ((FencedRpcEndpoint<?>) rpcEndpoint).getFencingToken()
+                : null;
     }
 
     @Override
