@@ -226,7 +226,11 @@ public class GRpcServer implements RpcServer {
         if (rpcInvocation == null) {
             // shutdown signal
             synchronized (lock) {
-                mainThread.execute(this::stop);
+                if (mainThread != null) {
+                    mainThread.execute(this::stop);
+                } else {
+                    stop();
+                }
             }
             return CompletableFuture.completedFuture(null);
         }
