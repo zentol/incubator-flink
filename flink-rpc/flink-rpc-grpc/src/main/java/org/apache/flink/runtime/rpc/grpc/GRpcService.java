@@ -84,6 +84,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -451,6 +452,9 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public void stopServer(RpcServer server) {
+        if (shutdownComplete.get()) {
+            return;
+        }
         LOG.info("Stopping RPC server {}.", server.getAddress());
         GRpcServer grpcServer = (GRpcServer) server;
         server.getTerminationFuture()
@@ -472,6 +476,7 @@ public class GRpcService implements RpcService, BindableService {
                                                 Type.TELL)));
     }
 
+    private final AtomicBoolean shutdownComplete = new AtomicBoolean(false);
     private final AtomicReference<CompletableFuture<Void>> terminationFuture =
             new AtomicReference<>();
 
@@ -488,7 +493,7 @@ public class GRpcService implements RpcService, BindableService {
                                                     targets.values().stream()
                                                             .map(
                                                                     server -> {
-                                                                        server.stop();
+                                                                        stopServer(server);
                                                                         return server
                                                                                 .getTerminationFuture();
                                                                     })
@@ -535,7 +540,8 @@ public class GRpcService implements RpcService, BindableService {
                                     },
                                     executorService)
                             .thenRun(targets::clear)
-                            .thenRun(executorService::shutdown),
+                            .thenRun(executorService::shutdown)
+                            .thenRun(() -> shutdownComplete.set(true)),
                     terminationFuture.get());
 
             shutdownStart.complete(null);
