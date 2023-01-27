@@ -609,6 +609,10 @@ public class GRpcService implements RpcService, BindableService {
 
         GRpcServer rpcServer = targets.get(target);
         if (rpcServer == null) {
+            if (rpcInvocation == null) {
+                // shutdown signal; server already shut down
+                return CompletableFuture.completedFuture(null);
+            }
             // check for wildcard endpoint name
             if (target.endsWith("*")) {
                 String targetWithoutWildcard = target.substring(0, target.length() - 1);
