@@ -220,12 +220,7 @@ public class GRpcService implements RpcService, BindableService {
         if (selfGatewayType.isInstance(rpcEndpoint)) {
             try {
                 return internalConnectAndCreateGateway(
-                                true,
-                                rpcServer.getAddress(),
-                                getFencingTaken(rpcServer),
-                                selfGatewayType,
-                                InProcessChannelBuilder::forName,
-                                serverSpec::prepareLocalConnection)
+                                rpcServer.getAddress(), getFencingTaken(rpcServer), selfGatewayType)
                         .get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -248,25 +243,14 @@ public class GRpcService implements RpcService, BindableService {
 
     @Override
     public <C extends RpcGateway> CompletableFuture<C> connect(String address, Class<C> clazz) {
-        return internalConnectAndCreateGateway(
-                false,
-                address,
-                null,
-                clazz,
-                forNetty(configuration),
-                serverSpec::prepareConnection);
+        return internalConnectAndCreateGateway(address, null, clazz);
     }
 
     @Override
     public <F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(
             String address, F fencingToken, Class<C> clazz) {
         return internalConnectAndCreateGateway(
-                false,
-                address,
-                Preconditions.checkNotNull(fencingToken),
-                clazz,
-                forNetty(configuration),
-                serverSpec::prepareConnection);
+                address, Preconditions.checkNotNull(fencingToken), clazz);
     }
 
     private static Function<String, ManagedChannelBuilder<?>> forNetty(
@@ -304,10 +288,6 @@ public class GRpcService implements RpcService, BindableService {
             boolean isLocal,
             Function<String, ManagedChannelBuilder<?>> channelBuilder,
             Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction) {
-        if (!address.contains("@")) {
-            return FutureUtils.completedExceptionally(
-                    new IllegalArgumentException("Invalid address: " + address));
-        }
         final String actualAddress = address.substring(0, address.indexOf("@"));
 
         final String pseudoAddress = actualAddress + (isLocal ? "(local)" : "(remote)");
@@ -351,12 +331,29 @@ public class GRpcService implements RpcService, BindableService {
     }
 
     private <F extends Serializable, C> CompletableFuture<C> internalConnectAndCreateGateway(
-            boolean isLocal,
-            String address,
-            @Nullable F fencingToken,
-            Class<C> clazz,
-            Function<String, ManagedChannelBuilder<?>> channelBuilder,
-            Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction) {
+            String address, @Nullable F fencingToken, Class<C> clazz) {
+
+        if (!address.contains("@")) {
+            return FutureUtils.completedExceptionally(
+                    new IllegalArgumentException("Invalid address: " + address));
+        }
+        final String actualAddress = address.substring(0, address.indexOf("@"));
+        final String target = address.substring(address.indexOf("@") + 1);
+
+        // check if target runs in this rpc service, and if so use local channel
+        final Function<String, ManagedChannelBuilder<?>> channelBuilder;
+        final Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction;
+        final boolean isLocal;
+        if (actualAddress.equals(this.getAddress() + ":" + this.getPort())
+                && resolveTarget(target).isPresent()) {
+            isLocal = true;
+            channelBuilder = InProcessChannelBuilder::forName;
+            callFunction = serverSpec::prepareLocalConnection;
+        } else {
+            isLocal = false;
+            channelBuilder = forNetty(configuration);
+            callFunction = serverSpec::prepareConnection;
+        }
 
         final CompletableFuture<Connection> connectionFuture =
                 internalConnect(address, isLocal, channelBuilder, callFunction);
@@ -369,7 +366,7 @@ public class GRpcService implements RpcService, BindableService {
                                             fencingToken,
                                             address,
                                             getInternalAddress(),
-                                            address.substring(address.indexOf("@") + 1),
+                                            target,
                                             captureAskCallStack,
                                             rpcTimeout,
                                             true,
@@ -597,6 +594,19 @@ public class GRpcService implements RpcService, BindableService {
         }
     }
 
+    private Optional<GRpcServer> resolveTarget(String target) {
+        if (target.endsWith("*")) {
+            String targetWithoutWildcard = target.substring(0, target.length() - 1);
+
+            return targets.keySet().stream()
+                    .filter(t -> t.startsWith(targetWithoutWildcard))
+                    .map(targets::get)
+                    .findFirst();
+        } else {
+            return Optional.ofNullable(targets.get(target));
+        }
+    }
+
     /**
      * Handle rpc invocations by looking up the rpc method on the rpc endpoint and calling this
      * method with the provided method arguments. If the method has a return value, it is returned
@@ -614,21 +624,9 @@ public class GRpcService implements RpcService, BindableService {
                 return CompletableFuture.completedFuture(null);
             }
             // check for wildcard endpoint name
-            if (target.endsWith("*")) {
-                String targetWithoutWildcard = target.substring(0, target.length() - 1);
-
-                Optional<String> first =
-                        targets.keySet().stream()
-                                .filter(t -> t.startsWith(targetWithoutWildcard))
-                                .findFirst();
-
-                if (first.isPresent()) {
-                    rpcServer = targets.get(first.get());
-                } else {
-                    return FutureUtils.completedExceptionally(
-                            new RecipientUnreachableException(
-                                    "unknown", target, rpcInvocation.toString()));
-                }
+            Optional<GRpcServer> gRpcServer = resolveTarget(target);
+            if (gRpcServer.isPresent()) {
+                rpcServer = gRpcServer.get();
             } else {
                 return FutureUtils.completedExceptionally(
                         new RecipientUnreachableException(
