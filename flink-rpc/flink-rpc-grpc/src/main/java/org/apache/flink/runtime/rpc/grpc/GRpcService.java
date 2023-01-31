@@ -340,16 +340,26 @@ public class GRpcService implements RpcService, BindableService {
         final String actualAddress = address.substring(0, address.indexOf("@"));
         final String target = address.substring(address.indexOf("@") + 1);
 
+        LOG.debug(
+                "Connect request for {} at rpc service {}; mapped to {}@{}",
+                address,
+                getAddress() + ":" + getPort(),
+                actualAddress,
+                target,
+                new Exception());
+
         // check if target runs in this rpc service, and if so use local channel
         final Function<String, ManagedChannelBuilder<?>> channelBuilder;
         final Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction;
         final boolean isLocal;
         if (actualAddress.equals(this.getAddress() + ":" + this.getPort())
                 && resolveTarget(target).isPresent()) {
+            LOG.debug("Creating local connection");
             isLocal = true;
             channelBuilder = InProcessChannelBuilder::forName;
             callFunction = serverSpec::prepareLocalConnection;
         } else {
+            LOG.debug("Creating remote connection");
             isLocal = false;
             channelBuilder = forNetty(configuration);
             callFunction = serverSpec::prepareConnection;
