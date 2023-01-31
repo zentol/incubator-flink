@@ -352,7 +352,8 @@ public class GRpcService implements RpcService, BindableService {
         final Function<String, ManagedChannelBuilder<?>> channelBuilder;
         final Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction;
         final boolean isLocal;
-        if (actualAddress.equals(this.getInternalAddress() + ":" + this.getPort())
+        if (!AkkaOptions.isForceRpcInvocationSerializationEnabled(configuration)
+                && actualAddress.equals(this.getInternalAddress() + ":" + this.getPort())
                 && resolveTarget(target).isPresent()) {
             LOG.debug("Creating local connection");
             isLocal = true;
