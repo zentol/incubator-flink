@@ -343,7 +343,7 @@ public class GRpcService implements RpcService, BindableService {
         LOG.debug(
                 "Connect request for {} at rpc service {}; mapped to {}@{}",
                 address,
-                getAddress() + ":" + getPort(),
+                getInternalAddress() + ":" + getPort(),
                 actualAddress,
                 target,
                 new Exception());
@@ -352,7 +352,7 @@ public class GRpcService implements RpcService, BindableService {
         final Function<String, ManagedChannelBuilder<?>> channelBuilder;
         final Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction;
         final boolean isLocal;
-        if (actualAddress.equals(this.getAddress() + ":" + this.getPort())
+        if (actualAddress.equals(this.getInternalAddress() + ":" + this.getPort())
                 && resolveTarget(target).isPresent()) {
             LOG.debug("Creating local connection");
             isLocal = true;
