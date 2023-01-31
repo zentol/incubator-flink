@@ -914,6 +914,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                                                             .getResultPartitionID(),
                                                     partitionInfo.getIntermediateDataSetID(),
                                                     executionAttemptID);
+                                        } else {
+                                            log.debug("sE#uPI returned true!");
                                         }
                                     } catch (IOException | InterruptedException e) {
                                         log.error(
