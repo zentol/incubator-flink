@@ -255,7 +255,7 @@ public class GRpcServer implements RpcServer {
             if (rpcMethod.getReturnType().equals(Void.TYPE)) {
                 // No return value to send back
                 synchronized (lock) {
-                    if (!mainThread.isShutdown()) {
+                    if (this.isRunning.get() != TernaryBoolean.TRUE) {
                         mainThread.execute(
                                 () -> {
                                     if (mainThread.isShutdown()) {
@@ -281,7 +281,7 @@ public class GRpcServer implements RpcServer {
             } else {
                 final CompletableFuture<Object> result = new CompletableFuture<>();
                 synchronized (lock) {
-                    if (!mainThread.isShutdown()) {
+                    if (this.isRunning.get() != TernaryBoolean.TRUE) {
                         mainThread.execute(
                                 () -> {
                                     if (mainThread.isShutdown()) {
