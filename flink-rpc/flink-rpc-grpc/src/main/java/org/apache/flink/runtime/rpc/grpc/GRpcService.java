@@ -345,8 +345,7 @@ public class GRpcService implements RpcService, BindableService {
                 address,
                 getInternalAddress() + ":" + getPort(),
                 actualAddress,
-                target,
-                new Exception());
+                target);
 
         // check if target runs in this rpc service, and if so use local channel
         final Function<String, ManagedChannelBuilder<?>> channelBuilder;
