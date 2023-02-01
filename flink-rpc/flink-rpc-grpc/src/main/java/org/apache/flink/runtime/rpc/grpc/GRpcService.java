@@ -283,7 +283,7 @@ public class GRpcService implements RpcService, BindableService {
         };
     }
 
-    private CompletableFuture<Connection> internalConnect(
+    private CompletableFuture<Connection> createConnection(
             String address,
             boolean isLocal,
             Function<String, ManagedChannelBuilder<?>> channelBuilder,
@@ -330,8 +330,8 @@ public class GRpcService implements RpcService, BindableService {
         return connectionFuture;
     }
 
-    private <F extends Serializable, C> CompletableFuture<C> internalConnectAndCreateGateway(
-            String address, @Nullable F fencingToken, Class<C> clazz) {
+    private <F extends Serializable, C> CompletableFuture<Connection> internalConnect(
+            String address) {
 
         if (!address.contains("@")) {
             return FutureUtils.completedExceptionally(
@@ -366,8 +366,15 @@ public class GRpcService implements RpcService, BindableService {
             callFunction = serverSpec::prepareConnection;
         }
 
-        final CompletableFuture<Connection> connectionFuture =
-                internalConnect(address, isLocal, channelBuilder, callFunction);
+        return createConnection(address, isLocal, channelBuilder, callFunction);
+    }
+
+    private <F extends Serializable, C> CompletableFuture<C> internalConnectAndCreateGateway(
+            String address, @Nullable F fencingToken, Class<C> clazz) {
+
+        final CompletableFuture<Connection> connectionFuture = internalConnect(address);
+
+        final String target = address.substring(address.indexOf("@") + 1);
 
         return ClassLoadingUtils.guardCompletionWithContextClassLoader(
                 connectionFuture.thenApply(
@@ -468,11 +475,7 @@ public class GRpcService implements RpcService, BindableService {
         server.getTerminationFuture()
                 .thenRun(() -> targets.remove(grpcServer.getEndpointId()))
                 .thenRun(() -> LOG.info("Stopped RPC server {}.", server.getAddress()));
-        internalConnect(
-                        server.getAddress(),
-                        true,
-                        InProcessChannelBuilder::forName,
-                        serverSpec::prepareLocalConnection)
+        internalConnect(server.getAddress())
                 .thenAccept(
                         connection ->
                                 connection.tell(
