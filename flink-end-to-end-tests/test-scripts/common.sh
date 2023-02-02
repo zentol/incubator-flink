@@ -429,6 +429,7 @@ function internal_check_logs_for_exceptions {
   "WARN  akka.remote.ReliableDeliverySupervisor" \
   "RecipientUnreachableException" \
   "TRACE org.apache.flink.runtime.rpc.grpc" \
+  "DEBUG org.apache.flink.runtime.rpc.grpc" \
   ", Exception)" \
   "SerializedCheckpointException.unwrap")
 

@@ -183,6 +183,7 @@ public abstract class YarnTestBase {
 
         // grpc logging
         Pattern.compile("TRACE org.apache.flink.runtime.rpc.grpc"),
+        Pattern.compile("DEBUG org.apache.flink.runtime.rpc.grpc"),
         Pattern.compile(", Exception\\)")
     };
 
