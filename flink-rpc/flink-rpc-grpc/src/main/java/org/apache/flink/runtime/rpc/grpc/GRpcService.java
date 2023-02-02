@@ -219,8 +219,11 @@ public class GRpcService implements RpcService, BindableService {
         final RpcEndpoint rpcEndpoint = ((GRpcServer) rpcServer).getRpcEndpoint();
         if (selfGatewayType.isInstance(rpcEndpoint)) {
             try {
-                return internalConnectAndCreateGateway(
-                                rpcServer.getAddress(), getFencingTaken(rpcServer), selfGatewayType)
+                return createGateway(
+                                rpcServer.getAddress(),
+                                getFencingTaken(rpcServer),
+                                selfGatewayType,
+                                internalLocalConnect(rpcServer.getAddress()))
                         .get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -330,8 +333,7 @@ public class GRpcService implements RpcService, BindableService {
         return connectionFuture;
     }
 
-    private <F extends Serializable, C> CompletableFuture<Connection> internalConnect(
-            String address) {
+    private CompletableFuture<Connection> internalConnect(String address) {
 
         if (!address.contains("@")) {
             return FutureUtils.completedExceptionally(
@@ -354,10 +356,7 @@ public class GRpcService implements RpcService, BindableService {
         if (!AkkaOptions.isForceRpcInvocationSerializationEnabled(configuration)
                 && actualAddress.equals(this.getInternalAddress() + ":" + this.getPort())
                 && resolveTarget(target).isPresent()) {
-            LOG.debug("Creating local connection");
-            isLocal = true;
-            channelBuilder = InProcessChannelBuilder::forName;
-            callFunction = serverSpec::prepareLocalConnection;
+            return internalLocalConnect(address);
         } else {
             LOG.debug("Creating remote connection");
             isLocal = false;
@@ -368,10 +367,32 @@ public class GRpcService implements RpcService, BindableService {
         return createConnection(address, isLocal, channelBuilder, callFunction);
     }
 
+    private CompletableFuture<Connection> internalLocalConnect(String address) {
+
+        LOG.debug("Creating local connection");
+
+        // check if target runs in this rpc service, and if so use local channel
+        final Function<String, ManagedChannelBuilder<?>> channelBuilder =
+                InProcessChannelBuilder::forName;
+        final Function<Channel, ClientCall<Message<?>, Message<?>>> callFunction =
+                serverSpec::prepareLocalConnection;
+
+        return createConnection(address, true, channelBuilder, callFunction);
+    }
+
     private <F extends Serializable, C> CompletableFuture<C> internalConnectAndCreateGateway(
             String address, @Nullable F fencingToken, Class<C> clazz) {
 
         final CompletableFuture<Connection> connectionFuture = internalConnect(address);
+
+        return createGateway(address, fencingToken, clazz, connectionFuture);
+    }
+
+    private <F extends Serializable, C> CompletableFuture<C> createGateway(
+            String address,
+            @Nullable F fencingToken,
+            Class<C> clazz,
+            CompletableFuture<Connection> connectionFuture) {
 
         final String target = address.substring(address.indexOf("@") + 1);
 
