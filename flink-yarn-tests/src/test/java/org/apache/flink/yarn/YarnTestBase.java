@@ -179,7 +179,11 @@ public abstract class YarnTestBase {
         Pattern.compile("ClassNotFoundException : \"org.apache.hadoop.hbase.HBaseConfiguration\""),
 
         // This happens in YARN shutdown
-        Pattern.compile("Rejected TaskExecutor registration at the ResourceManager")
+        Pattern.compile("Rejected TaskExecutor registration at the ResourceManager"),
+
+        // grpc logging
+        Pattern.compile("TRACE org.apache.flink.runtime.rpc.grpc.connection.ConnectionHandler"),
+        Pattern.compile(", Exception\\)")
     };
 
     // Temp directory which is deleted after the unit test.
