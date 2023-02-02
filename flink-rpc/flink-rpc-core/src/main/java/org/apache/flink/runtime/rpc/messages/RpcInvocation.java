@@ -55,16 +55,6 @@ public interface RpcInvocation extends Message {
      */
     static String convertRpcToString(
             String declaringClassName, String methodName, Class<?>[] parameterTypes) {
-        final StringBuilder paramTypeStringBuilder = new StringBuilder(parameterTypes.length * 5);
-
-        if (parameterTypes.length > 0) {
-            paramTypeStringBuilder.append(parameterTypes[0].getSimpleName());
-
-            for (int i = 1; i < parameterTypes.length; i++) {
-                paramTypeStringBuilder.append(", ").append(parameterTypes[i].getSimpleName());
-            }
-        }
-
-        return declaringClassName + '.' + methodName + '(' + paramTypeStringBuilder + ')';
+        return declaringClassName + '.' + methodName;
     }
 }
