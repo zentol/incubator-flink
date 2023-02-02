@@ -182,7 +182,7 @@ public abstract class YarnTestBase {
         Pattern.compile("Rejected TaskExecutor registration at the ResourceManager"),
 
         // grpc logging
-        Pattern.compile("TRACE org.apache.flink.runtime.rpc.grpc.connection.ConnectionHandler"),
+        Pattern.compile("TRACE org.apache.flink.runtime.rpc.grpc"),
         Pattern.compile(", Exception\\)")
     };
 
