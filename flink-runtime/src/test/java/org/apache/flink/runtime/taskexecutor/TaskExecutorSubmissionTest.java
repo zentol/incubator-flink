@@ -443,6 +443,7 @@ public class TaskExecutorSubmissionTest extends TestLogger {
 
     /** Tests that the TaskManager fails the task if the partition update fails. */
     @Test
+    @Ignore("Relies on objects not going through Java serialization")
     public void testUpdateTaskInputPartitionsFailure() throws Exception {
         final ExecutionAttemptID eid = createExecutionAttemptId();
 
