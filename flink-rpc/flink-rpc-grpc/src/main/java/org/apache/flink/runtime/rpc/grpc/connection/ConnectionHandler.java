@@ -137,18 +137,17 @@ class ConnectionHandler {
                                     })
                             .exceptionally(
                                     e -> {
+                                        Throwable ex = ExceptionUtils.stripCompletionException(e);
                                         synchronized (lock) {
-                                            if (e.getCause()
-                                                            instanceof RecipientUnreachableException
-                                                    || e.getCause()
-                                                            instanceof RejectedExecutionException) {
+                                            if (ex instanceof RecipientUnreachableException
+                                                    || ex instanceof RejectedExecutionException) {
                                                 LOG.debug(
                                                         "RPC ({}) failed{}.",
                                                         message.getPayload(),
                                                         isStopped
                                                                 ? " while server was stopped."
                                                                 : "",
-                                                        e);
+                                                        ex);
                                             } else {
                                                 LOG.debug(
                                                         "RPC ({}) failed{}.",
@@ -156,15 +155,12 @@ class ConnectionHandler {
                                                         isStopped
                                                                 ? " while server was stopped."
                                                                 : "",
-                                                        e);
+                                                        ex);
                                             }
                                             if (!isStopped) {
                                                 tell(
                                                         new Response(
-                                                                new SerializedThrowable(
-                                                                        ExceptionUtils
-                                                                                .stripCompletionException(
-                                                                                        e)),
+                                                                new SerializedThrowable(ex),
                                                                 1,
                                                                 message.getId()));
                                             }
