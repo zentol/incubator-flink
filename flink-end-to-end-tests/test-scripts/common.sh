@@ -428,6 +428,7 @@ function internal_check_logs_for_exceptions {
   "org.apache.flink.runtime.JobException: Recovery is suppressed" \
   "WARN  akka.remote.ReliableDeliverySupervisor" \
   "RecipientUnreachableException" \
+  "TRACE org.apache.flink.runtime.rpc.grpc.connection.ConnectionHandler" \
   ", Exception)" \
   "SerializedCheckpointException.unwrap")
 
