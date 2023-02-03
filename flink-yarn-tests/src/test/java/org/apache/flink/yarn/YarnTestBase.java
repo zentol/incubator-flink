@@ -163,6 +163,8 @@ public abstract class YarnTestBase {
                 "java\\.util\\.concurrent\\.RejectedExecutionException: Worker has already been shutdown"),
         // this can happen if a message was in-flight while an endpoint was shutting down
         Pattern.compile("java\\.util\\.concurrent\\.RejectedExecutionException: Task"),
+        Pattern.compile(
+                "org\\.apache\\.flink\\.runtime\\.rpc\\.exceptions\\.RecipientUnreachableException"),
         Pattern.compile("org\\.apache\\.flink.util\\.FlinkException: Stopping JobMaster"),
         Pattern.compile(
                 "org\\.apache\\.flink.util\\.FlinkException: JobManager is shutting down\\."),
@@ -433,7 +435,9 @@ public abstract class YarnTestBase {
         private String[] names;
         private String excludeInPath = null;
 
-        /** @param names which have to be included in the filename. */
+        /**
+         * @param names which have to be included in the filename.
+         */
         public ContainsName(String[] names) {
             this.names = names;
         }

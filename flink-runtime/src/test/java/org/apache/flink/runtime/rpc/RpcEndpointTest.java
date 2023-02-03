@@ -24,6 +24,7 @@ import org.apache.flink.util.TestLoggerExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -165,6 +166,7 @@ public class RpcEndpointTest {
 
     /** Tests that the RPC is not running if it is being stopped. */
     @Test
+    @Disabled("Bad contract; if the endpoint is closed no request should make it to the endpoint")
     public void testNotRunningState()
             throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Void> stopFuture = new CompletableFuture<>();

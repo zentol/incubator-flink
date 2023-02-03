@@ -495,7 +495,7 @@ public class GRpcService implements RpcService, BindableService {
         server.getTerminationFuture()
                 .thenRun(() -> targets.remove(grpcServer.getEndpointId()))
                 .thenRun(() -> LOG.info("Stopped RPC server {}.", server.getAddress()));
-        internalConnect(server.getAddress())
+        internalLocalConnect(server.getAddress())
                 .thenAccept(
                         connection ->
                                 connection.tell(
