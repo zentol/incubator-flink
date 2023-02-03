@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.rpc.grpc;
 
-import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.rpc.RpcEndpoint;
 import org.apache.flink.runtime.rpc.RpcGateway;
@@ -40,14 +39,10 @@ class ServerGrpcTest {
 
     @Test
     void testSelfGateway() throws Exception {
-        Configuration configuration = new Configuration();
-        // we explicitly test that messages on self gateways do not go through serialization
-        configuration.set(AkkaOptions.FORCE_RPC_INVOCATION_SERIALIZATION, false);
-
         try (RpcSystem rpcSystem = new GRpcSystem()) {
             final RpcService rpcService =
                     rpcSystem
-                            .remoteServiceBuilder(configuration, null, "8000,8001")
+                            .remoteServiceBuilder(new Configuration(), null, "8000,8001")
                             .withComponentName("test")
                             .createAndStart();
 
