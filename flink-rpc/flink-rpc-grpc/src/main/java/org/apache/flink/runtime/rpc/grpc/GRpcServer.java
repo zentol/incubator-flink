@@ -171,10 +171,7 @@ public class GRpcServer implements RpcServer {
                                 FutureUtils.forward(
                                         rpcEndpoint
                                                 .internalCallOnStop()
-                                                .thenRun(
-                                                        () ->
-                                                                mainThread.execute(
-                                                                        mainThread::shutdownNow)),
+                                                .thenRun(() -> mainThread.shutdownNow()),
                                         terminationFuture),
                         flinkClassLoader);
             } else if (isRunning.compareAndSet(TernaryBoolean.UNDEFINED, TernaryBoolean.FALSE)) {
@@ -255,7 +252,7 @@ public class GRpcServer implements RpcServer {
             if (rpcMethod.getReturnType().equals(Void.TYPE)) {
                 // No return value to send back
                 synchronized (lock) {
-                    if (this.isRunning.get() == TernaryBoolean.TRUE) {
+                    try {
                         mainThread.execute(
                                 () -> {
                                     if (mainThread.isShutdown()) {
@@ -273,7 +270,7 @@ public class GRpcServer implements RpcServer {
                                         throw new RuntimeException(e);
                                     }
                                 });
-                    } else {
+                    } catch (RejectedExecutionException e) {
                         LOG.debug("Dropping RPC because server is shutting down.");
                     }
                 }
@@ -281,7 +278,7 @@ public class GRpcServer implements RpcServer {
             } else {
                 final CompletableFuture<Object> result = new CompletableFuture<>();
                 synchronized (lock) {
-                    if (this.isRunning.get() == TernaryBoolean.TRUE) {
+                    try {
                         mainThread.execute(
                                 () -> {
                                     if (mainThread.isShutdown()) {
@@ -324,7 +321,7 @@ public class GRpcServer implements RpcServer {
                                         result.completeExceptionally(e);
                                     }
                                 });
-                    } else {
+                    } catch (RejectedExecutionException e) {
                         LOG.debug("Dropping RPC because server is shutting down.");
                         result.completeExceptionally(
                                 new RecipientUnreachableException(
