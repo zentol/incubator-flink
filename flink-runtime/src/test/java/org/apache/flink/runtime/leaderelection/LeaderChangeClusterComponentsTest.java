@@ -112,6 +112,8 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
         submissionFuture.get();
 
         CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
+        // make sure the requestJobResult call was already processed by job master
+        miniCluster.getJobStatus(jobId).get();
 
         highAvailabilityServices.revokeDispatcherLeadership().get();
 
