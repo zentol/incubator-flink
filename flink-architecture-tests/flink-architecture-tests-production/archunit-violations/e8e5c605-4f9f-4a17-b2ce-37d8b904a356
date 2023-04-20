@@ -1,0 +1,10 @@
+@Public interface FunctionInitializationContext extends interface ManagedInitializationContext which is not @Public.
+@Public interface MultipleInputStreamOperator extends interface KeyContext which is not @Public.
+@Public interface OneInputStreamOperator extends interface KeyContext which is not @Public.
+@Public interface SpecializedContext extends interface ExpressionEvaluatorFactory which is not @Public.
+@Public interface StateInitializationContext extends interface ManagedInitializationContext which is not @Public.
+@Public interface StatementSet extends interface Compilable which is not @Public.
+@Public interface StreamOperator extends interface KeyContext which is not @Public.
+@Public interface StreamStatementSet extends interface Compilable which is not @Public.
+@Public interface TablePipeline extends interface Compilable which is not @Public.
+@Public interface TwoInputStreamOperator extends interface KeyContext which is not @Public.

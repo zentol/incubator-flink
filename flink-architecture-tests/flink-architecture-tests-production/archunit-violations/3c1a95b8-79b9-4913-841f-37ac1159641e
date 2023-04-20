@@ -1,0 +1,14 @@
+@Public class AbstractParameterTool extends class GlobalJobParameters which is not @Public.
+@Public class Configuration extends class GlobalJobParameters which is not @Public.
+@Public class HadoopInputFormat extends class HadoopInputFormatBase which is not @Public.
+@Public class HadoopInputFormat extends class HadoopInputFormatBase which is not @Public.
+@Public class HadoopInputFormat extends class HadoopInputFormatCommonBase which is not @Public.
+@Public class HadoopInputFormat extends class HadoopInputFormatCommonBase which is not @Public.
+@Public class HadoopOutputFormat extends class HadoopOutputFormatBase which is not @Public.
+@Public class HadoopOutputFormat extends class HadoopOutputFormatBase which is not @Public.
+@Public class HadoopOutputFormat extends class HadoopOutputFormatCommonBase which is not @Public.
+@Public class HadoopOutputFormat extends class HadoopOutputFormatCommonBase which is not @Public.
+@Public class JobID extends class AbstractID which is not @Public.
+@Public class ParameterTool extends class GlobalJobParameters which is not @Public.
+@Public class TupleTypeInfo extends class TupleTypeInfoBase which is not @Public.
+@Public class UnmodifiableConfiguration extends class GlobalJobParameters which is not @Public.

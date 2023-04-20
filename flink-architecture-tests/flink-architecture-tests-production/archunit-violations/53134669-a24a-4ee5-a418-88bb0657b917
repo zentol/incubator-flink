@@ -1,0 +1,11 @@
+@Public class ArrayResultIterator extends class RecyclableIterator which is not @Public.
+@Public class IteratorResultIterator extends class RecyclableIterator which is not @Public.
+@Public class KeyedStateCheckpointOutputStream extends class NonClosingCheckpointOutputStream which is not @Public.
+@Public class LatencyMarker extends class StreamElement which is not @Public.
+@Public class MultipleParameterTool extends class GlobalJobParameters which is not @Public.
+@Public class OperatorStateCheckpointOutputStream extends class NonClosingCheckpointOutputStream which is not @Public.
+@Public class RowCsvInputFormat extends class CsvInputFormat which is not @Public.
+@Public class RowCsvInputFormat extends class GenericCsvInputFormat which is not @Public.
+@Public class RowTypeInfo extends class TupleTypeInfoBase which is not @Public.
+@Public class SingletonResultIterator extends class RecyclableIterator which is not @Public.
+@Public class Watermark extends class StreamElement which is not @Public.

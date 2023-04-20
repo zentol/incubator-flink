@@ -27,12 +27,20 @@ import org.apache.flink.annotation.VisibleForTesting;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
+import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.domain.properties.CanBeAnnotated;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackage;
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
+import static com.tngtech.archunit.lang.conditions.ArchPredicates.are;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.library.freeze.FreezingArchRule.freeze;
 import static org.apache.flink.architecture.common.Conditions.fulfill;
@@ -94,6 +102,168 @@ public class ApiAnnotationRules {
                                                                     Deprecated.class))))
                             .as(
                                     "Return and argument types of methods annotated with @Public must be annotated with @Public."));
+
+    static DescribedPredicate<CanBeAnnotated> publicApi =
+            are(annotatedWith(Public.class))
+                    .and(are(not(annotatedWith(PublicEvolving.class))))
+                    .and(are(not(annotatedWith(Internal.class))))
+                    .and(are(not(annotatedWith(Deprecated.class))))
+                    .and(are(not(annotatedWith(Experimental.class))));
+
+    @ArchTest
+    public static final ArchRule PUBLIC_API_CLASSES_EXTEND_ONLY_PUBLIC_API_CLASSES =
+            freeze(
+                    classes()
+                            .that(publicApi)
+                            .and()
+                            .areTopLevelClasses()
+                            .and()
+                            .arePublic()
+                            .should(
+                                    new ArchCondition<JavaClass>("only extend @Public classes") {
+                                        @Override
+                                        public void check(JavaClass item, ConditionEvents events) {
+                                            for (JavaClass superClass :
+                                                    item.getAllRawSuperclasses()) {
+                                                if (!superClass
+                                                        .getPackageName()
+                                                        .startsWith("org.apache.flink")) {
+                                                    continue;
+                                                }
+                                                if (!superClass
+                                                        .getModifiers()
+                                                        .contains(JavaModifier.PUBLIC)) {
+                                                    continue;
+                                                }
+                                                if (!superClass.isAnnotatedWith(Public.class)) {
+                                                    events.add(
+                                                            SimpleConditionEvent.violated(
+                                                                    item,
+                                                                    String.format(
+                                                                            "@Public class %s extends class %s which is not @Public.",
+                                                                            item.getSimpleName(),
+                                                                            superClass
+                                                                                    .getSimpleName())));
+                                                }
+                                            }
+                                        }
+                                    })
+                            .as(
+                                    "Classes annotated with @Public must only extend classes annotated with @Public."));
+
+    @ArchTest
+    public static final ArchRule
+            PUBLIC_EVOLVING_API_CLASSES_EXTEND_ONLY_PUBLIC_EVOLVING_API_CLASSES =
+                    freeze(
+                            classes()
+                                    .that()
+                                    .areAnnotatedWith(PublicEvolving.class)
+                                    .and()
+                                    .areTopLevelClasses()
+                                    .and()
+                                    .arePublic()
+                                    .and()
+                                    .areNotAnnotatedWith(Public.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Internal.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Deprecated.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Experimental.class)
+                                    .should(
+                                            new ArchCondition<JavaClass>(
+                                                    "only extend @Public classes") {
+                                                @Override
+                                                public void check(
+                                                        JavaClass item, ConditionEvents events) {
+                                                    for (JavaClass superClass :
+                                                            item.getAllRawSuperclasses()) {
+                                                        if (!superClass
+                                                                .getPackageName()
+                                                                .startsWith("org.apache.flink")) {
+                                                            continue;
+                                                        }
+                                                        if (!superClass
+                                                                .getModifiers()
+                                                                .contains(JavaModifier.PUBLIC)) {
+                                                            continue;
+                                                        }
+                                                        if (!superClass.isAnnotatedWith(
+                                                                        Public.class)
+                                                                && !superClass.isAnnotatedWith(
+                                                                        PublicEvolving.class)) {
+                                                            events.add(
+                                                                    SimpleConditionEvent.violated(
+                                                                            item,
+                                                                            String.format(
+                                                                                    "@Public class %s extends class %s which is not @Public.",
+                                                                                    item
+                                                                                            .getSimpleName(),
+                                                                                    superClass
+                                                                                            .getSimpleName())));
+                                                        }
+                                                    }
+                                                }
+                                            })
+                                    .as(
+                                            "Classes annotated with @PublicEvolving must only extend classes annotated with @Public(Evolving)."));
+
+    @ArchTest
+    public static final ArchRule
+            PUBLIC_EVOLVING_API_INTERFACE_EXTEND_ONLY_PUBLIC_EVOLVING_API_INTERFACE =
+                    freeze(
+                            classes()
+                                    .that()
+                                    .areAnnotatedWith(PublicEvolving.class)
+                                    .and()
+                                    .areInterfaces()
+                                    .and()
+                                    .arePublic()
+                                    .and()
+                                    .areNotAnnotatedWith(Public.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Internal.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Deprecated.class)
+                                    .and()
+                                    .areNotAnnotatedWith(Experimental.class)
+                                    .should(
+                                            new ArchCondition<JavaClass>(
+                                                    "only extend @Public classes") {
+                                                @Override
+                                                public void check(
+                                                        JavaClass item, ConditionEvents events) {
+                                                    for (JavaClass superClass :
+                                                            item.getAllRawInterfaces()) {
+                                                        if (!superClass
+                                                                .getPackageName()
+                                                                .startsWith("org.apache.flink")) {
+                                                            continue;
+                                                        }
+                                                        if (!superClass
+                                                                .getModifiers()
+                                                                .contains(JavaModifier.PUBLIC)) {
+                                                            continue;
+                                                        }
+                                                        if (!superClass.isAnnotatedWith(
+                                                                        Public.class)
+                                                                && !superClass.isAnnotatedWith(
+                                                                        PublicEvolving.class)) {
+                                                            events.add(
+                                                                    SimpleConditionEvent.violated(
+                                                                            item,
+                                                                            String.format(
+                                                                                    "@Public interface %s extends interface %s which is not @Public.",
+                                                                                    item
+                                                                                            .getSimpleName(),
+                                                                                    superClass
+                                                                                            .getSimpleName())));
+                                                        }
+                                                    }
+                                                }
+                                            })
+                                    .as(
+                                            "Interfaces annotated with @PublicEvolving must only extend interfaces annotated with @Public(Evolving)."));
 
     @ArchTest
     public static final ArchRule PUBLIC_EVOLVING_API_METHODS_USE_ONLY_PUBLIC_EVOLVING_API_TYPES =
