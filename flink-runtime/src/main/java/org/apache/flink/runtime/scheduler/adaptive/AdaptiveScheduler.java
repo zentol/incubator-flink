@@ -521,6 +521,10 @@ public class AdaptiveScheduler
 
     @Override
     public void handleGlobalFailure(Throwable cause) {
+        // the adaptive scheduler is passed around like candy as a failure handler
+        // ensure everyone is a good boy and calls it from the main thread
+        componentMainThreadExecutor.assertRunningInMainThread();
+
         final FailureEnricher.Context ctx =
                 DefaultFailureEnricherContext.forGlobalFailure(
                         jobInformation.getJobID(),
@@ -1203,6 +1207,7 @@ public class AdaptiveScheduler
 
     @Override
     public FailureResult howToHandleFailure(Throwable failure) {
+        componentMainThreadExecutor.assertRunningInMainThread();
         if (ExecutionFailureHandler.isUnrecoverableError(failure)) {
             return FailureResult.canNotRestart(
                     new JobException("The failure is not recoverable", failure));
