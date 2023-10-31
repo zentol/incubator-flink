@@ -98,11 +98,11 @@ try:
             print("Temp path for symlink to parent already exists {0}".format(TEMP_PATH),
                   file=sys.stderr)
             sys.exit(-1)
-        flink_version = ET.parse("../../pom.xml").getroot().find(
-            'POM:version',
-            namespaces={
-                'POM': 'http://maven.apache.org/POM/4.0.0'
-            }).text
+
+        namespaces = {'POM': 'http://maven.apache.org/POM/4.0.0'}
+        flink_version = ET.parse("../../pom.xml").getroot() \
+            .find('POM:properties', namespaces) \
+            .find('POM:revision', namespaces).text
         if not flink_version:
             print("Not able to get flink version", file=sys.stderr)
             sys.exit(-1)
