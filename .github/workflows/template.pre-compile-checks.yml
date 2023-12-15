@@ -1,0 +1,109 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This workflow collects all checks that do not require compilation and are, therefore,
+# JDK independent.
+
+name: "Pre-compile Checks"
+
+on:
+  workflow_dispatch:
+    inputs:
+      jdk_version:
+        description: "The JDK version that shall be used as a default within the Flink CI Docker container."
+        default: "8"
+        type: choice
+        options: ["8", "11", "17"]
+      branch:
+        description: "The branch the source code analysis should run on."
+        default: "master"
+        type: string
+
+  workflow_call:
+    inputs:
+      jdk_version:
+        description: "The JDK version that shall be used as a default within the Flink CI Docker container."
+        default: 8
+        type: number
+      branch:
+        description: "The branch the source code analysis should run on."
+        default: "master"
+        type: string
+
+permissions: read-all
+
+# This workflow should only contain steps that do not require the compilation of Flink (and therefore, are
+# independent of the used JDK)
+jobs:
+  qa:
+    name: "Basic QA"
+    runs-on: ubuntu-latest
+    container:
+      image: chesnay/flink-ci:java_8_11_17_21_maven_386
+      options: --init
+
+    steps:
+      - name: "Flink Checkout"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
+        uses: "./.github/actions/set_java_in_container"
+        with:
+          jdk_version: ${{ inputs.jdk_version }}
+
+      - name: "Checkstyle"
+        uses: "./.github/actions/run_mvn"
+        with:
+          maven-parameters: "checkstyle:check -T1C"
+
+      - name: "Spotless"
+        if: (success() || failure())
+        uses: "./.github/actions/run_mvn"
+        with:
+          maven-parameters: "spotless:check -T1C"
+
+      - name: "License Headers"
+        if: (success() || failure())
+        uses: "./.github/actions/run_mvn"
+        with:
+          maven-parameters: "org.apache.rat:apache-rat-plugin:check -N"
+
+  docs-404-check:
+    name: "Docs 404 Check"
+    runs-on: ubuntu-latest
+    container:
+      image: chesnay/flink-ci:java_8_11_17_21_maven_386
+    steps:
+      - name: "Checks out Flink"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      - name: "Mark GHA checkout as a safe directory (workaround for https://github.com/actions/checkout/issues/1169)"
+        run: git config --system --add safe.directory $GITHUB_WORKSPACE
+        shell: bash
+
+      - name: "Check if PR contains docs change"
+        run: |
+          source ./tools/azure-pipelines/build_properties.sh
+          pr_contains_docs_changes
+        shell: bash
+
+      - name: "Builds docs"
+        run: ./tools/ci/docs.sh
