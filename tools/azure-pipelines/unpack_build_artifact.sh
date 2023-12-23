@@ -24,7 +24,12 @@ if ! [ -e $FLINK_ARTIFACT_DIR ]; then
 fi
 
 echo "Merging cache"
-cp -RT "$FLINK_ARTIFACT_DIR" "."
+if [ -z "${FLINK_ARTIFACT_FILENAME}" ]; then
+  cp -RT "$FLINK_ARTIFACT_DIR" "."
+else
+  echo "Extract build artifacts ${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME} into local directory."
+  tar -xzf "${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME}"
+fi
 
 echo "Adjusting timestamps"
 # adjust timestamps of proto file to avoid re-generation
