@@ -17,7 +17,7 @@
 #
 ---
 name: "Runs Maven Command"
-description: "Sets the Java version within Flink' CI Docker container"
+description: "Executes Flink's Maven wrapper with the passed Maven parameters."
 inputs:
   working_directory:
     description: "The directory under which the Maven command should be executed."
