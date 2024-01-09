@@ -204,6 +204,8 @@ under the License.
 		     of entries in the form '[-]{2}add-[opens|exports]=<module>/<package>=ALL-UNNAMED'.-->
 		<surefire.module.config/>
 
+		<github-actions.surefire.excludedGroups/>
+
 		<!-- Can be set to any value to reproduce a specific build. -->
 		<test.randomization.seed/>
 		<test.unit.pattern>**/*Test.*</test.unit.pattern>
@@ -1000,17 +1002,9 @@ under the License.
 
 		<profile>
 			<id>github-actions</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<excludedGroups>org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser</excludedGroups>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
+			<properties>
+				<github-actions.surefire.excludedGroups>org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser</github-actions.surefire.excludedGroups>
+			</properties>
 		</profile>
 
 		<profile>
@@ -1024,32 +1018,8 @@ under the License.
 							<systemProperties>
 								<flink.tests.enable-adaptive-scheduler>true</flink.tests.enable-adaptive-scheduler>
 							</systemProperties>
-							<excludedGroups>org.apache.flink.testutils.junit.FailsWithAdaptiveScheduler</excludedGroups>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-
-		<!--
-		The surefire plugin doesn't allow to merge multiple <excludedGroups/> configurations which is
-		why a dedicated *-gha profile is needed that overrides the <excludedGroups/> of the profile above.
-		The *-gha profile declaration needs to happen _after_ the actual profile due to the way the pom file
-		is processed.
-		-->
-		<profile>
-			<id>enable-adaptive-scheduler-gha</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<systemProperties>
-								<flink.tests.enable-adaptive-scheduler>true</flink.tests.enable-adaptive-scheduler>
-							</systemProperties>
 							<excludedGroups>
-								org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser,
+								${github-actions.surefire.excludedGroups},
 								org.apache.flink.testutils.junit.FailsWithAdaptiveScheduler,
 							</excludedGroups>
 						</configuration>
@@ -1074,13 +1044,6 @@ under the License.
 						</plugin>
 						<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<excludedGroups>org.apache.flink.testutils.junit.FailsOnJava11</excludedGroups>
-							</configuration>
-						</plugin>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-javadoc-plugin</artifactId>
 							<configuration>
 								<additionalJOptions>
@@ -1091,32 +1054,18 @@ under the License.
 						</plugin>
 					</plugins>
 				</pluginManagement>
-			</build>
-		</profile>
-
-		<!--
-		The surefire plugin doesn't allow to merge multiple <excludedGroups/> configurations which is
-		why a dedicated *-gha profile is needed that overrides the <excludedGroups/> of the profile above.
-		The *-gha profile declaration needs to happen _after_ the actual profile due to the way the pom file
-		is processed.
-		-->
-		<profile>
-			<id>java11-gha</id>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<excludedGroups>
-									org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser,
-									org.apache.flink.testutils.junit.FailsOnJava11,
-								</excludedGroups>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<excludedGroups>
+								${github-actions.surefire.excludedGroups},
+								org.apache.flink.testutils.junit.FailsOnJava11,
+							</excludedGroups>
+						</configuration>
+					</plugin>
+				</plugins>
 			</build>
 		</profile>
 
@@ -1154,47 +1103,19 @@ under the License.
 			</properties>
 
 			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<excludedGroups>
-									org.apache.flink.testutils.junit.FailsOnJava11,
-									org.apache.flink.testutils.junit.FailsOnJava17,
-								</excludedGroups>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
-
-		<!--
-		The surefire plugin doesn't allow to merge multiple <excludedGroups/> configurations which is
-		why a dedicated *-gha profile is needed that overrides the <excludedGroups/> of the profile above.
-		The *-gha profile declaration needs to happen _after_ the actual profile due to the way the pom file
-		is processed.
-		-->
-		<profile>
-			<id>java17-gha</id>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<excludedGroups>
-									org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser,
-									org.apache.flink.testutils.junit.FailsOnJava11,
-									org.apache.flink.testutils.junit.FailsOnJava17,
-								</excludedGroups>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<excludedGroups>
+								${github-actions.surefire.excludedGroups},
+								org.apache.flink.testutils.junit.FailsOnJava11,
+								org.apache.flink.testutils.junit.FailsOnJava17,
+							</excludedGroups>
+						</configuration>
+					</plugin>
+				</plugins>
 			</build>
 		</profile>
 
@@ -1251,33 +1172,19 @@ under the License.
 						</plugin>
 					</plugins>
 				</pluginManagement>
-			</build>
-		</profile>
-
-		<!--
-		The surefire plugin doesn't allow to merge multiple <excludedGroups/> configurations which is
-		why a dedicated *-gha profile is needed that overrides the <excludedGroups/> of the profile above.
-		The *-gha profile declaration needs to happen _after_ the actual profile due to the way the pom file
-		is processed.
-		-->
-		<profile>
-			<id>java21-gha</id>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<excludedGroups>
-									org.apache.flink.testutils.junit.FailsInGHAContainerWithRootUser,
-									org.apache.flink.testutils.junit.FailsOnJava11,
-									org.apache.flink.testutils.junit.FailsOnJava17,
-								</excludedGroups>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<excludedGroups>
+								${github-actions.surefire.excludedGroups},
+								org.apache.flink.testutils.junit.FailsOnJava11,
+								org.apache.flink.testutils.junit.FailsOnJava17,
+							</excludedGroups>
+						</configuration>
+					</plugin>
+				</plugins>
 			</build>
 		</profile>
 
@@ -1879,6 +1786,7 @@ under the License.
 					</systemPropertyVariables>
 					<!-- This is picked up by IntelliJ -->
 					<argLine>${flink.surefire.baseArgLine}</argLine>
+					<excludedGroups>${github-actions.surefire.excludedGroups}</excludedGroups>
 				</configuration>
 				<executions>
 					<!--execute all the unit tests-->
