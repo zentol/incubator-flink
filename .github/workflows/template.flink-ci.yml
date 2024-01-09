@@ -290,40 +290,10 @@ jobs:
         if: ${{ !cancelled() && (failure() || !steps.docker-cache.cache.hit) }}
         run: ./tools/azure-pipelines/cache_docker_images.sh save
 
-  e2e-prereq-check:
-    name: "Check: Code modified"
-    needs: compile
-    runs-on: ubuntu-latest
-    container:
-      image: chesnay/flink-ci:java_8_11_17_21_maven_386
-      options: --init
-    outputs:
-      skip-e2e: ${{ steps.docs-only-pr-check.skip-e2e }}
-    steps:
-      - name: "Flink Checkout"
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.branch }}
-          persist-credentials: false
-
-      # Skip e2e test execution if this is a documentation only pull request (master / release builds will still be checked regularly)
-      - name: "Check if it's a docs-only PR (i.e. e2e tests can be skipped)"
-        id: docs-only-pr-check
-        run: |
-          source ./tools/azure-pipelines/build_properties.sh
-          if is_docs_only_pullrequest; then
-            echo "This is a documentation-only change. Skipping e2e execution."
-            echo "skip-e2e=true" >> $GITHUB_OUTPUT
-          else
-            echo "This is a regular CI build. Continuing ..."
-          fi
-        shell: bash
-
   e2e:
     name: "E2E (group ${{ matrix.group }})"
-    needs: [compile, e2e-prereq-check]
+    needs: compile
     runs-on: ubuntu-latest
-    if: ${{ needs.e2e-prereq-check.outputs.skip-e2e != 'true' }}
     timeout-minutes: 310
     env:
       # required and forwarded as the cache-dir system property to to DownloadCacheFactory
