@@ -40,8 +40,8 @@ runs:
     - name: "Initializes GHA_PIPELINE_START_TIME with the job's start time"
       shell: bash
       run: |
-        job_start_time="$(date +'%y-%m-%d %H:%M:%S')"
-        echo "GHA_PIPELINE_START_TIME=$(date +"%y-%m-%d %H:%M:%S")" >> "${GITHUB_ENV}"
+        job_start_time="$(date --rfc-3339=seconds)"
+        echo "GHA_PIPELINE_START_TIME=${job_start_time}" >> "${GITHUB_ENV}"
         echo "The job's start time is set to ${job_start_time}."
 
     - name: "Set JDK version to ${{ inputs.jdk_version }}"
