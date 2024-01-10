@@ -91,6 +91,11 @@ jobs:
       - name: "Stringify workflow name"
         id: workflow-prep-step
         run: |
+          # adds a stringified version of the workflow name that can be used for generating unique build artifact names within a composite workflow
+          # - replaces any special characters (except for underscores and dots) with dashes
+          # - makes the entire string lowercase
+          # - condenses multiple dashes into a single one
+          # - removes leading and following dashes
           stringified_workflow_name=$(echo "${{ github.workflow }}-${{ inputs.workflow-caller-id }}" | tr -C '[:alnum:]._' '-' |  tr '[:upper:]' '[:lower:]' | sed -e 's/--*/-/g' -e 's/^-*//g' -e 's/-*$//g')
           echo "stringified-workflow-name=${stringified_workflow_name}" >> $GITHUB_OUTPUT
 
