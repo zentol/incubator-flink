@@ -52,6 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
+      # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
 
     steps:

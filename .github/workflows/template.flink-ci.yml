@@ -77,6 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
+      # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
     timeout-minutes: 240
     outputs:
@@ -144,6 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
+      # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
 
     steps:
@@ -193,6 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
+      # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
     strategy:
       fail-fast: false
@@ -295,6 +298,7 @@ jobs:
   e2e:
     name: "E2E (group ${{ matrix.group }})"
     needs: compile
+    # the end to end tests are not executed in Flink's CI Docker container due to problems when running Docker-in-Docker
     runs-on: ubuntu-latest
     timeout-minutes: 310
     env:
