@@ -269,9 +269,6 @@ jobs:
         timeout-minutes: 240
         run: |
           ${{ inputs.environment }} PROFILE="$PROFILE -Pgithub-actions" ./tools/azure-pipelines/uploading_watchdog.sh \
-              -a ${{ github.job }} \
-              -d ${{ env.FLINK_ARTIFACT_DIR }} \
-              -t 480 \
               ./tools/ci/test_controller.sh ${{ matrix.module }}
 
       - name: "Post-process build artifacts"
@@ -391,9 +388,6 @@ jobs:
         timeout-minutes: 310
         run: |
           ${{ inputs.environment }} FLINK_DIR=`pwd`/build-target ./tools/azure-pipelines/uploading_watchdog.sh \
-            -a ${{ github.job }} \
-            -d ${{ env.FLINK_ARTIFACT_DIR }} \
-            -t 310 \
             flink-end-to-end-tests/run-nightly-tests.sh ${{ matrix.group }}
 
       - name: "Upload Logs"
