@@ -45,7 +45,7 @@ rm -rf "$FLINK_ARTIFACT_DIR/target/site"
 rm -rf "$FLINK_ARTIFACT_DIR/flink-runtime-web/web-dashboard/node"
 rm -rf "$FLINK_ARTIFACT_DIR/flink-runtime-web/web-dashboard/node_modules"
 
-if [ ! -z "${FLINK_ARTIFACT_FILENAME}" ]; then
+if [ -n "${FLINK_ARTIFACT_FILENAME}" ]; then
   # GitHub Actions doesn't create an archive automatically - packaging the files improves the performance of artifact uploads
   echo "Archives artifacts into ${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME}"
   tar --create --gzip --exclude "${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME}" --file "${FLINK_ARTIFACT_FILENAME}" -C "${FLINK_ARTIFACT_DIR}" .
