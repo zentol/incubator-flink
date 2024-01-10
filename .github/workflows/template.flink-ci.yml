@@ -302,7 +302,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 310
     env:
-      # required and forwarded as the cache-dir system property to to DownloadCacheFactory
+      # required and forwarded as the cache-dir system property to DownloadCacheFactory
       # implementations in flink-end-to-end-tests/flink-end-to-end-tests-common
       E2E_CACHE_FOLDER: ${{ github.workspace }}/.e2e-cache
       # required by common_artifact_download_cacher.sh in flink-end-to-end-tests/test-scripts
