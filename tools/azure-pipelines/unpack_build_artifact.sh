@@ -25,8 +25,10 @@ fi
 
 echo "Merging cache"
 if [ -z "${FLINK_ARTIFACT_FILENAME}" ]; then
+  # for Azure Pipelines
   cp -RT "$FLINK_ARTIFACT_DIR" "."
 else
+  # for GitHub Actions
   echo "Extract build artifacts ${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME} into local directory."
   tar -xzf "${FLINK_ARTIFACT_DIR}/${FLINK_ARTIFACT_FILENAME}"
 fi
