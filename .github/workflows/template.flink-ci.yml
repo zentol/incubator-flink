@@ -79,7 +79,9 @@ jobs:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
       # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
-    timeout-minutes: 240
+    env:
+      # timeout in minutes - this environment variable is required by uploading_watchdog.sh
+      GHA_JOB_TIMEOUT: 240
     outputs:
       stringified-workflow-name: ${{ steps.workflow-prep-step.outputs.stringified-workflow-name }}
     steps:
@@ -88,6 +90,14 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
+      - name: "Initialize job"
+        uses: "./.github/actions/job_init"
+        with:
+          jdk_version: ${{ inputs.jdk_version }}
+          maven_repo_folder: ${{ env.MAVEN_REPO_FOLDER }}
+          source_directory: ${{ env.MOUNTED_WORKING_DIR }}
+          target_directory: ${{ env.CONTAINER_LOCAL_WORKING_DIR }}
 
       - name: "Stringify workflow name"
         id: workflow-prep-step
@@ -100,26 +110,9 @@ jobs:
           stringified_workflow_name=$(echo "${{ github.workflow }}-${{ inputs.workflow-caller-id }}" | tr -C '[:alnum:]._' '-' |  tr '[:upper:]' '[:lower:]' | sed -e 's/--*/-/g' -e 's/^-*//g' -e 's/-*$//g')
           echo "stringified-workflow-name=${stringified_workflow_name}" >> $GITHUB_OUTPUT
 
-      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
-        uses: "./.github/actions/set_java_in_container"
-        with:
-          jdk_version: ${{ inputs.jdk_version }}
-
-      - name: "Setup Maven package cache"
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.MAVEN_REPO_FOLDER }}
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: "Moves relevant checkout content to container-local working directory"
-        uses: "./.github/actions/move_checkout"
-        with:
-          source_directory: ${{ env.MOUNTED_WORKING_DIR }}
-          target_directory: ${{ env.CONTAINER_LOCAL_WORKING_DIR }}
-
       - name: "Compile Flink"
         uses: "./.github/actions/run_mvn"
+        timeout-minutes: ${{ fromJSON(env.GHA_JOB_TIMEOUT) }}
         with:
           working_directory: ${{ env.CONTAINER_LOCAL_WORKING_DIR }}
           maven-parameters: "test-compile -Dflink.markBundledAsOptional=false -Dfast"
@@ -155,21 +148,11 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
-        uses: "./.github/actions/set_java_in_container"
+      - name: "Initialize job"
+        uses: "./.github/actions/job_init"
         with:
           jdk_version: ${{ inputs.jdk_version }}
-
-      - name: "Setup Maven package cache"
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.MAVEN_REPO_FOLDER }}
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: "Moves relevant checkout content to container-local working directory"
-        uses: "./.github/actions/move_checkout"
-        with:
+          maven_repo_folder: ${{ env.MAVEN_REPO_FOLDER }}
           source_directory: ${{ env.MOUNTED_WORKING_DIR }}
           target_directory: ${{ env.CONTAINER_LOCAL_WORKING_DIR }}
 
@@ -197,6 +180,9 @@ jobs:
       image: chesnay/flink-ci:java_8_11_17_21_maven_386
       # makes the process in the container being started as an init process which will clean up any daemon processes during shutdown
       options: --init
+    env:
+      # timeout in minutes - this environment variable is required by uploading_watchdog.sh
+      GHA_JOB_TIMEOUT: 240
     strategy:
       fail-fast: false
       matrix:
@@ -221,21 +207,11 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
-        uses: "./.github/actions/set_java_in_container"
+      - name: "Initialize job"
+        uses: "./.github/actions/job_init"
         with:
           jdk_version: ${{ inputs.jdk_version }}
-
-      - name: "Setup Maven package cache"
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.MAVEN_REPO_FOLDER }}
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: "Moves relevant checkout content to container-local working directory"
-        uses: "./.github/actions/move_checkout"
-        with:
+          maven_repo_folder: ${{ env.MAVEN_REPO_FOLDER }}
           source_directory: ${{ env.MOUNTED_WORKING_DIR }}
           target_directory: ${{ env.CONTAINER_LOCAL_WORKING_DIR }}
 
@@ -274,7 +250,7 @@ jobs:
           IT_CASE_S3_BUCKET: ${{ secrets.s3_bucket }}
           IT_CASE_S3_ACCESS_KEY: ${{ secrets.s3_access_key }}
           IT_CASE_S3_SECRET_KEY: ${{ secrets.s3_secret_key }}
-        timeout-minutes: 240
+        timeout-minutes: ${{ fromJSON(env.GHA_JOB_TIMEOUT) }}
         run: |
           ${{ inputs.environment }} PROFILE="$PROFILE -Pgithub-actions" ./tools/azure-pipelines/uploading_watchdog.sh \
               ./tools/ci/test_controller.sh ${{ matrix.module }}
@@ -302,6 +278,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 310
     env:
+      # timeout in minutes - this environment variable is required by uploading_watchdog.sh
+      GHA_JOB_TIMEOUT: 310
+
       # required and forwarded as the cache-dir system property to DownloadCacheFactory
       # implementations in flink-end-to-end-tests/flink-end-to-end-tests-common
       E2E_CACHE_FOLDER: ${{ github.workspace }}/.e2e-cache
@@ -326,20 +305,14 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
-        uses: "./.github/actions/set_java_in_container"
+      - name: "Initialize job"
+        uses: "./.github/actions/job_init"
         with:
           jdk_version: ${{ inputs.jdk_version }}
+          maven_repo_folder: ${{ env.MAVEN_REPO_FOLDER }}
 
       - name: "Install missing packages"
         run: sudo apt-get install -y net-tools docker-compose zip
-
-      - name: "Setup Maven package cache"
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.MAVEN_REPO_FOLDER }}
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
 
       - name: "Download build artifacts from compile job"
         uses: actions/download-artifact@v3
@@ -394,7 +367,7 @@ jobs:
           IT_CASE_S3_BUCKET: ${{ secrets.s3_bucket }}
           IT_CASE_S3_ACCESS_KEY: ${{ secrets.s3_access_key }}
           IT_CASE_S3_SECRET_KEY: ${{ secrets.s3_secret_key }}
-        timeout-minutes: 310
+        timeout-minutes: ${{ fromJSON(env.GHA_JOB_TIMEOUT) }}
         run: |
           ${{ inputs.environment }} FLINK_DIR=`pwd`/build-target ./tools/azure-pipelines/uploading_watchdog.sh \
             flink-end-to-end-tests/run-nightly-tests.sh ${{ matrix.group }}

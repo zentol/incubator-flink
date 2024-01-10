@@ -62,8 +62,8 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: "Set JDK version to Java ${{ inputs.jdk_version }}"
-        uses: "./.github/actions/set_java_in_container"
+      - name: "Initialize job"
+        uses: "./.github/actions/job_init"
         with:
           jdk_version: ${{ inputs.jdk_version }}
 
