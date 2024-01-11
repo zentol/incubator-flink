@@ -38,5 +38,5 @@ runs:
         # errexit needs to be disabled explicitly here because maven-utils.sh handles the error if a mirror is not available
         set +o errexit
         
-        source "./tools/ci/maven-utils.sh"
-        ${{ inputs.env }} run_mvn ${{ inputs.maven-parameters }}
+        ${{ inputs.env }} source "./tools/ci/maven-utils.sh"
+        run_mvn ${{ inputs.maven-parameters }}
