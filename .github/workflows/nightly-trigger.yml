@@ -47,6 +47,6 @@ jobs:
               workflow_id: 'nightly-dev.yml',
               ref: 'main',
               inputs: {
-                branch: ${{ matrix.branch }}
+                branch: "${{ matrix.branch }}"
               }
             })
