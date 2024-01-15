@@ -28,11 +28,10 @@ on:
         default: "master"
         type: string
 
-permissions: read-all
-
 jobs:
   triggering_job:
-    permissions: write-all
+    permissions:
+      actions: write
     strategy:
       matrix:
         branch: ["gha", "gha2"]
