@@ -45,7 +45,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'nightly-dev.yml',
-              ref: 'main',
+              ref: '${{ matrix.branch }}',
               inputs: {
                 branch: "${{ matrix.branch }}"
               }
