@@ -34,7 +34,7 @@ jobs:
   triggering_job:
     strategy:
       matrix:
-        branch: [gha, gha2]
+        branch: ["gha", "gha2"]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Workflow
