@@ -32,6 +32,7 @@ permissions: read-all
 
 jobs:
   triggering_job:
+    permissions: write-all
     strategy:
       matrix:
         branch: ["gha", "gha2"]
