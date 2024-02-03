@@ -142,6 +142,7 @@ import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.FlinkExpectedException;
+import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.OptionalConsumer;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
@@ -642,6 +643,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
         try {
             final JobID jobId = tdd.getJobId();
+            MdcUtils.addJobID(jobId); // todo: consider adding task info
             final ExecutionAttemptID executionAttemptID = tdd.getExecutionAttemptId();
 
             final JobTable.Connection jobManagerConnection =
@@ -817,7 +819,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                             taskManagerConfiguration,
                             taskMetricGroup,
                             partitionStateChecker,
-                            getRpcService().getScheduledExecutor(),
+                            MdcUtils.wrapExecutor(jobId, getRpcService().getScheduledExecutor()),
                             channelStateExecutorFactoryManager.getOrCreateExecutorFactory(jobId));
 
             taskMetricGroup.gauge(MetricNames.IS_BACK_PRESSURED, task::isBackPressured);
@@ -851,6 +853,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             }
         } catch (TaskSubmissionException e) {
             return FutureUtils.completedExceptionally(e);
+        } finally {
+            MdcUtils.removeJobID();
         }
     }
 
@@ -903,22 +907,28 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
     public CompletableFuture<Acknowledge> cancelTask(
             ExecutionAttemptID executionAttemptID, Time timeout) {
         final Task task = taskSlotTable.getTask(executionAttemptID);
+        MdcUtils.addJobID(task.getJobID());
 
-        if (task != null) {
-            try {
-                task.cancelExecution();
-                return CompletableFuture.completedFuture(Acknowledge.get());
-            } catch (Throwable t) {
-                return FutureUtils.completedExceptionally(
-                        new TaskException(
-                                "Cannot cancel task for execution " + executionAttemptID + '.', t));
+        try {
+            if (task != null) {
+                try {
+                    task.cancelExecution();
+                    return CompletableFuture.completedFuture(Acknowledge.get());
+                } catch (Throwable t) {
+                    return FutureUtils.completedExceptionally(
+                            new TaskException(
+                                    "Cannot cancel task for execution " + executionAttemptID + '.',
+                                    t));
+                }
+            } else {
+                final String message =
+                        "Cannot find task to stop for execution " + executionAttemptID + '.';
+
+                log.debug(message);
+                return FutureUtils.completedExceptionally(new TaskException(message));
             }
-        } else {
-            final String message =
-                    "Cannot find task to stop for execution " + executionAttemptID + '.';
-
-            log.debug(message);
-            return FutureUtils.completedExceptionally(new TaskException(message));
+        } finally {
+            MdcUtils.removeJobID();
         }
     }
 
@@ -1146,37 +1156,43 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         // TODO: Filter invalid requests from the resource manager by using the
         // instance/registration Id
 
+        MdcUtils.addJobID(jobId);
         log.info(
                 "Receive slot request {} for job {} from resource manager with leader id {}.",
                 allocationId,
                 jobId,
                 resourceManagerId);
-
-        if (!isConnectedToResourceManager(resourceManagerId)) {
-            final String message =
-                    String.format(
-                            "TaskManager is not connected to the resource manager %s.",
-                            resourceManagerId);
-            log.debug(message);
-            return FutureUtils.completedExceptionally(new TaskManagerException(message));
-        }
-
-        tryPersistAllocationSnapshot(
-                new SlotAllocationSnapshot(
-                        slotId, jobId, targetAddress, allocationId, resourceProfile));
-
         try {
-            final boolean isConnected =
-                    allocateSlotForJob(jobId, slotId, allocationId, resourceProfile, targetAddress);
 
-            if (isConnected) {
-                offerSlotsToJobManager(jobId);
+            if (!isConnectedToResourceManager(resourceManagerId)) {
+                final String message =
+                        String.format(
+                                "TaskManager is not connected to the resource manager %s.",
+                                resourceManagerId);
+                log.debug(message);
+                return FutureUtils.completedExceptionally(new TaskManagerException(message));
             }
 
-            return CompletableFuture.completedFuture(Acknowledge.get());
-        } catch (SlotAllocationException e) {
-            log.debug("Could not allocate slot for allocation id {}.", allocationId, e);
-            return FutureUtils.completedExceptionally(e);
+            tryPersistAllocationSnapshot(
+                    new SlotAllocationSnapshot(
+                            slotId, jobId, targetAddress, allocationId, resourceProfile));
+
+            try {
+                final boolean isConnected =
+                        allocateSlotForJob(
+                                jobId, slotId, allocationId, resourceProfile, targetAddress);
+
+                if (isConnected) {
+                    offerSlotsToJobManager(jobId);
+                }
+
+                return CompletableFuture.completedFuture(Acknowledge.get());
+            } catch (SlotAllocationException e) {
+                log.debug("Could not allocate slot for allocation id {}.", allocationId, e);
+                return FutureUtils.completedExceptionally(e);
+            }
+        } finally {
+            MdcUtils.removeJobID();
         }
     }
 
@@ -1266,15 +1282,21 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public void freeInactiveSlots(JobID jobId, Time timeout) {
-        log.debug("Freeing inactive slots for job {}.", jobId);
+        MdcUtils.addJobID(jobId);
+        try {
+            log.debug("Freeing inactive slots for job {}.", jobId);
 
-        // need a copy to prevent ConcurrentModificationExceptions
-        final ImmutableList<TaskSlot<Task>> inactiveSlots =
-                ImmutableList.copyOf(taskSlotTable.getAllocatedSlots(jobId));
-        for (TaskSlot<Task> slot : inactiveSlots) {
-            freeSlotInternal(
-                    slot.getAllocationId(),
-                    new FlinkException("Slot was re-claimed by resource manager."));
+            // need a copy to prevent ConcurrentModificationExceptions
+            final ImmutableList<TaskSlot<Task>> inactiveSlots =
+                    ImmutableList.copyOf(taskSlotTable.getAllocatedSlots(jobId));
+            for (TaskSlot<Task> slot : inactiveSlots) {
+                freeSlotInternal(
+                        slot.getAllocationId(),
+                        new FlinkException("Slot was re-claimed by resource manager."));
+            }
+
+        } finally {
+            MdcUtils.removeJobID();
         }
     }
 
@@ -1338,16 +1360,27 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     @Override
     public void disconnectJobManager(JobID jobId, Exception cause) {
-        jobTable.getConnection(jobId)
-                .ifPresent(
-                        jobManagerConnection ->
-                                disconnectAndTryReconnectToJobManager(jobManagerConnection, cause));
+        MdcUtils.addJobID(jobId);
+        try {
+            jobTable.getConnection(jobId)
+                    .ifPresent(
+                            jobManagerConnection ->
+                                    disconnectAndTryReconnectToJobManager(
+                                            jobManagerConnection, cause));
+        } finally {
+            MdcUtils.removeJobID();
+        }
     }
 
     private void disconnectAndTryReconnectToJobManager(
             JobTable.Connection jobManagerConnection, Exception cause) {
-        disconnectJobManagerConnection(jobManagerConnection, cause);
-        jobLeaderService.reconnect(jobManagerConnection.getJobId());
+        MdcUtils.addJobID(jobManagerConnection.getJobId());
+        try {
+            disconnectJobManagerConnection(jobManagerConnection, cause);
+            jobLeaderService.reconnect(jobManagerConnection.getJobId());
+        } finally {
+            MdcUtils.removeJobID();
+        }
     }
 
     @Override
@@ -1658,7 +1691,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             acceptedSlotsFuture.whenCompleteAsync(
                     handleAcceptedSlotOffers(
                             jobId, jobMasterGateway, jobMasterId, reservedSlots, slotOfferId),
-                    getMainThreadExecutor());
+                    getMainThreadExecutor(jobId));
         } else {
             log.debug("There are no unassigned slots for the job {}.", jobId);
         }
@@ -2061,13 +2094,16 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         // only respond to freeing slots when not shutting down to avoid freeing slot allocation
         // information
         if (isRunning()) {
+            final JobID jobId = taskSlotTable.getOwningJob(allocationId);
+            if (jobId != null) {
+                MdcUtils.addJobID(jobId);
+            }
             log.debug(
                     "Free slot with allocation id {} because: {}",
                     allocationId,
                     cause.getMessage());
 
             try {
-                final JobID jobId = taskSlotTable.getOwningJob(allocationId);
 
                 final int slotIndex = taskSlotTable.freeSlot(allocationId, cause);
 
@@ -2093,6 +2129,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
                 }
             } catch (SlotNotFoundException e) {
                 log.debug("Could not free slot for allocation id {}.", allocationId, e);
+            } finally {
+                MdcUtils.removeJobID();
             }
 
             localStateStoresManager.releaseLocalStateForAllocationId(allocationId);

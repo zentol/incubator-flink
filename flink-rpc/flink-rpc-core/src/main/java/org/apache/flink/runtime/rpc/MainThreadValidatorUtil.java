@@ -45,11 +45,13 @@ public final class MainThreadValidatorUtil {
     public void enterMainThread() {
         assert (endpoint.currentMainThread.compareAndSet(null, Thread.currentThread()))
                 : "The RpcEndpoint has concurrent access from " + endpoint.currentMainThread.get();
+        endpoint.beforeInvocation();
     }
 
     public void exitMainThread() {
         assert (endpoint.currentMainThread.compareAndSet(Thread.currentThread(), null))
                 : "The RpcEndpoint has concurrent access from " + endpoint.currentMainThread.get();
+        endpoint.afterInvocation();
     }
 
     /**

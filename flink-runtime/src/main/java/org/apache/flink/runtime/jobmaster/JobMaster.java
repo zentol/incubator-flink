@@ -41,6 +41,7 @@ import org.apache.flink.runtime.checkpoint.SubTaskInitializationMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
+import org.apache.flink.runtime.concurrent.JobIdLoggingMainThreadExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
@@ -104,6 +105,7 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.concurrent.FutureUtils;
 
@@ -250,7 +252,11 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
             long initializationTimestamp)
             throws Exception {
 
-        super(rpcService, RpcServiceUtils.createRandomName(JOB_MANAGER_NAME), jobMasterId);
+        super(
+                rpcService,
+                RpcServiceUtils.createRandomName(JOB_MANAGER_NAME),
+                jobMasterId,
+                e -> JobIdLoggingMainThreadExecutor.scopeToJob(jobGraph.getJobID(), e));
 
         final ExecutionDeploymentReconciliationHandler executionStateReconciliationHandler =
                 new ExecutionDeploymentReconciliationHandler() {
@@ -303,7 +309,9 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         this.highAvailabilityServices = checkNotNull(highAvailabilityService);
         this.blobWriter = jobManagerSharedServices.getBlobWriter();
         this.futureExecutor = jobManagerSharedServices.getFutureExecutor();
-        this.ioExecutor = jobManagerSharedServices.getIoExecutor();
+        this.ioExecutor =
+                MdcUtils.wrapExecutor(
+                        jobGraph.getJobID(), jobManagerSharedServices.getIoExecutor());
         this.jobCompletionActions = checkNotNull(jobCompletionActions);
         this.fatalErrorHandler = checkNotNull(fatalErrorHandler);
         this.userCodeLoader = checkNotNull(userCodeLoader);
@@ -1000,7 +1008,8 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                     createResourceManagerHeartbeatManager(heartbeatServices);
 
             // start the slot pool make sure the slot pool now accepts messages for this leader
-            slotPoolService.start(getFencingToken(), getAddress(), getMainThreadExecutor());
+            slotPoolService.start(
+                    getFencingToken(), getAddress(), getMainThreadExecutor(jobGraph.getJobID()));
 
             // job is ready to go, try to establish connection with resource manager
             //   - activate leader retrieval for the resource manager
@@ -1575,5 +1584,15 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         @Override
         public void unblockResources(Collection<BlockedNode> unblockedNodes) {}
+    }
+
+    @Override
+    public void beforeInvocation() {
+        MdcUtils.addJobID(jobGraph.getJobID());
+    }
+
+    @Override
+    public void afterInvocation() {
+        MdcUtils.removeJobID();
     }
 }

@@ -19,8 +19,10 @@
 package org.apache.flink.runtime.rpc;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
+import org.apache.flink.runtime.concurrent.JobIdLoggingMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledFutureAdapter;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.Preconditions;
@@ -45,6 +47,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -112,7 +115,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      * The main thread executor to be used to execute future callbacks in the main thread of the
      * executing rpc server.
      */
-    private final MainThreadExecutor mainThreadExecutor;
+    private final ComponentMainThreadExecutor mainThreadExecutor;
 
     /**
      * Register endpoint closeable resource to the registry and close them when the server is
@@ -133,8 +136,13 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      *
      * @param rpcService The RPC server that dispatches calls to this RPC endpoint.
      * @param endpointId Unique identifier for this endpoint
+     * @param configureExecutor customizes the {@link ComponentMainThreadExecutor} used by this
+     *     {@link RpcEndpoint}
      */
-    protected RpcEndpoint(final RpcService rpcService, final String endpointId) {
+    protected RpcEndpoint(
+            RpcService rpcService,
+            String endpointId,
+            Function<ComponentMainThreadExecutor, ComponentMainThreadExecutor> configureExecutor) {
         this.rpcService = checkNotNull(rpcService, "rpcService");
         this.endpointId = checkNotNull(endpointId, "endpointId");
 
@@ -142,8 +150,21 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
         this.resourceRegistry = new CloseableRegistry();
 
         this.mainThreadExecutor =
-                new MainThreadExecutor(rpcServer, this::validateRunsInMainThread, endpointId);
+                configureExecutor.apply(
+                        new MainThreadExecutor(
+                                rpcServer, this::validateRunsInMainThread, endpointId));
+
         registerResource(this.mainThreadExecutor);
+    }
+
+    /**
+     * Initializes the RPC endpoint.
+     *
+     * @param rpcService The RPC server that dispatches calls to this RPC endpoint.
+     * @param endpointId Unique identifier for this endpoint
+     */
+    protected RpcEndpoint(final RpcService rpcService, final String endpointId) {
+        this(rpcService, endpointId, Function.identity());
     }
 
     /**
@@ -338,8 +359,21 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      *
      * @return Main thread execution context
      */
-    protected MainThreadExecutor getMainThreadExecutor() {
+    protected ComponentMainThreadExecutor getMainThreadExecutor() {
         return mainThreadExecutor;
+    }
+
+    /**
+     * Gets the main thread execution context. The main thread execution context can be used to
+     * execute tasks in the main thread of the underlying RPC endpoint.
+     *
+     * @param jobID the {@link JobID} to scope the returned {@link ComponentMainThreadExecutor} to,
+     *     i.e. add/remove before/after the invocations using the returned executor
+     * @return Main thread execution context
+     */
+    protected ComponentMainThreadExecutor getMainThreadExecutor(JobID jobID) {
+        // todo: consider caching
+        return JobIdLoggingMainThreadExecutor.scopeToJob(jobID, getMainThreadExecutor());
     }
 
     /**
@@ -440,7 +474,8 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      * @return true if all the resources are closed, otherwise false
      */
     boolean validateResourceClosed() {
-        return mainThreadExecutor.validateScheduledExecutorClosed() && resourceRegistry.isClosed();
+        return ((MainThreadExecutor) mainThreadExecutor).validateScheduledExecutorClosed()
+                && resourceRegistry.isClosed();
     }
 
     // ------------------------------------------------------------------------
@@ -448,7 +483,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
     // ------------------------------------------------------------------------
 
     /** Executor which executes runnables in the main thread context. */
-    protected static class MainThreadExecutor implements ComponentMainThreadExecutor, Closeable {
+    protected static class MainThreadExecutor implements ComponentMainThreadExecutor {
         private static final Logger log = LoggerFactory.getLogger(MainThreadExecutor.class);
 
         private final MainThreadExecutable gateway;

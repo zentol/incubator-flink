@@ -196,7 +196,12 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                     state = state.terminate(this, flinkClassLoader);
                     break;
                 default:
-                    handleUnknownControlMessage(controlMessage);
+                    rpcEndpoint.beforeInvocation();
+                    try {
+                        handleUnknownControlMessage(controlMessage);
+                    } finally {
+                        rpcEndpoint.afterInvocation();
+                    }
             }
         } catch (Exception e) {
             this.rpcEndpointTerminationResult = RpcEndpointTerminationResult.failure(e);

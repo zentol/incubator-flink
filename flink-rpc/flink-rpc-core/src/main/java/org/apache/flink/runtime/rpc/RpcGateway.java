@@ -34,4 +34,16 @@ public interface RpcGateway {
      * @return Fully qualified hostname under which the associated rpc endpoint is reachable
      */
     String getHostname();
+
+    /**
+     * Perform optional steps before handling any messages or performing service actions (e.g.
+     * start/stop).
+     */
+    default void beforeInvocation() {}
+
+    /**
+     * Perform optional steps after handling any messages or performing service actions (e.g.
+     * start/stop).
+     */
+    default void afterInvocation() {}
 }

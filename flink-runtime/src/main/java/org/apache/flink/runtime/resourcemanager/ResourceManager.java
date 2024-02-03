@@ -85,6 +85,7 @@ import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.FlinkExpectedException;
+import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.concurrent.FutureUtils;
 
 import javax.annotation.Nullable;
@@ -435,7 +436,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                                         new FlinkException(declineMessage));
                             }
                         },
-                        getMainThreadExecutor());
+                        getMainThreadExecutor(jobId));
 
         // handle exceptions which might have occurred in one of the futures inputs of combine
         return registrationResponseFuture.handleAsync(
@@ -572,30 +573,37 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
     public CompletableFuture<Acknowledge> declareRequiredResources(
             JobMasterId jobMasterId, ResourceRequirements resourceRequirements, Time timeout) {
         final JobID jobId = resourceRequirements.getJobId();
-        final JobManagerRegistration jobManagerRegistration = jobManagerRegistrations.get(jobId);
+        MdcUtils.addJobID(jobId);
+        try {
+            final JobManagerRegistration jobManagerRegistration =
+                    jobManagerRegistrations.get(jobId);
 
-        if (null != jobManagerRegistration) {
-            if (Objects.equals(jobMasterId, jobManagerRegistration.getJobMasterId())) {
-                return getReadyToServeFuture()
-                        .thenApply(
-                                acknowledge -> {
-                                    validateRunsInMainThread();
-                                    slotManager.processResourceRequirements(resourceRequirements);
-                                    return null;
-                                });
+            if (null != jobManagerRegistration) {
+                if (Objects.equals(jobMasterId, jobManagerRegistration.getJobMasterId())) {
+                    return getReadyToServeFuture()
+                            .thenApply(
+                                    acknowledge -> {
+                                        validateRunsInMainThread();
+                                        slotManager.processResourceRequirements(
+                                                resourceRequirements);
+                                        return null;
+                                    });
+                } else {
+                    return FutureUtils.completedExceptionally(
+                            new ResourceManagerException(
+                                    "The job leader's id "
+                                            + jobManagerRegistration.getJobMasterId()
+                                            + " does not match the received id "
+                                            + jobMasterId
+                                            + '.'));
+                }
             } else {
                 return FutureUtils.completedExceptionally(
                         new ResourceManagerException(
-                                "The job leader's id "
-                                        + jobManagerRegistration.getJobMasterId()
-                                        + " does not match the received id "
-                                        + jobMasterId
-                                        + '.'));
+                                "Could not find registered job manager for job " + jobId + '.'));
             }
-        } else {
-            return FutureUtils.completedExceptionally(
-                    new ResourceManagerException(
-                            "Could not find registered job manager for job " + jobId + '.'));
+        } finally {
+            MdcUtils.removeJobID();
         }
     }
 

@@ -87,6 +87,7 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.FlinkRuntimeException;
+import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.TaskManagerExceptionUtils;
@@ -563,8 +564,10 @@ public class Task
     @Override
     public void run() {
         try {
+            MdcUtils.addJobID(jobId);
             doRun();
         } finally {
+            MdcUtils.removeJobID();
             terminationFuture.complete(executionState);
         }
     }
@@ -1244,7 +1247,8 @@ public class Task
                                         invokable,
                                         executingThread,
                                         taskNameWithSubtask,
-                                        taskCancellationInterval);
+                                        taskCancellationInterval,
+                                        jobId);
 
                         Thread interruptingThread =
                                 new Thread(
@@ -1266,7 +1270,8 @@ public class Task
                                             taskInfo,
                                             executingThread,
                                             taskManagerActions,
-                                            taskCancellationTimeout);
+                                            taskCancellationTimeout,
+                                            jobId);
 
                             Thread watchDogThread =
                                     new Thread(
@@ -1662,6 +1667,7 @@ public class Task
         @Override
         public void run() {
             try {
+                MdcUtils.addJobID(jobId);
                 // the user-defined cancel method may throw errors.
                 // we need do continue despite that
                 try {
@@ -1686,6 +1692,8 @@ public class Task
             } catch (Throwable t) {
                 ExceptionUtils.rethrowIfFatalError(t);
                 logger.error("Error in the task canceler for task {}.", taskName, t);
+            } finally {
+                MdcUtils.removeJobID();
             }
         }
     }
@@ -1708,23 +1716,28 @@ public class Task
         /** The interval in which we interrupt. */
         private final long interruptIntervalMillis;
 
+        private final JobID jobID;
+
         TaskInterrupter(
                 Logger log,
                 TaskInvokable task,
                 Thread executorThread,
                 String taskName,
-                long interruptIntervalMillis) {
+                long interruptIntervalMillis,
+                JobID jobID) {
 
             this.log = log;
             this.task = task;
             this.executorThread = executorThread;
             this.taskName = taskName;
             this.interruptIntervalMillis = interruptIntervalMillis;
+            this.jobID = jobID;
         }
 
         @Override
         public void run() {
             try {
+                MdcUtils.addJobID(jobID);
                 // we initially wait for one interval
                 // in most cases, the threads go away immediately (by the cancellation thread)
                 // and we need not actually do anything
@@ -1743,6 +1756,8 @@ public class Task
             } catch (Throwable t) {
                 ExceptionUtils.rethrowIfFatalError(t);
                 log.error("Error in the task canceler for task {}.", taskName, t);
+            } finally {
+                MdcUtils.removeJobID();
             }
         }
     }
@@ -1765,11 +1780,14 @@ public class Task
 
         private final TaskInfo taskInfo;
 
+        private final JobID jobID;
+
         TaskCancelerWatchDog(
                 TaskInfo taskInfo,
                 Thread executorThread,
                 TaskManagerActions taskManager,
-                long timeoutMillis) {
+                long timeoutMillis,
+                JobID jobID) {
 
             checkArgument(timeoutMillis > 0);
 
@@ -1777,11 +1795,13 @@ public class Task
             this.executorThread = executorThread;
             this.taskManager = taskManager;
             this.timeoutMillis = timeoutMillis;
+            this.jobID = jobID;
         }
 
         @Override
         public void run() {
             try {
+                MdcUtils.addJobID(jobID);
                 Deadline timeout = Deadline.fromNow(Duration.ofMillis(timeoutMillis));
                 while (executorThread.isAlive() && timeout.hasTimeLeft()) {
                     try {
@@ -1805,6 +1825,8 @@ public class Task
                 }
             } catch (Throwable t) {
                 throw new FlinkRuntimeException("Error in Task Cancellation Watch Dog", t);
+            } finally {
+                MdcUtils.removeJobID();
             }
         }
     }
