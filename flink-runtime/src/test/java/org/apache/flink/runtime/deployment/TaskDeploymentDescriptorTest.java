@@ -81,8 +81,8 @@ class TaskDeploymentDescriptorTest {
     private static final List<PermanentBlobKey> requiredJars = new ArrayList<>(0);
     private static final List<URL> requiredClasspaths = new ArrayList<>(0);
     private static final TaskStateSnapshot taskStateHandles = new TaskStateSnapshot();
-    private static final JobManagerTaskRestore taskRestore =
-            new JobManagerTaskRestore(1L, taskStateHandles);
+    private final SerializedValue<JobManagerTaskRestore> taskRestore =
+            new SerializedValue<>(new JobManagerTaskRestore(1L, taskStateHandles));
 
     private final SerializedValue<ExecutionConfig> executionConfig =
             new SerializedValue<>(new ExecutionConfig());
@@ -178,6 +178,7 @@ class TaskDeploymentDescriptorTest {
                     blobServer,
                     new NoOpGroupCache<>(),
                     taskInformationCache,
+                    new NoOpGroupCache<>(),
                     new NoOpGroupCache<>());
             TaskInformation taskInformation1 = tdd1.getTaskInformation();
             assertThat(taskInformation1).isEqualTo(taskInformation);
@@ -196,6 +197,7 @@ class TaskDeploymentDescriptorTest {
                     blobServer,
                     new NoOpGroupCache<>(),
                     taskInformationCache,
+                    new NoOpGroupCache<>(),
                     new NoOpGroupCache<>());
             TaskInformation taskInformation2 = tdd2.getTaskInformation();
             // The TaskInformation2 is equals to taskInformation1 and original taskInformation, but
@@ -235,7 +237,7 @@ class TaskDeploymentDescriptorTest {
                 taskInformation,
                 execId,
                 allocationId,
-                taskRestore,
+                new TaskDeploymentDescriptor.NonOffloaded<>(taskRestore),
                 producedResults,
                 inputGates);
     }

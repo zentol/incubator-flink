@@ -183,6 +183,7 @@ class DefaultExecutionGraphDeploymentTest {
                                     blobCache,
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>(),
+                                    new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>());
                             tdd.complete(taskDeploymentDescriptor);
                         }));

@@ -124,6 +124,7 @@ class DefaultExecutionGraphDeploymentWithSmallBlobCacheSizeLimitTest
                                     blobCache,
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>(),
+                                    new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>());
                             tdds.offer(taskDeploymentDescriptor);
                         }));
