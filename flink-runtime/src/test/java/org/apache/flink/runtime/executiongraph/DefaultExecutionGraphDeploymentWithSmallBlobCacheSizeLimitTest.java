@@ -24,6 +24,7 @@ import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.blob.BlobCacheSizeTracker;
 import org.apache.flink.runtime.blob.BlobServer;
 import org.apache.flink.runtime.blob.PermanentBlobCache;
+import org.apache.flink.runtime.blob.TransientBlobCache;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
@@ -92,6 +93,9 @@ class DefaultExecutionGraphDeploymentWithSmallBlobCacheSizeLimitTest
                         new VoidBlobStore(),
                         serverAddress,
                         blobCacheSizeTracker);
+        transientBlobService =
+                new TransientBlobCache(
+                        config, TempDirUtils.newFolder(temporaryFolder), serverAddress);
     }
 
     /**
@@ -122,6 +126,7 @@ class DefaultExecutionGraphDeploymentWithSmallBlobCacheSizeLimitTest
                         taskDeploymentDescriptor -> {
                             taskDeploymentDescriptor.loadBigData(
                                     blobCache,
+                                    transientBlobService,
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>());

@@ -21,6 +21,8 @@ package org.apache.flink.runtime.deployment;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.blob.PermanentBlobService;
+import org.apache.flink.runtime.blob.TransientBlobKey;
+import org.apache.flink.runtime.blob.TransientBlobService;
 import org.apache.flink.runtime.checkpoint.JobManagerTaskRestore;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptorFactory.ShuffleDescriptorGroup;
@@ -119,11 +121,34 @@ public final class TaskDeploymentDescriptor implements Serializable {
         }
     }
 
+    /**
+     * Reference to a serialized value that was offloaded to the {@link
+     * org.apache.flink.runtime.blob.BlobServer}.
+     *
+     * @param <T> type of the serialized value
+     */
+    public static class TransientOffloaded<T> extends MaybeOffloaded<T> {
+        private static final long serialVersionUID = 4544135485379071679L;
+
+        /** The key of the offloaded value BLOB. */
+        public TransientBlobKey serializedValueKey;
+
+        @SuppressWarnings("unused")
+        public TransientOffloaded() {}
+
+        public TransientOffloaded(TransientBlobKey serializedValueKey) {
+            this.serializedValueKey = Preconditions.checkNotNull(serializedValueKey);
+        }
+    }
+
     /** Serialized job information if non-offloaded or <tt>PermanentBlobKey</tt> if offloaded. */
     private final MaybeOffloaded<JobInformation> serializedJobInformation;
 
     /** Serialized task information if non-offloaded or <tt>PermanentBlobKey</tt> if offloaded. */
     private final MaybeOffloaded<TaskInformation> serializedTaskInformation;
+
+    /** Information to restore the task. This can be null if there is no state to restore. */
+    @Nullable private final MaybeOffloaded<JobManagerTaskRestore> serializedTaskRestore;
 
     /**
      * The job information, it isn't null when serializedJobInformation is offloaded and after
@@ -136,6 +161,9 @@ public final class TaskDeploymentDescriptor implements Serializable {
      * {@link #loadBigData}.
      */
     private transient TaskInformation taskInformation;
+
+    /** Information to restore the task. This can be null if there is no state to restore. */
+    @Nullable private transient JobManagerTaskRestore taskRestore;
 
     /**
      * The ID referencing the job this task belongs to.
@@ -157,16 +185,13 @@ public final class TaskDeploymentDescriptor implements Serializable {
     /** The list of consumed intermediate result partitions. */
     private final List<InputGateDeploymentDescriptor> inputGates;
 
-    /** Information to restore the task. This can be null if there is no state to restore. */
-    @Nullable private final JobManagerTaskRestore taskRestore;
-
     public TaskDeploymentDescriptor(
             JobID jobId,
             MaybeOffloaded<JobInformation> serializedJobInformation,
             MaybeOffloaded<TaskInformation> serializedTaskInformation,
             ExecutionAttemptID executionAttemptId,
             AllocationID allocationId,
-            @Nullable JobManagerTaskRestore taskRestore,
+            @Nullable MaybeOffloaded<JobManagerTaskRestore> serializedTaskRestore,
             List<ResultPartitionDeploymentDescriptor> resultPartitionDeploymentDescriptors,
             List<InputGateDeploymentDescriptor> inputGateDeploymentDescriptors) {
 
@@ -178,7 +203,7 @@ public final class TaskDeploymentDescriptor implements Serializable {
         this.executionId = Preconditions.checkNotNull(executionAttemptId);
         this.allocationId = Preconditions.checkNotNull(allocationId);
 
-        this.taskRestore = taskRestore;
+        this.serializedTaskRestore = serializedTaskRestore;
 
         this.producedPartitions = Preconditions.checkNotNull(resultPartitionDeploymentDescriptors);
         this.inputGates = Preconditions.checkNotNull(inputGateDeploymentDescriptors);
@@ -260,8 +285,16 @@ public final class TaskDeploymentDescriptor implements Serializable {
     }
 
     @Nullable
-    public JobManagerTaskRestore getTaskRestore() {
-        return taskRestore;
+    public JobManagerTaskRestore getTaskRestore() throws IOException, ClassNotFoundException {
+        if (taskRestore != null || serializedTaskRestore == null) {
+            return taskRestore;
+        }
+        if (serializedTaskRestore instanceof NonOffloaded) {
+            NonOffloaded<JobManagerTaskRestore> taskRestore =
+                    (NonOffloaded<JobManagerTaskRestore>) serializedTaskRestore;
+            return taskRestore.serializedValue.deserializeValue(getClass().getClassLoader());
+        }
+        throw new IllegalStateException("Trying to work with offloaded serialized task restore.");
     }
 
     public AllocationID getAllocationId() {
@@ -273,6 +306,7 @@ public final class TaskDeploymentDescriptor implements Serializable {
      *
      * @param blobService the blob store to use (may be <tt>null</tt> if {@link
      *     #serializedJobInformation} and {@link #serializedTaskInformation} are non-<tt>null</tt>)
+     * @param transientBlobService
      * @param shuffleDescriptorsCache cache of shuffle descriptors to reduce the cost of
      *     deserialization
      * @throws IOException during errors retrieving or reading the BLOBs
@@ -280,6 +314,7 @@ public final class TaskDeploymentDescriptor implements Serializable {
      */
     public void loadBigData(
             @Nullable PermanentBlobService blobService,
+            TransientBlobService transientBlobService,
             GroupCache<JobID, PermanentBlobKey, JobInformation> jobInformationCache,
             GroupCache<JobID, PermanentBlobKey, TaskInformation> taskInformationCache,
             GroupCache<JobID, PermanentBlobKey, ShuffleDescriptorGroup> shuffleDescriptorsCache)
@@ -328,6 +363,22 @@ public final class TaskDeploymentDescriptor implements Serializable {
                 taskInformationCache.put(jobId, taskInfoKey, taskInformation);
             }
             this.taskInformation = taskInformation.deepCopy();
+        }
+
+        if (serializedTaskRestore == null) {
+            this.taskRestore = null;
+        } else if (serializedTaskRestore instanceof TransientOffloaded) {
+            final TransientBlobKey blobKey =
+                    ((TransientOffloaded<JobManagerTaskRestore>) serializedTaskRestore)
+                            .serializedValueKey;
+
+            Preconditions.checkNotNull(transientBlobService);
+
+            final File dataFile = transientBlobService.getFile(jobId, blobKey);
+            this.taskRestore =
+                    InstantiationUtil.deserializeObject(
+                            new BufferedInputStream(Files.newInputStream(dataFile.toPath())),
+                            getClass().getClassLoader());
         }
 
         for (InputGateDeploymentDescriptor inputGate : inputGates) {

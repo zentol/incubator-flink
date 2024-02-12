@@ -69,6 +69,7 @@ class DefaultExecutionGraphDeploymentWithBlobServerTest
                         config, TempDirUtils.newFolder(temporaryFolder), new VoidBlobStore());
         blobWriter = blobServer;
         blobCache = blobServer;
+        transientBlobService = blobServer;
 
         seenHashes.clear();
         blobServer.start();

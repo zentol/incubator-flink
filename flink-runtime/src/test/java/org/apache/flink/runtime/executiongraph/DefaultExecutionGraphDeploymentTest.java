@@ -27,6 +27,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
 import org.apache.flink.runtime.blob.BlobWriter;
 import org.apache.flink.runtime.blob.PermanentBlobService;
+import org.apache.flink.runtime.blob.TransientBlobService;
 import org.apache.flink.runtime.blob.VoidBlobWriter;
 import org.apache.flink.runtime.checkpoint.CheckpointRetentionPolicy;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
@@ -102,6 +103,8 @@ class DefaultExecutionGraphDeploymentTest {
      * TaskDeploymentDescriptor} loading (may be <tt>null</tt>).
      */
     protected PermanentBlobService blobCache = null;
+
+    protected TransientBlobService transientBlobService = null;
 
     /**
      * Checks that the job information for the given ID has been offloaded successfully (if
@@ -181,6 +184,7 @@ class DefaultExecutionGraphDeploymentTest {
                         taskDeploymentDescriptor -> {
                             taskDeploymentDescriptor.loadBigData(
                                     blobCache,
+                                    transientBlobService,
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>(),
                                     new NoOpGroupCache<>());

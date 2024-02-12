@@ -22,6 +22,7 @@ import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.blob.BlobServer;
 import org.apache.flink.runtime.blob.PermanentBlobCache;
+import org.apache.flink.runtime.blob.TransientBlobCache;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.testutils.junit.utils.TempDirUtils;
 
@@ -57,6 +58,9 @@ class DefaultExecutionGraphDeploymentWithBlobCacheTest
                         TempDirUtils.newFolder(temporaryFolder),
                         new VoidBlobStore(),
                         serverAddress);
+        transientBlobService =
+                new TransientBlobCache(
+                        config, TempDirUtils.newFolder(temporaryFolder), serverAddress);
     }
 
     @AfterEach

@@ -24,7 +24,7 @@ import org.apache.flink.configuration.BlobServerOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.runtime.blob.BlobServer;
-import org.apache.flink.runtime.blob.BlobWriter;
+import org.apache.flink.runtime.blob.BlobWriterUtils;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.checkpoint.JobManagerTaskRestore;
@@ -81,8 +81,8 @@ class TaskDeploymentDescriptorTest {
     private static final List<PermanentBlobKey> requiredJars = new ArrayList<>(0);
     private static final List<URL> requiredClasspaths = new ArrayList<>(0);
     private static final TaskStateSnapshot taskStateHandles = new TaskStateSnapshot();
-    private static final JobManagerTaskRestore taskRestore =
-            new JobManagerTaskRestore(1L, taskStateHandles);
+    private final SerializedValue<JobManagerTaskRestore> taskRestore =
+            new SerializedValue<>(new JobManagerTaskRestore(1L, taskStateHandles));
 
     private final SerializedValue<ExecutionConfig> executionConfig =
             new SerializedValue<>(new ExecutionConfig());
@@ -161,7 +161,7 @@ class TaskDeploymentDescriptorTest {
         try (BlobServer blobServer = setupBlobServer()) {
             // Serialize taskInformation to blobServer and get the permanentBlobKey
             Either<SerializedValue<TaskInformation>, PermanentBlobKey> taskInformationOrBlobKey =
-                    BlobWriter.serializeAndTryOffload(taskInformation, jobID, blobServer);
+                    BlobWriterUtils.serializeAndTryOffload(taskInformation, jobID, blobServer);
             assertThat(taskInformationOrBlobKey.isRight()).isTrue();
             PermanentBlobKey permanentBlobKey = taskInformationOrBlobKey.right();
 
@@ -175,6 +175,7 @@ class TaskDeploymentDescriptorTest {
                             new TaskDeploymentDescriptor.Offloaded<>(permanentBlobKey));
             assertThat(taskInformationCache.get(jobID, permanentBlobKey)).isNull();
             tdd1.loadBigData(
+                    blobServer,
                     blobServer,
                     new NoOpGroupCache<>(),
                     taskInformationCache,
@@ -193,6 +194,7 @@ class TaskDeploymentDescriptorTest {
                             new TaskDeploymentDescriptor.NonOffloaded<>(serializedJobInformation),
                             new TaskDeploymentDescriptor.Offloaded<>(permanentBlobKey));
             tdd2.loadBigData(
+                    blobServer,
                     blobServer,
                     new NoOpGroupCache<>(),
                     taskInformationCache,
@@ -235,7 +237,7 @@ class TaskDeploymentDescriptorTest {
                 taskInformation,
                 execId,
                 allocationId,
-                taskRestore,
+                new TaskDeploymentDescriptor.NonOffloaded<>(taskRestore),
                 producedResults,
                 inputGates);
     }

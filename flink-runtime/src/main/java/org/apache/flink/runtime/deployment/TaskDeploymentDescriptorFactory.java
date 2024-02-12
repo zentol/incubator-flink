@@ -23,7 +23,9 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.runtime.blob.BlobWriter;
+import org.apache.flink.runtime.blob.BlobWriterUtils;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
+import org.apache.flink.runtime.blob.TransientBlobKey;
 import org.apache.flink.runtime.checkpoint.JobManagerTaskRestore;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor.MaybeOffloaded;
@@ -116,7 +118,7 @@ public class TaskDeploymentDescriptorFactory {
     public TaskDeploymentDescriptor createDeploymentDescriptor(
             Execution execution,
             AllocationID allocationID,
-            @Nullable JobManagerTaskRestore taskRestore,
+            @Nullable Either<SerializedValue<JobManagerTaskRestore>, TransientBlobKey> taskRestore,
             Collection<ResultPartitionDeploymentDescriptor> producedPartitions)
             throws IOException, ClusterDatasetCorruptedException {
         final ExecutionVertex executionVertex = execution.getVertex();
@@ -128,7 +130,7 @@ public class TaskDeploymentDescriptorFactory {
                         executionVertex.getJobVertex().getTaskInformationOrBlobKey()),
                 execution.getAttemptId(),
                 allocationID,
-                taskRestore,
+                taskRestore != null ? getSerializedTaskRestore(taskRestore) : null,
                 new ArrayList<>(producedPartitions),
                 createInputGateDeploymentDescriptors(executionVertex));
     }
@@ -295,6 +297,13 @@ public class TaskDeploymentDescriptorFactory {
         return taskInfo.isLeft()
                 ? new TaskDeploymentDescriptor.NonOffloaded<>(taskInfo.left())
                 : new TaskDeploymentDescriptor.Offloaded<>(taskInfo.right());
+    }
+
+    private static MaybeOffloaded<JobManagerTaskRestore> getSerializedTaskRestore(
+            Either<SerializedValue<JobManagerTaskRestore>, TransientBlobKey> either) {
+        return either.isLeft()
+                ? new TaskDeploymentDescriptor.NonOffloaded<>(either.left())
+                : new TaskDeploymentDescriptor.TransientOffloaded<>(either.right());
     }
 
     public static ShuffleDescriptor getConsumedPartitionShuffleDescriptor(
@@ -507,7 +516,7 @@ public class TaskDeploymentDescriptorFactory {
 
             final Either<ShuffleDescriptorGroup, PermanentBlobKey> rawValueOrBlobKey =
                     shouldOffload(shuffleDescriptorGroup.getShuffleDescriptors(), numConsumer)
-                            ? BlobWriter.offloadWithException(
+                            ? BlobWriterUtils.offloadWithException(
                                             CompressedSerializedValue.fromObject(
                                                     shuffleDescriptorGroup),
                                             jobID,

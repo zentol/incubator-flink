@@ -134,6 +134,7 @@ import org.apache.flink.runtime.taskmanager.Task;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
 import org.apache.flink.runtime.taskmanager.TaskManagerActions;
 import org.apache.flink.runtime.taskmanager.UnresolvedTaskManagerLocation;
+import org.apache.flink.runtime.util.DefaultGroupCache;
 import org.apache.flink.runtime.util.GroupCache;
 import org.apache.flink.runtime.util.profiler.ProfilingService;
 import org.apache.flink.runtime.webmonitor.threadinfo.ThreadInfoSamplesRequest;
@@ -304,6 +305,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
     private final GroupCache<JobID, PermanentBlobKey, JobInformation> jobInformationCache;
     private final GroupCache<JobID, PermanentBlobKey, TaskInformation> taskInformationCache;
+    private final GroupCache<JobID, PermanentBlobKey, JobManagerTaskRestore> taskRestoreCache;
     private final GroupCache<JobID, PermanentBlobKey, ShuffleDescriptorGroup>
             shuffleDescriptorsCache;
 
@@ -388,6 +390,9 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
         this.sharedResources = taskExecutorServices.getSharedResources();
         this.jobInformationCache = taskExecutorServices.getJobInformationCache();
         this.taskInformationCache = taskExecutorServices.getTaskInformationCache();
+        this.taskRestoreCache =
+                new DefaultGroupCache.Factory<JobID, PermanentBlobKey, JobManagerTaskRestore>()
+                        .create();
         this.shuffleDescriptorsCache = taskExecutorServices.getShuffleDescriptorCache();
     }
 
@@ -685,6 +690,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             try {
                 tdd.loadBigData(
                         taskExecutorBlobService.getPermanentBlobService(),
+                        taskExecutorBlobService.getTransientBlobService(),
                         jobInformationCache,
                         taskInformationCache,
                         shuffleDescriptorsCache);
@@ -696,9 +702,11 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             // deserialize the pre-serialized information
             final JobInformation jobInformation;
             final TaskInformation taskInformation;
+            final JobManagerTaskRestore taskRestore;
             try {
                 jobInformation = tdd.getJobInformation();
                 taskInformation = tdd.getTaskInformation();
+                taskRestore = tdd.getTaskRestore();
             } catch (IOException | ClassNotFoundException e) {
                 throw new TaskSubmissionException(
                         "Could not deserialize the job or task information.", e);
@@ -769,8 +777,6 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             } catch (IOException e) {
                 throw new TaskSubmissionException(e);
             }
-
-            final JobManagerTaskRestore taskRestore = tdd.getTaskRestore();
 
             final TaskStateManager taskStateManager =
                     new TaskStateManagerImpl(
