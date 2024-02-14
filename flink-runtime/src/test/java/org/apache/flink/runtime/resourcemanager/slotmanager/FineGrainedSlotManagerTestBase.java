@@ -19,12 +19,12 @@ package org.apache.flink.runtime.resourcemanager.slotmanager;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.runtime.blocklist.BlockedTaskManagerChecker;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.clusterframework.types.SlotID;
+import org.apache.flink.runtime.executiongraph.TestingComponentMainThreadExecutor;
 import org.apache.flink.runtime.metrics.groups.SlotManagerMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
@@ -49,7 +49,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,6 +60,10 @@ abstract class FineGrainedSlotManagerTestBase {
     @RegisterExtension
     static final TestExecutorExtension<ScheduledExecutorService> EXECUTOR_RESOURCE =
             TestingUtils.defaultExecutorExtension();
+
+    @RegisterExtension
+    static final TestingComponentMainThreadExecutor.Extension MAIN_THREAD_EXECUTOR_EXTENSION =
+            new TestingComponentMainThreadExecutor.Extension();
 
     private static final long FUTURE_TIMEOUT_SECOND = 5;
     private static final long FUTURE_EXPECT_TIMEOUT_MS = 50;
@@ -154,7 +157,8 @@ abstract class FineGrainedSlotManagerTestBase {
         private BlockedTaskManagerChecker blockedTaskManagerChecker = resourceID -> false;
         ScheduledExecutor scheduledExecutor =
                 new ScheduledExecutorServiceAdapter(EXECUTOR_RESOURCE.getExecutor());
-        Executor mainThreadExecutor = EXECUTOR_RESOURCE.getExecutor();
+        TestingComponentMainThreadExecutor mainThreadExecutor =
+                MAIN_THREAD_EXECUTOR_EXTENSION.getComponentMainThreadTestExecutor();
         private FineGrainedSlotManager slotManager;
 
         final TestingResourceAllocationStrategy.Builder resourceAllocationStrategyBuilder =
@@ -196,17 +200,11 @@ abstract class FineGrainedSlotManagerTestBase {
         }
 
         void runInMainThread(Runnable runnable) {
-            mainThreadExecutor.execute(runnable);
+            mainThreadExecutor.getMainThreadExecutor().execute(runnable);
         }
 
-        void runInMainThreadAndWait(Runnable runnable) throws InterruptedException {
-            final OneShotLatch latch = new OneShotLatch();
-            mainThreadExecutor.execute(
-                    () -> {
-                        runnable.run();
-                        latch.trigger();
-                    });
-            latch.await();
+        void runInMainThreadAndWait(Runnable runnable) {
+            mainThreadExecutor.execute(runnable::run);
         }
 
         protected final void runTest(RunnableWithException testMethod) throws Exception {
@@ -227,7 +225,7 @@ abstract class FineGrainedSlotManagerTestBase {
                     () ->
                             slotManager.start(
                                     resourceManagerId,
-                                    mainThreadExecutor,
+                                    mainThreadExecutor.getMainThreadExecutor(),
                                     resourceAllocatorBuilder.build(),
                                     resourceEventListenerBuilder.build(),
                                     blockedTaskManagerChecker));

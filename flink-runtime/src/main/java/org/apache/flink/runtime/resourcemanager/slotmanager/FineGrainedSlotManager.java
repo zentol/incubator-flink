@@ -28,6 +28,7 @@ import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.clusterframework.types.SlotID;
+import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.SlotManagerMetricGroup;
@@ -56,11 +57,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -112,7 +113,7 @@ public class FineGrainedSlotManager implements SlotManager {
      * Executor for future callbacks which have to be "synchronized". This field being {@code null}
      * indicates that the component isn't started.
      */
-    @Nullable private Executor mainThreadExecutor;
+    @Nullable private ComponentMainThreadExecutor mainThreadExecutor;
 
     /** Callbacks for resource (de-)allocations. */
     @Nullable private ResourceAllocator resourceAllocator;
@@ -203,11 +204,15 @@ public class FineGrainedSlotManager implements SlotManager {
     @Override
     public void start(
             ResourceManagerId newResourceManagerId,
-            Executor newMainThreadExecutor,
+            ComponentMainThreadExecutor newMainThreadExecutor,
             ResourceAllocator newResourceAllocator,
             ResourceEventListener newResourceEventListener,
             BlockedTaskManagerChecker newBlockedTaskManagerChecker) {
         LOG.info("Starting the slot manager.");
+
+        Preconditions.checkState(
+                !isStarted(), "The %s is already started.", this.getClass().getSimpleName());
+        newMainThreadExecutor.assertRunningInMainThread();
 
         resourceManagerId = Preconditions.checkNotNull(newResourceManagerId);
         resourceAllocator = Preconditions.checkNotNull(newResourceAllocator);
@@ -417,6 +422,8 @@ public class FineGrainedSlotManager implements SlotManager {
 
     /** DO NOT call this method directly. Use {@link #declareNeededResourcesWithDelay()} instead. */
     private void declareNeededResources() {
+        assertRunsInMainThreadExecutor();
+
         Map<InstanceID, WorkerResourceSpec> unWantedTaskManagers =
                 taskManagerTracker.getUnWantedTaskManager();
         Map<WorkerResourceSpec, Set<InstanceID>> unWantedTaskManagerBySpec =
@@ -589,6 +596,8 @@ public class FineGrainedSlotManager implements SlotManager {
      * are performed with a slight delay.
      */
     private void checkResourceRequirementsWithDelay() {
+        assertRunsInMainThreadExecutor();
+
         if (requirementsCheckDelay.toMillis() <= 0) {
             checkResourceRequirements();
         } else {
@@ -811,6 +820,8 @@ public class FineGrainedSlotManager implements SlotManager {
     // ---------------------------------------------------------------------------------------------
 
     private void checkClusterReconciliation() {
+        assertRunsInMainThreadExecutor();
+
         if (checkResourcesNeedReconcile()) {
             // only declare on needed.
             declareNeededResourcesWithDelay();
@@ -888,15 +899,19 @@ public class FineGrainedSlotManager implements SlotManager {
     // ---------------------------------------------------------------------------------------------
 
     private void checkInit() {
-        Preconditions.checkState(isStarted(), "The slot manager has not been started.");
+        assertRunsInMainThreadExecutor();
         Preconditions.checkNotNull(resourceManagerId);
-        Preconditions.checkNotNull(mainThreadExecutor);
         Preconditions.checkNotNull(resourceAllocator);
         Preconditions.checkNotNull(resourceEventListener);
     }
 
     private boolean isStarted() {
         return mainThreadExecutor != null;
+    }
+
+    private void assertRunsInMainThreadExecutor() {
+        Preconditions.checkState(isStarted());
+        Objects.requireNonNull(mainThreadExecutor).assertRunningInMainThread();
     }
 
     private boolean isMaxTotalResourceExceededAfterAdding(ResourceProfile newResource) {

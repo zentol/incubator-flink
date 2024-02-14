@@ -601,7 +601,11 @@ class ResourceManagerTest {
                         .buildAndStart();
 
         registerTaskExecutor(resourceManager, taskExecutorId, taskExecutorGateway.getAddress());
-        resourceManager.disconnectTaskManager(taskExecutorId, new FlinkException("Test exception"));
+
+        resourceManager.runInMainThread(
+                () ->
+                        resourceManager.disconnectTaskManager(
+                                taskExecutorId, new FlinkException("Test exception")));
 
         assertThatFuture(disconnectFuture).eventuallySucceeds().isInstanceOf(FlinkException.class);
         assertThatFuture(stopWorkerFuture).eventuallySucceeds().isEqualTo(taskExecutorId);

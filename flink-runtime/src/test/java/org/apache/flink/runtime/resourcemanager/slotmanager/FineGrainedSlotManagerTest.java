@@ -25,7 +25,9 @@ import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.clusterframework.types.SlotID;
+import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
 import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
+import org.apache.flink.runtime.executiongraph.TestingComponentMainThreadExecutor;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.metrics.MetricRegistry;
@@ -40,7 +42,6 @@ import org.apache.flink.runtime.taskexecutor.SlotStatus;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
-import org.apache.flink.util.concurrent.Executors;
 import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
 import org.apache.flink.util.function.ThrowingConsumer;
 
@@ -53,7 +54,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -627,13 +629,17 @@ class FineGrainedSlotManagerTest extends FineGrainedSlotManagerTestBase {
             {
                 final ManuallyTriggeredScheduledExecutorService testScheduledExecutorService =
                         new ManuallyTriggeredScheduledExecutorService();
-                final ExecutorService testMainThreadExecutorService =
-                        Executors.newDirectExecutorService();
+                final ScheduledExecutorService testMainThreadExecutorService =
+                        Executors.newSingleThreadScheduledExecutor();
 
                 scheduledExecutor =
                         new ScheduledExecutorServiceAdapter(testScheduledExecutorService);
-                mainThreadExecutor = testMainThreadExecutorService;
-                runTest(() -> triggerScheduledTask.accept(getSlotManager()));
+                mainThreadExecutor =
+                        new TestingComponentMainThreadExecutor(
+                                ComponentMainThreadExecutorServiceAdapter.forSingleThreadExecutor(
+                                        testMainThreadExecutorService));
+
+                runTest(() -> runInMainThread(() -> triggerScheduledTask.accept(getSlotManager())));
 
                 // waiting for the close call to complete ensures that the task was scheduled
                 // because close is called on the main thread after scheduling the task
