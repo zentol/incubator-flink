@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -62,7 +63,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -109,11 +110,14 @@ public class FineGrainedSlotManager implements SlotManager {
     /** ResourceManager's id. */
     @Nullable private ResourceManagerId resourceManagerId;
 
+    private final Object lock = new Object();
     /**
      * Executor for future callbacks which have to be "synchronized". This field being {@code null}
      * indicates that the component isn't started.
      */
-    @Nullable private ComponentMainThreadExecutor mainThreadExecutor;
+    @GuardedBy("lock")
+    @Nullable
+    private volatile ComponentMainThreadExecutor mainThreadExecutor;
 
     /** Callbacks for resource (de-)allocations. */
     @Nullable private ResourceAllocator resourceAllocator;
@@ -121,11 +125,11 @@ public class FineGrainedSlotManager implements SlotManager {
     /** Callbacks for resource not enough. */
     @Nullable private ResourceEventListener resourceEventListener;
 
-    @Nullable private ScheduledFuture<?> clusterReconciliationCheck;
+    private Future<?> clusterReconciliationCheck;
 
-    @Nullable private CompletableFuture<Void> requirementsCheckFuture;
+    private Future<?> requirementsCheckFuture;
 
-    @Nullable private CompletableFuture<Void> declareNeededResourceFuture;
+    private Future<?> declareNeededResourceFuture;
 
     /** Blocked task manager checker. */
     @Nullable private BlockedTaskManagerChecker blockedTaskManagerChecker;
@@ -165,8 +169,9 @@ public class FineGrainedSlotManager implements SlotManager {
         resourceAllocator = null;
         resourceEventListener = null;
         mainThreadExecutor = null;
-        clusterReconciliationCheck = null;
-        requirementsCheckFuture = null;
+        clusterReconciliationCheck = FutureUtils.completedVoidFuture();
+        declareNeededResourceFuture = FutureUtils.completedVoidFuture();
+        requirementsCheckFuture = FutureUtils.completedVoidFuture();
     }
 
     @Override
@@ -224,7 +229,7 @@ public class FineGrainedSlotManager implements SlotManager {
         if (resourceAllocator.isSupported()) {
             clusterReconciliationCheck =
                     scheduledExecutor.scheduleWithFixedDelay(
-                            () -> mainThreadExecutor.execute(this::checkClusterReconciliation),
+                            () -> runInMainThreadIfStarted(this::checkClusterReconciliation),
                             0L,
                             taskManagerTimeout.toMilliseconds(),
                             TimeUnit.MILLISECONDS);
@@ -232,8 +237,10 @@ public class FineGrainedSlotManager implements SlotManager {
 
         registerSlotManagerMetrics();
 
-        // initialize at the end as an indicator that the SlotManager is started
-        mainThreadExecutor = Preconditions.checkNotNull(newMainThreadExecutor);
+        synchronized (lock) {
+            // initialize at the end as an indicator that the SlotManager is started
+            mainThreadExecutor = Preconditions.checkNotNull(newMainThreadExecutor);
+        }
     }
 
     private void registerSlotManagerMetrics() {
@@ -255,10 +262,11 @@ public class FineGrainedSlotManager implements SlotManager {
         slotManagerMetricGroup.close();
 
         // stop the timeout checks for the TaskManagers
-        if (clusterReconciliationCheck != null) {
-            clusterReconciliationCheck.cancel(false);
-            clusterReconciliationCheck = null;
-        }
+        clusterReconciliationCheck.cancel(false);
+
+        // cancel any ongoing background tasks
+        declareNeededResourceFuture.cancel(false);
+        requirementsCheckFuture.cancel(false);
 
         slotStatusSyncer.close();
         taskManagerTracker.clear();
@@ -404,18 +412,12 @@ public class FineGrainedSlotManager implements SlotManager {
         if (declareNeededResourceDelay.toMillis() <= 0) {
             declareNeededResources();
         } else {
-            if (declareNeededResourceFuture == null || declareNeededResourceFuture.isDone()) {
-                declareNeededResourceFuture = new CompletableFuture<>();
-                scheduledExecutor.schedule(
-                        () ->
-                                mainThreadExecutor.execute(
-                                        () -> {
-                                            declareNeededResources();
-                                            Preconditions.checkNotNull(declareNeededResourceFuture)
-                                                    .complete(null);
-                                        }),
-                        declareNeededResourceDelay.toMillis(),
-                        TimeUnit.MILLISECONDS);
+            if (declareNeededResourceFuture.isDone()) {
+                declareNeededResourceFuture =
+                        scheduledExecutor.schedule(
+                                () -> runInMainThreadIfStarted(this::declareNeededResources),
+                                declareNeededResourceDelay.toMillis(),
+                                TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -601,18 +603,12 @@ public class FineGrainedSlotManager implements SlotManager {
         if (requirementsCheckDelay.toMillis() <= 0) {
             checkResourceRequirements();
         } else {
-            if (requirementsCheckFuture == null || requirementsCheckFuture.isDone()) {
-                requirementsCheckFuture = new CompletableFuture<>();
-                scheduledExecutor.schedule(
-                        () ->
-                                mainThreadExecutor.execute(
-                                        () -> {
-                                            checkResourceRequirements();
-                                            Preconditions.checkNotNull(requirementsCheckFuture)
-                                                    .complete(null);
-                                        }),
-                        requirementsCheckDelay.toMillis(),
-                        TimeUnit.MILLISECONDS);
+            if (requirementsCheckFuture.isDone()) {
+                requirementsCheckFuture =
+                        scheduledExecutor.schedule(
+                                () -> runInMainThreadIfStarted(this::checkResourceRequirements),
+                                requirementsCheckDelay.toMillis(),
+                                TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -737,13 +733,15 @@ public class FineGrainedSlotManager implements SlotManager {
         }
         FutureUtils.combineAll(allocationFutures)
                 .whenCompleteAsync(
-                        (s, t) -> {
-                            if (t != null) {
-                                // If there is allocation failure, we need to trigger it again.
-                                checkResourceRequirementsWithDelay();
-                            }
-                        },
-                        mainThreadExecutor);
+                        (s, t) ->
+                                runInMainThreadIfStarted(
+                                        () -> {
+                                            if (t != null) {
+                                                // If there is allocation failure, we need to
+                                                // trigger it again.
+                                                checkResourceRequirementsWithDelay();
+                                            }
+                                        }));
     }
 
     /**
@@ -856,14 +854,17 @@ public class FineGrainedSlotManager implements SlotManager {
                 .getTaskExecutorGateway()
                 .canBeReleased()
                 .thenAcceptAsync(
-                        canBeReleased -> {
-                            boolean stillIdle = idleSince == taskManagerInfo.getIdleSince();
-                            if (stillIdle && canBeReleased) {
-                                releaseIdleTaskExecutor(taskManagerInfo.getInstanceId());
-                                declareNeededResourcesWithDelay();
-                            }
-                        },
-                        mainThreadExecutor);
+                        canBeReleased ->
+                                runInMainThreadIfStarted(
+                                        () -> {
+                                            boolean stillIdle =
+                                                    idleSince == taskManagerInfo.getIdleSince();
+                                            if (stillIdle && canBeReleased) {
+                                                releaseIdleTaskExecutor(
+                                                        taskManagerInfo.getInstanceId());
+                                                declareNeededResourcesWithDelay();
+                                            }
+                                        }));
     }
 
     private void releaseIdleTaskExecutor(InstanceID taskManagerToRelease) {
@@ -905,13 +906,24 @@ public class FineGrainedSlotManager implements SlotManager {
         Preconditions.checkNotNull(resourceEventListener);
     }
 
+    @GuardedBy("lock") // or executed in mainThreadExecutor
     private boolean isStarted() {
         return mainThreadExecutor != null;
     }
 
     private void assertRunsInMainThreadExecutor() {
-        Preconditions.checkState(isStarted());
-        Objects.requireNonNull(mainThreadExecutor).assertRunningInMainThread();
+        synchronized (lock) {
+            Preconditions.checkState(isStarted());
+            Objects.requireNonNull(mainThreadExecutor).assertRunningInMainThread();
+        }
+    }
+
+    private void runInMainThreadIfStarted(Runnable runnable) {
+        synchronized (lock) {
+            if (isStarted()) {
+                Objects.requireNonNull(mainThreadExecutor).execute(runnable);
+            }
+        }
     }
 
     private boolean isMaxTotalResourceExceededAfterAdding(ResourceProfile newResource) {
