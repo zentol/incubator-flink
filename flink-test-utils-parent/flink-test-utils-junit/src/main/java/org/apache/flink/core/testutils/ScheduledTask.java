@@ -23,6 +23,7 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -63,22 +64,23 @@ public final class ScheduledTask<T> implements ScheduledFuture<T> {
         return period;
     }
 
+    /** @throws CompletionException if the executed callback actually failed. */
     public void execute() {
         if (!result.isDone()) {
-            if (!isPeriodic()) {
-                try {
-                    result.complete(callable.call());
-                } catch (Exception e) {
-                    result.completeExceptionally(e);
+            try {
+                T value = callable.call();
+                if (!isPeriodic()) {
+                    result.complete(value);
                 }
-            } else {
-                try {
-                    callable.call();
-                } catch (Exception e) {
-                    result.completeExceptionally(e);
-                }
+            } catch (Exception e) {
+                // error should be raised immediately
+                throw new CompletionException(new ExecutionException(e));
             }
         }
+    }
+
+    public void completeExceptionally(Throwable t) {
+        result.completeExceptionally(t);
     }
 
     @Override
