@@ -108,7 +108,10 @@ public class FineGrainedSlotManager implements SlotManager {
     /** ResourceManager's id. */
     @Nullable private ResourceManagerId resourceManagerId;
 
-    /** Executor for future callbacks which have to be "synchronized". */
+    /**
+     * Executor for future callbacks which have to be "synchronized". This field being {@code null}
+     * indicates that the component isn't started.
+     */
     @Nullable private Executor mainThreadExecutor;
 
     /** Callbacks for resource (de-)allocations. */
@@ -125,9 +128,6 @@ public class FineGrainedSlotManager implements SlotManager {
 
     /** Blocked task manager checker. */
     @Nullable private BlockedTaskManagerChecker blockedTaskManagerChecker;
-
-    /** True iff the component has been started. */
-    private boolean started;
 
     public FineGrainedSlotManager(
             ScheduledExecutor scheduledExecutor,
@@ -166,8 +166,6 @@ public class FineGrainedSlotManager implements SlotManager {
         mainThreadExecutor = null;
         clusterReconciliationCheck = null;
         requirementsCheckFuture = null;
-
-        started = false;
     }
 
     @Override
@@ -212,14 +210,11 @@ public class FineGrainedSlotManager implements SlotManager {
         LOG.info("Starting the slot manager.");
 
         resourceManagerId = Preconditions.checkNotNull(newResourceManagerId);
-        mainThreadExecutor = Preconditions.checkNotNull(newMainThreadExecutor);
         resourceAllocator = Preconditions.checkNotNull(newResourceAllocator);
         resourceEventListener = Preconditions.checkNotNull(newResourceEventListener);
         slotStatusSyncer.initialize(
-                taskManagerTracker, resourceTracker, resourceManagerId, mainThreadExecutor);
+                taskManagerTracker, resourceTracker, resourceManagerId, newMainThreadExecutor);
         blockedTaskManagerChecker = Preconditions.checkNotNull(newBlockedTaskManagerChecker);
-
-        started = true;
 
         if (resourceAllocator.isSupported()) {
             clusterReconciliationCheck =
@@ -231,6 +226,9 @@ public class FineGrainedSlotManager implements SlotManager {
         }
 
         registerSlotManagerMetrics();
+
+        // initialize at the end as an indicator that the SlotManager is started
+        mainThreadExecutor = Preconditions.checkNotNull(newMainThreadExecutor);
     }
 
     private void registerSlotManagerMetrics() {
@@ -243,7 +241,7 @@ public class FineGrainedSlotManager implements SlotManager {
     /** Suspends the component. This clears the internal state of the slot manager. */
     @Override
     public void suspend() {
-        if (!started) {
+        if (!isStarted()) {
             return;
         }
 
@@ -265,7 +263,6 @@ public class FineGrainedSlotManager implements SlotManager {
         resourceManagerId = null;
         resourceAllocator = null;
         resourceEventListener = null;
-        started = false;
     }
 
     /**
@@ -615,7 +612,7 @@ public class FineGrainedSlotManager implements SlotManager {
      * DO NOT call this method directly. Use {@link #checkResourceRequirementsWithDelay()} instead.
      */
     private void checkResourceRequirements() {
-        if (!started) {
+        if (!isStarted()) {
             return;
         }
         Map<JobID, Collection<ResourceRequirement>> missingResources =
@@ -891,11 +888,15 @@ public class FineGrainedSlotManager implements SlotManager {
     // ---------------------------------------------------------------------------------------------
 
     private void checkInit() {
-        Preconditions.checkState(started, "The slot manager has not been started.");
+        Preconditions.checkState(isStarted(), "The slot manager has not been started.");
         Preconditions.checkNotNull(resourceManagerId);
         Preconditions.checkNotNull(mainThreadExecutor);
         Preconditions.checkNotNull(resourceAllocator);
         Preconditions.checkNotNull(resourceEventListener);
+    }
+
+    private boolean isStarted() {
+        return mainThreadExecutor != null;
     }
 
     private boolean isMaxTotalResourceExceededAfterAdding(ResourceProfile newResource) {
