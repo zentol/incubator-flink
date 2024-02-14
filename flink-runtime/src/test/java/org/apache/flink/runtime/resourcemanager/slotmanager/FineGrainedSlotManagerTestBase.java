@@ -152,9 +152,9 @@ abstract class FineGrainedSlotManagerTestBase {
         private SlotManagerMetricGroup slotManagerMetricGroup =
                 UnregisteredMetricGroups.createUnregisteredSlotManagerMetricGroup();
         private BlockedTaskManagerChecker blockedTaskManagerChecker = resourceID -> false;
-        private final ScheduledExecutor scheduledExecutor =
+        ScheduledExecutor scheduledExecutor =
                 new ScheduledExecutorServiceAdapter(EXECUTOR_RESOURCE.getExecutor());
-        private final Executor mainThreadExecutor = EXECUTOR_RESOURCE.getExecutor();
+        Executor mainThreadExecutor = EXECUTOR_RESOURCE.getExecutor();
         private FineGrainedSlotManager slotManager;
 
         final TestingResourceAllocationStrategy.Builder resourceAllocationStrategyBuilder =
@@ -167,6 +167,8 @@ abstract class FineGrainedSlotManagerTestBase {
                 new TestingResourceEventListenerBuilder();
         final SlotManagerConfigurationBuilder slotManagerConfigurationBuilder =
                 SlotManagerConfigurationBuilder.newBuilder();
+
+        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
 
         FineGrainedSlotManager getSlotManager() {
             return slotManager;
@@ -232,7 +234,6 @@ abstract class FineGrainedSlotManagerTestBase {
 
             testMethod.run();
 
-            CompletableFuture<Void> closeFuture = new CompletableFuture<>();
             runInMainThread(
                     () -> {
                         try {

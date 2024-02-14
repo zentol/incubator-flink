@@ -20,10 +20,12 @@ package org.apache.flink.runtime.resourcemanager.slotmanager;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.core.testutils.FlinkAssertions;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.clusterframework.types.SlotID;
+import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.metrics.MetricRegistry;
@@ -38,6 +40,8 @@ import org.apache.flink.runtime.taskexecutor.SlotStatus;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
+import org.apache.flink.util.concurrent.Executors;
+import org.apache.flink.util.concurrent.ScheduledExecutorServiceAdapter;
 import org.apache.flink.util.function.ThrowingConsumer;
 
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -590,6 +595,64 @@ class FineGrainedSlotManagerTest extends FineGrainedSlotManagerTestBase {
                                     notEnoughResourceNotifications.get(0);
                             assertThat(notification.f0).isEqualTo(jobId);
                         });
+            }
+        };
+    }
+
+    @Test
+    void testCloseWithRequirementsCheckBeingScheduled() throws Exception {
+        testCallingCloseWhileHavingTasksScheduled(
+                FineGrainedSlotManager::triggerResourceRequirementsCheck, 2);
+    }
+
+    @Test
+    void testCloseWithNeededResourcesDeclarationBeingScheduled() throws Exception {
+        testCallingCloseWhileHavingTasksScheduled(
+                FineGrainedSlotManager::declareNeededResourcesWithDelay, 2);
+    }
+
+    @Test
+    void testCloseWithClusterReconciliationCheckBeingScheduled() throws Exception {
+        testCallingCloseWhileHavingTasksScheduled(
+                slotManager -> {
+                    // nothing to do - resource allocation is scheduled during startup
+                },
+                1);
+    }
+
+    private void testCallingCloseWhileHavingTasksScheduled(
+            Consumer<FineGrainedSlotManager> triggerScheduledTask, int expectedScheduledTasks)
+            throws Exception {
+        new Context() {
+            {
+                final ManuallyTriggeredScheduledExecutorService testScheduledExecutorService =
+                        new ManuallyTriggeredScheduledExecutorService();
+                final ExecutorService testMainThreadExecutorService =
+                        Executors.newDirectExecutorService();
+
+                scheduledExecutor =
+                        new ScheduledExecutorServiceAdapter(testScheduledExecutorService);
+                mainThreadExecutor = testMainThreadExecutorService;
+                runTest(() -> triggerScheduledTask.accept(getSlotManager()));
+
+                // waiting for the close call to complete ensures that the task was scheduled
+                // because close is called on the main thread after scheduling the task
+                FlinkAssertions.assertThatFuture(closeFuture)
+                        .as(
+                                "The test run should have been terminated before proceeding with the checks.")
+                        .eventuallySucceeds();
+
+                assertThat(testScheduledExecutorService.getAllScheduledTasks())
+                        .as("The expected number of tasks should have been scheduled.")
+                        .hasSize(expectedScheduledTasks);
+
+                // simulate shutting down the RpcEndpoint
+                testMainThreadExecutorService.shutdown();
+
+                assertThatNoException()
+                        .as(
+                                "There shouldn't occur any error due to the shutdown of the MainThreadExecutorService.")
+                        .isThrownBy(testScheduledExecutorService::triggerScheduledTasks);
             }
         };
     }
