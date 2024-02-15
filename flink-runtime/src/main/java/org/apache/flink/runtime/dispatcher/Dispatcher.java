@@ -1620,6 +1620,6 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId>
 
     private Executor getIoExecutor(JobID jobID) {
         // todo: consider caching
-        return MdcUtils.wrapExecutor(jobID, ioExecutor);
+        return MdcUtils.scopeToJob(jobID, ioExecutor);
     }
 }

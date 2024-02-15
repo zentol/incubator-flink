@@ -18,22 +18,22 @@
 
 package org.apache.flink.util;
 
-import org.apache.flink.api.common.JobID;
-
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
-class JobIdLoggingExecutor<T extends Executor> implements Executor {
-    protected final JobID jobID;
+class MdcAwareExecutor<T extends Executor> implements Executor {
+    protected final Map<String, String> contextData;
     protected final T delegate;
 
-    protected JobIdLoggingExecutor(T delegate, JobID jobID) {
+    protected MdcAwareExecutor(T delegate, Map<String, String> contextData) {
         this.delegate = checkNotNull(delegate);
-        this.jobID = checkNotNull(jobID);
+        this.contextData = Collections.unmodifiableMap(checkNotNull(contextData));
     }
 
     public void execute(Runnable command) {
-        delegate.execute(MdcUtils.wrapRunnable(jobID, command));
+        delegate.execute(MdcUtils.wrapRunnable(contextData, command));
     }
 }

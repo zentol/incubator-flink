@@ -22,6 +22,8 @@ import org.apache.flink.api.common.JobID;
 
 import org.slf4j.MDC;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -48,31 +50,34 @@ public class MdcUtils {
     }
 
     /**
-     * Wrap the given {@link Runnable} so that the given {@link JobID} is added before its execution
-     * and removed afterward.
+     * Wrap the given {@link Runnable} so that the given data is added to {@link MDC} before its
+     * execution and removed afterward.
      */
-    public static Runnable wrapRunnable(JobID jobID, Runnable command) {
+    public static Runnable wrapRunnable(Map<String, String> contextData, Runnable command) {
         return () -> {
-            addJobID(jobID);
+            final Map<String, String> orig = MDC.getCopyOfContextMap();
+            MDC.setContextMap(contextData);
             try {
                 command.run();
             } finally {
-                removeJobID();
+                MDC.setContextMap(orig);
             }
         };
     }
 
     /**
-     * Wrap the given {@link Callable} so that the given {@link JobID} is added before its execution
-     * and removed afterward.
+     * Wrap the given {@link Callable} so that the given data is added to {@link MDC} before its
+     * execution and removed afterward.
      */
-    public static <T> Callable<T> wrapCallable(JobID jobID, Callable<T> command) {
+    public static <T> Callable<T> wrapCallable(
+            Map<String, String> contextData, Callable<T> command) {
         return () -> {
-            addJobID(jobID);
+            final Map<String, String> orig = MDC.getCopyOfContextMap();
+            MDC.setContextMap(contextData);
             try {
                 return command.call();
             } finally {
-                removeJobID();
+                MDC.setContextMap(orig);
             }
         };
     }
@@ -81,27 +86,30 @@ public class MdcUtils {
      * Wrap the given {@link Executor} so that the given {@link JobID} is added before it executes
      * any submitted commands and removed afterward.
      */
-    public static Executor wrapExecutor(JobID jobID, Executor executor) {
-        checkArgument(!(executor instanceof JobIdLoggingExecutor));
-        return new JobIdLoggingExecutor<>(executor, jobID);
+    public static Executor scopeToJob(JobID jobID, Executor executor) {
+        checkArgument(!(executor instanceof MdcAwareExecutor));
+        return new MdcAwareExecutor<>(executor, asContextData(jobID));
     }
 
     /**
      * Wrap the given {@link ExecutorService} so that the given {@link JobID} is added before it
      * executes any submitted commands and removed afterward.
      */
-    public static ExecutorService wrapExecutorService(JobID jobID, ExecutorService delegate) {
-        checkArgument(!(delegate instanceof JobIdLoggingExecutorService));
-        return new JobIdLoggingExecutorService<>(delegate, jobID);
+    public static ExecutorService scopeToJob(JobID jobID, ExecutorService delegate) {
+        checkArgument(!(delegate instanceof MdcAwareExecutorService));
+        return new MdcAwareExecutorService<>(delegate, asContextData(jobID));
     }
 
     /**
      * Wrap the given {@link ScheduledExecutorService} so that the given {@link JobID} is added
      * before it executes any submitted commands and removed afterward.
      */
-    public static ScheduledExecutorService wrapScheduledExecutorService(
-            JobID jobID, ScheduledExecutorService ses) {
-        checkArgument(!(ses instanceof JobIdLoggingScheduledExecutorService));
-        return new JobIdLoggingScheduledExecutorService(ses, jobID);
+    public static ScheduledExecutorService scopeToJob(JobID jobID, ScheduledExecutorService ses) {
+        checkArgument(!(ses instanceof MdcAwareScheduledExecutorService));
+        return new MdcAwareScheduledExecutorService(ses, asContextData(jobID));
+    }
+
+    public static Map<String, String> asContextData(JobID jobID) {
+        return Collections.singletonMap(JOB_ID, jobID.toHexString());
     }
 }

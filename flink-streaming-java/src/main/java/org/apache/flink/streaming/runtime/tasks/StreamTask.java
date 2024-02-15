@@ -437,7 +437,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             // for simultaneous N ongoing concurrent checkpoints and for example clean up of one
             // aborted one.
             this.asyncOperationsThreadPool =
-                    MdcUtils.wrapExecutorService(
+                    MdcUtils.scopeToJob(
                             getEnvironment().getJobID(),
                             new ThreadPoolExecutor(
                                     0,

@@ -99,7 +99,7 @@ public enum JobMasterServiceLeadershipRunnerFactory implements JobManagerRunnerF
 
         final DefaultJobMasterServiceFactory jobMasterServiceFactory =
                 new DefaultJobMasterServiceFactory(
-                        MdcUtils.wrapExecutor(
+                        MdcUtils.scopeToJob(
                                 jobGraph.getJobID(), jobManagerServices.getIoExecutor()),
                         rpcService,
                         jobMasterConfiguration,

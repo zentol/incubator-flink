@@ -484,7 +484,7 @@ public class DefaultExecutionGraph implements ExecutionGraph, InternalExecutionG
         checkState(checkpointCoordinatorTimer == null);
 
         checkpointCoordinatorTimer =
-                MdcUtils.wrapScheduledExecutorService(
+                MdcUtils.scopeToJob(
                         getJobID(),
                         Executors.newSingleThreadScheduledExecutor(
                                 new DispatcherThreadFactory(

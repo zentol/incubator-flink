@@ -22,9 +22,10 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
-import org.apache.flink.runtime.concurrent.JobIdLoggingMainThreadExecutor;
+import org.apache.flink.runtime.concurrent.MdcAwareMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledFutureAdapter;
 import org.apache.flink.util.AutoCloseableAsync;
+import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 
@@ -373,7 +374,8 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      */
     protected ComponentMainThreadExecutor getMainThreadExecutor(JobID jobID) {
         // todo: consider caching
-        return JobIdLoggingMainThreadExecutor.scopeToJob(jobID, getMainThreadExecutor());
+        return new MdcAwareMainThreadExecutor(
+                getMainThreadExecutor(), MdcUtils.asContextData(jobID));
     }
 
     /**

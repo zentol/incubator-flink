@@ -41,7 +41,7 @@ import org.apache.flink.runtime.checkpoint.SubTaskInitializationMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
-import org.apache.flink.runtime.concurrent.JobIdLoggingMainThreadExecutor;
+import org.apache.flink.runtime.concurrent.MdcAwareMainThreadExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
@@ -256,7 +256,9 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                 rpcService,
                 RpcServiceUtils.createRandomName(JOB_MANAGER_NAME),
                 jobMasterId,
-                e -> JobIdLoggingMainThreadExecutor.scopeToJob(jobGraph.getJobID(), e));
+                e ->
+                        new MdcAwareMainThreadExecutor(
+                                e, MdcUtils.asContextData(jobGraph.getJobID())));
 
         final ExecutionDeploymentReconciliationHandler executionStateReconciliationHandler =
                 new ExecutionDeploymentReconciliationHandler() {
@@ -310,8 +312,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         this.blobWriter = jobManagerSharedServices.getBlobWriter();
         this.futureExecutor = jobManagerSharedServices.getFutureExecutor();
         this.ioExecutor =
-                MdcUtils.wrapExecutor(
-                        jobGraph.getJobID(), jobManagerSharedServices.getIoExecutor());
+                MdcUtils.scopeToJob(jobGraph.getJobID(), jobManagerSharedServices.getIoExecutor());
         this.jobCompletionActions = checkNotNull(jobCompletionActions);
         this.fatalErrorHandler = checkNotNull(fatalErrorHandler);
         this.userCodeLoader = checkNotNull(userCodeLoader);

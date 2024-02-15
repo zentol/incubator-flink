@@ -18,11 +18,10 @@
 
 package org.apache.flink.util;
 
-import org.apache.flink.api.common.JobID;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -33,11 +32,11 @@ import java.util.concurrent.TimeoutException;
 import static org.apache.flink.util.MdcUtils.wrapCallable;
 import static org.apache.flink.util.MdcUtils.wrapRunnable;
 
-class JobIdLoggingExecutorService<T extends ExecutorService> extends JobIdLoggingExecutor<T>
+class MdcAwareExecutorService<S extends ExecutorService> extends MdcAwareExecutor<S>
         implements ExecutorService {
 
-    public JobIdLoggingExecutorService(T delegate, JobID jobID) {
-        super(delegate, jobID);
+    public MdcAwareExecutorService(S delegate, Map<String, String> contextData) {
+        super(delegate, contextData);
     }
 
     @Override
@@ -67,17 +66,17 @@ class JobIdLoggingExecutorService<T extends ExecutorService> extends JobIdLoggin
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        return delegate.submit(wrapCallable(jobID, task));
+        return delegate.submit(wrapCallable(contextData, task));
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        return delegate.submit(wrapRunnable(jobID, task), result);
+        return delegate.submit(wrapRunnable(contextData, task), result);
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        return delegate.submit(wrapRunnable(jobID, task));
+        return delegate.submit(wrapRunnable(contextData, task));
     }
 
     @Override
@@ -108,7 +107,7 @@ class JobIdLoggingExecutorService<T extends ExecutorService> extends JobIdLoggin
     private <T> List<Callable<T>> wrapCallables(Collection<? extends Callable<T>> tasks) {
         List<Callable<T>> list = new ArrayList<>(tasks.size());
         for (Callable<T> task : tasks) {
-            list.add(wrapCallable(jobID, task));
+            list.add(wrapCallable(contextData, task));
         }
         return list;
     }
