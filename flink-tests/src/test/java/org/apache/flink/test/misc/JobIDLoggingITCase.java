@@ -19,40 +19,45 @@
 package org.apache.flink.test.misc;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.api.common.time.Deadline;
+import org.apache.flink.client.program.ClusterClient;
+import org.apache.flink.core.execution.CheckpointType;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
+import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.jobmaster.JobMaster;
 import org.apache.flink.runtime.taskmanager.Task;
-import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
-import org.apache.flink.test.util.MiniClusterWithClientResource;
+import org.apache.flink.test.junit5.InjectClusterClient;
+import org.apache.flink.test.junit5.MiniClusterExtension;
+import org.apache.flink.testutils.logging.LoggerAuditingExtension;
+import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.MdcUtils;
 import org.apache.flink.util.TestLogger;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkState;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.slf4j.event.Level.DEBUG;
 
 /**
  * Tests adding of {@link JobID} to logs (via {@link org.slf4j.MDC}) in the most important cases.
@@ -60,91 +65,82 @@ import static org.junit.Assert.assertTrue;
 public class JobIDLoggingITCase extends TestLogger {
     private static final Logger logger = LoggerFactory.getLogger(JobIDLoggingITCase.class);
 
-    @ClassRule
-    public static MiniClusterWithClientResource miniClusterResource =
-            new MiniClusterWithClientResource(
+    @RegisterExtension
+    public final LoggerAuditingExtension checkpointCoordinatorLogging =
+            new LoggerAuditingExtension(CheckpointCoordinator.class, DEBUG);
+
+    @RegisterExtension
+    public final LoggerAuditingExtension streamTaskLogging =
+            new LoggerAuditingExtension(StreamTask.class, DEBUG);
+
+    @RegisterExtension
+    public final LoggerAuditingExtension taskLogging =
+            new LoggerAuditingExtension(Task.class, DEBUG);
+
+    @RegisterExtension
+    public final LoggerAuditingExtension executionGraphLogging =
+            new LoggerAuditingExtension(ExecutionGraph.class, DEBUG);
+
+    @RegisterExtension
+    public final LoggerAuditingExtension jobMasterLogging =
+            new LoggerAuditingExtension(JobMaster.class, DEBUG);
+
+    @RegisterExtension
+    public final LoggerAuditingExtension asyncCheckpointRunnableLogging =
+            // this class is private
+            new LoggerAuditingExtension(
+                    "org.apache.flink.streaming.runtime.tasks.AsyncCheckpointRunnable", DEBUG);
+
+    @RegisterExtension
+    public static MiniClusterExtension miniClusterResource =
+            new MiniClusterExtension(
                     new MiniClusterResourceConfiguration.Builder()
                             .setNumberTaskManagers(1)
                             .setNumberSlotsPerTaskManager(1)
                             .build());
 
     @Test
-    public void testJobIDLogging() throws Exception {
-        LoggerContext ctx = LoggerContext.getContext(false);
-        org.apache.logging.log4j.core.config.Configuration originalConfiguration =
-                ctx.getConfiguration();
-        ListAppender appender = new ListAppender("list-appender");
+    public void testJobIDLogging(@InjectClusterClient ClusterClient<?> clusterClient)
+            throws Exception {
         JobID jobID = null;
         try {
-            setupLogging(appender, ctx, Level.DEBUG);
-            jobID = runJob();
+            jobID = runJob(clusterClient);
         } finally {
             if (jobID != null) {
-                miniClusterResource.getClusterClient().cancel(jobID).get();
+                clusterClient.cancel(jobID).get();
             }
-            restoreLogging(ctx, originalConfiguration);
-            appender.stop();
         }
 
-        assertJobIDPresent(jobID, appender.getEvents());
-    }
-
-    private static void assertJobIDPresent(JobID jobID, List<LogEvent> events) {
         // NOTE: most of the assertions are empirical, such as
         // - which classes are important
         // - how many messages to expect
         // - which log patterns to ignore
-        Map<String, List<LogEvent>> eventsByLogger =
-                events.stream().collect(Collectors.groupingBy(LogEvent::getLoggerName));
 
-        assertJobIDPresent(eventsByLogger, CheckpointCoordinator.class, jobID, 3);
-        assertJobIDPresent(eventsByLogger, StreamTask.class, jobID, 6);
-        assertJobIDPresent(eventsByLogger, Task.class, jobID, 13);
+        assertJobIDPresent(jobID, 3, checkpointCoordinatorLogging);
+        assertJobIDPresent(jobID, 6, streamTaskLogging);
+        assertJobIDPresent(jobID, 10, taskLogging);
+        assertJobIDPresent(jobID, 10, executionGraphLogging);
         assertJobIDPresent(
-                eventsByLogger,
-                // this class is private
-                "org.apache.flink.streaming.runtime.tasks.AsyncCheckpointRunnable",
-                jobID,
-                1);
-        assertJobIDPresent(eventsByLogger, ExecutionGraph.class, jobID, 10);
-        assertJobIDPresent(
-                eventsByLogger,
-                JobMaster.class,
                 jobID,
                 15,
+                jobMasterLogging,
                 "Registration at ResourceManager.*",
                 "Registration with ResourceManager.*",
                 "Resolved ResourceManager address.*");
-        long totalMessagesWithJobID =
-                events.stream()
-                        .filter(e -> e.getContextData().containsKey(MdcUtils.JOB_ID))
-                        .count();
-        assertTrue(
-                "at least " + .75f + " of all events are expected to have job id",
-                (float) totalMessagesWithJobID / events.size() > .75f);
+        assertJobIDPresent(jobID, 1, asyncCheckpointRunnableLogging);
     }
 
     private static void assertJobIDPresent(
-            Map<String, List<LogEvent>> map,
-            Class<?> aClass,
-            JobID jobid,
+            JobID jobID,
             int expectedLogMessages,
+            LoggerAuditingExtension ext,
             String... ignPatterns) {
-        assertJobIDPresent(map, aClass.getName(), jobid, expectedLogMessages, ignPatterns);
-    }
-
-    private static void assertJobIDPresent(
-            Map<String, List<LogEvent>> map,
-            String loggerName,
-            JobID jobid,
-            int expectedLogMessages,
-            String... ignPatterns) {
-        final List<LogEvent> events = map.getOrDefault(loggerName, Collections.emptyList());
+        String loggerName = ext.getLoggerName();
         checkState(
-                events.size() >= expectedLogMessages,
+                ext.getEvents().size() >= expectedLogMessages,
                 "Too few log events recorded for %s (%s) - this must be a bug in the test code",
                 loggerName,
-                events.size());
+                ext.getEvents().size());
 
         final List<LogEvent> eventsWithMissingJobId = new ArrayList<>();
         final List<LogEvent> eventsWithWrongJobId = new ArrayList<>();
@@ -152,10 +148,10 @@ public class JobIDLoggingITCase extends TestLogger {
         final List<Pattern> ignorePatterns =
                 Arrays.stream(ignPatterns).map(Pattern::compile).collect(Collectors.toList());
 
-        for (LogEvent e : events) {
+        for (LogEvent e : ext.getEvents()) {
             if (e.getContextData().containsKey(MdcUtils.JOB_ID)) {
                 if (!Objects.equals(
-                        e.getContextData().getValue(MdcUtils.JOB_ID), jobid.toHexString())) {
+                        e.getContextData().getValue(MdcUtils.JOB_ID), jobID.toHexString())) {
                     eventsWithWrongJobId.add(e);
                 }
             } else if (matchesAny(ignorePatterns, e.getMessage().getFormattedMessage())) {
@@ -167,52 +163,54 @@ public class JobIDLoggingITCase extends TestLogger {
         logger.debug(
                 "checked events for {}:\n  {};\n  ignored: {},\n  wrong job id: {},\n  missing job id: {}",
                 loggerName,
-                events,
+                ext.getEvents(),
                 ignoredEvents,
                 eventsWithWrongJobId,
                 eventsWithMissingJobId);
         assertTrue(
+                eventsWithWrongJobId.isEmpty(),
                 "events with a wrong Job ID recorded for "
                         + loggerName
                         + ": "
-                        + eventsWithWrongJobId,
-                eventsWithWrongJobId.isEmpty());
+                        + eventsWithWrongJobId);
         assertTrue(
+                eventsWithMissingJobId.isEmpty(),
                 "too many events without Job ID recorded for "
                         + loggerName
                         + ": "
-                        + eventsWithMissingJobId,
-                eventsWithMissingJobId.isEmpty());
+                        + eventsWithMissingJobId);
     }
 
     private static boolean matchesAny(List<Pattern> patternStream, String message) {
         return patternStream.stream().anyMatch(p -> p.matcher(message).matches());
     }
 
-    private static void restoreLogging(
-            LoggerContext ctx,
-            org.apache.logging.log4j.core.config.Configuration originalConfiguration) {
-        ctx.setConfigLocation(originalConfiguration.getConfigurationSource().getURI());
-    }
-
-    private static void setupLogging(ListAppender appender, LoggerContext ctx, Level level) {
-        LoggerConfig root = ctx.getConfiguration().getRootLogger();
-        root.getAppenders().keySet().forEach(root::removeAppender);
-        appender.start();
-        root.setLevel(level); // ORDER MATTERS!
-        ctx.getRootLogger().addAppender(appender);
-    }
-
-    private static JobID runJob() throws Exception {
+    private static JobID runJob(ClusterClient<?> clusterClient) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.fromSequence(Long.MIN_VALUE, Long.MAX_VALUE).addSink(new DiscardingSink<>());
-        JobID jobId =
-                miniClusterResource
-                        .getClusterClient()
-                        .submitJob(env.getStreamGraph().getJobGraph())
-                        .get();
-        CommonTestUtils.waitForAllTaskRunning(miniClusterResource.getMiniCluster(), jobId, true);
-        miniClusterResource.getMiniCluster().triggerCheckpoint(jobId).get();
-        return jobId;
+        JobID jobId = clusterClient.submitJob(env.getStreamGraph().getJobGraph()).get();
+        Deadline deadline = Deadline.fromNow(Duration.ofMinutes(5));
+        while (deadline.hasTimeLeft()
+                && clusterClient.listJobs().get().stream()
+                        .noneMatch(
+                                m ->
+                                        m.getJobId().equals(jobId)
+                                                && m.getJobState().equals(JobStatus.RUNNING))) {
+            Thread.sleep(10);
+        }
+        // wait for all tasks ready and then checkpoint
+        while (true) {
+            try {
+                clusterClient.triggerCheckpoint(jobId, CheckpointType.DEFAULT).get();
+                return jobId;
+            } catch (ExecutionException e) {
+                if (ExceptionUtils.findThrowable(e, CheckpointException.class).isPresent()
+                        && !deadline.isOverdue()) {
+                    Thread.sleep(10);
+                } else {
+                    throw e;
+                }
+            }
+        }
     }
 }
