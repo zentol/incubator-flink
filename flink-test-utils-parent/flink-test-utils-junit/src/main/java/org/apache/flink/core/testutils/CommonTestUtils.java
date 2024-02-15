@@ -43,6 +43,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class CommonTestUtils {
 
     /**
+     * {@code Duration} that can be used for mimicking a forever time frame. It translates to ~24
+     * days.
+     *
+     * <p>{@code Integer.MAX_VALUE} is used here because Apache Pekko saves its tickCount in integer
+     * which results in a hard limit for Pekko-related scenarios. But the maximum of 24 days is
+     * still a reasonable enough boundary to simulate infinity.
+     */
+    public static final Duration FOREVER = Duration.ofMillis(Integer.MAX_VALUE);
+
+    /**
      * Creates a copy of an object via Java Serialization.
      *
      * @param original The original object.
