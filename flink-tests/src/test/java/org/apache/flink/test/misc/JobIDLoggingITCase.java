@@ -27,6 +27,7 @@ import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.jobmaster.JobMaster;
+import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.runtime.taskmanager.Task;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -74,6 +75,10 @@ public class JobIDLoggingITCase extends TestLogger {
             new LoggerAuditingExtension(StreamTask.class, DEBUG);
 
     @RegisterExtension
+    public final LoggerAuditingExtension taskExecutorLogging =
+            new LoggerAuditingExtension(TaskExecutor.class, DEBUG);
+
+    @RegisterExtension
     public final LoggerAuditingExtension taskLogging =
             new LoggerAuditingExtension(Task.class, DEBUG);
 
@@ -118,6 +123,16 @@ public class JobIDLoggingITCase extends TestLogger {
 
         assertJobIDPresent(jobID, 3, checkpointCoordinatorLogging);
         assertJobIDPresent(jobID, 6, streamTaskLogging);
+        assertJobIDPresent(
+                jobID,
+                9,
+                taskExecutorLogging,
+                "Successful registration.*",
+                "Establish JobManager connection.*",
+                "Offer reserved slots.*",
+                ".*ResourceManager.*",
+                "Operator event.*");
+
         assertJobIDPresent(jobID, 10, taskLogging);
         assertJobIDPresent(jobID, 10, executionGraphLogging);
         assertJobIDPresent(
