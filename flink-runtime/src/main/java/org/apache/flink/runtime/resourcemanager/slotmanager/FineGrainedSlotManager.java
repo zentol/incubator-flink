@@ -276,6 +276,9 @@ public class FineGrainedSlotManager implements SlotManager {
         resourceManagerId = null;
         resourceAllocator = null;
         resourceEventListener = null;
+
+        // unsetting the mainThreadExecutor switches the instance into a stopped state
+        this.mainThreadExecutor = null;
     }
 
     /**

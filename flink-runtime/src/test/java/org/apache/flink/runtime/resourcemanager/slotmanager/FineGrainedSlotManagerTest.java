@@ -100,6 +100,20 @@ class FineGrainedSlotManagerTest extends FineGrainedSlotManagerTestBase {
         };
     }
 
+    @Test
+    void testRestartAfterSuspend() throws Exception {
+        new Context() {
+            {
+                runTest(
+                        () -> {
+                            runInMainThreadAndWait(() -> getSlotManager().suspend());
+
+                            startSlotManagerInMainThread();
+                        });
+            }
+        };
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Register / unregister TaskManager and slot status reconciliation
     // ---------------------------------------------------------------------------------------------

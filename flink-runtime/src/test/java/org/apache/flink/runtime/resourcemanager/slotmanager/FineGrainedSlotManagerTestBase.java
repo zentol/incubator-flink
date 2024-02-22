@@ -207,6 +207,17 @@ abstract class FineGrainedSlotManagerTestBase {
             mainThreadExecutor.execute(runnable::run);
         }
 
+        protected final void startSlotManagerInMainThread() {
+            runInMainThreadAndWait(
+                    () ->
+                            slotManager.start(
+                                    resourceManagerId,
+                                    mainThreadExecutor.getMainThreadExecutor(),
+                                    resourceAllocatorBuilder.build(),
+                                    resourceEventListenerBuilder.build(),
+                                    blockedTaskManagerChecker));
+        }
+
         protected final void runTest(RunnableWithException testMethod) throws Exception {
             SlotManagerConfiguration configuration = slotManagerConfigurationBuilder.build();
             slotManager =
@@ -221,14 +232,7 @@ abstract class FineGrainedSlotManagerTestBase {
                                             .orElse(resourceAllocationStrategyBuilder.build()))
                             .build();
 
-            runInMainThreadAndWait(
-                    () ->
-                            slotManager.start(
-                                    resourceManagerId,
-                                    mainThreadExecutor.getMainThreadExecutor(),
-                                    resourceAllocatorBuilder.build(),
-                                    resourceEventListenerBuilder.build(),
-                                    blockedTaskManagerChecker));
+            startSlotManagerInMainThread();
 
             testMethod.run();
 
