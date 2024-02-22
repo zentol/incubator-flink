@@ -117,7 +117,7 @@ public class FineGrainedSlotManager implements SlotManager {
      */
     @GuardedBy("lock")
     @Nullable
-    private volatile ComponentMainThreadExecutor mainThreadExecutor;
+    private ComponentMainThreadExecutor mainThreadExecutor;
 
     /** Callbacks for resource (de-)allocations. */
     @Nullable private ResourceAllocator resourceAllocator;
