@@ -95,7 +95,7 @@ class FineGrainedSlotManagerTest extends FineGrainedSlotManagerTestBase {
     void testCloseAfterSuspendDoesNotThrowException() throws Exception {
         new Context() {
             {
-                runTest(() -> getSlotManager().suspend());
+                runTest(() -> runInMainThreadAndWait(getSlotManager()::suspend));
             }
         };
     }

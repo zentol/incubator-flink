@@ -257,6 +257,8 @@ public class FineGrainedSlotManager implements SlotManager {
             return;
         }
 
+        assertRunsInMainThreadExecutor();
+
         LOG.info("Suspending the slot manager.");
 
         slotManagerMetricGroup.close();
