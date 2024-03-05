@@ -182,12 +182,9 @@ public class JobIDLoggingITCase extends TestLogger {
                 ignoredEvents,
                 eventsWithWrongJobId,
                 eventsWithMissingJobId);
-        assertTrue(
-                eventsWithWrongJobId.isEmpty(),
-                "events with a wrong Job ID recorded for "
-                        + loggerName
-                        + ": "
-                        + eventsWithWrongJobId);
+        assertThat(eventsWithWrongJobId)
+                .as("events with a wrong Job ID)
+                .isEmpty();
         assertTrue(
                 eventsWithMissingJobId.isEmpty(),
                 "too many events without Job ID recorded for "
