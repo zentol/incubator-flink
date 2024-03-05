@@ -18,12 +18,12 @@
 
 package org.apache.flink.runtime.rpc;
 
-import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
 /**
  * Base class for fenced {@link RpcEndpoint}. A fenced rpc endpoint expects all rpc messages being
@@ -40,8 +40,8 @@ public abstract class FencedRpcEndpoint<F extends Serializable> extends RpcEndpo
             RpcService rpcService,
             String endpointId,
             F fencingToken,
-            Function<ComponentMainThreadExecutor, ComponentMainThreadExecutor> configureExecutor) {
-        super(rpcService, endpointId, configureExecutor);
+            Map<String, String> loggingContext) {
+        super(rpcService, endpointId, loggingContext);
 
         Preconditions.checkNotNull(fencingToken, "The fence token should be null");
         Preconditions.checkNotNull(rpcServer, "The rpc server should be null");
@@ -50,7 +50,7 @@ public abstract class FencedRpcEndpoint<F extends Serializable> extends RpcEndpo
     }
 
     protected FencedRpcEndpoint(RpcService rpcService, String endpointId, F fencingToken) {
-        this(rpcService, endpointId, fencingToken, Function.identity());
+        this(rpcService, endpointId, fencingToken, Collections.emptyMap());
     }
 
     protected FencedRpcEndpoint(RpcService rpcService, F fencingToken) {

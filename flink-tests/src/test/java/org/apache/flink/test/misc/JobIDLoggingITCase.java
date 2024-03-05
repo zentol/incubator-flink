@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkState;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.slf4j.event.Level.DEBUG;
 
@@ -182,9 +182,7 @@ public class JobIDLoggingITCase extends TestLogger {
                 ignoredEvents,
                 eventsWithWrongJobId,
                 eventsWithMissingJobId);
-        assertThat(eventsWithWrongJobId)
-                .as("events with a wrong Job ID)
-                .isEmpty();
+        assertThat(eventsWithWrongJobId).as("events with a wrong Job ID").isEmpty();
         assertTrue(
                 eventsWithMissingJobId.isEmpty(),
                 "too many events without Job ID recorded for "

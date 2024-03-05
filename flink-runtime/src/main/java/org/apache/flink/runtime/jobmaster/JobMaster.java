@@ -41,7 +41,6 @@ import org.apache.flink.runtime.checkpoint.SubTaskInitializationMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
-import org.apache.flink.runtime.concurrent.MdcAwareMainThreadExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
@@ -256,9 +255,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                 rpcService,
                 RpcServiceUtils.createRandomName(JOB_MANAGER_NAME),
                 jobMasterId,
-                e ->
-                        new MdcAwareMainThreadExecutor(
-                                e, MdcUtils.asContextData(jobGraph.getJobID())));
+                MdcUtils.asContextData(jobGraph.getJobID()));
 
         final ExecutionDeploymentReconciliationHandler executionStateReconciliationHandler =
                 new ExecutionDeploymentReconciliationHandler() {
@@ -1009,8 +1006,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
                     createResourceManagerHeartbeatManager(heartbeatServices);
 
             // start the slot pool make sure the slot pool now accepts messages for this leader
-            slotPoolService.start(
-                    getFencingToken(), getAddress(), getMainThreadExecutor(jobGraph.getJobID()));
+            slotPoolService.start(getFencingToken(), getAddress(), getMainThreadExecutor());
 
             // job is ready to go, try to establish connection with resource manager
             //   - activate leader retrieval for the resource manager
@@ -1585,15 +1581,5 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         @Override
         public void unblockResources(Collection<BlockedNode> unblockedNodes) {}
-    }
-
-    @Override
-    public void beforeInvocation() {
-        MdcUtils.addJobID(jobGraph.getJobID());
-    }
-
-    @Override
-    public void afterInvocation() {
-        MdcUtils.removeJobID();
     }
 }

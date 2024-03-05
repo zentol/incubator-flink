@@ -22,7 +22,6 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
-import org.apache.flink.runtime.concurrent.MdcAwareMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledFutureAdapter;
 import org.apache.flink.util.AutoCloseableAsync;
 import org.apache.flink.util.MdcUtils;
@@ -37,9 +36,12 @@ import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,7 +50,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -116,7 +117,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      * The main thread executor to be used to execute future callbacks in the main thread of the
      * executing rpc server.
      */
-    private final ComponentMainThreadExecutor mainThreadExecutor;
+    private final MainThreadExecutor mainThreadExecutor;
 
     /**
      * Register endpoint closeable resource to the registry and close them when the server is
@@ -137,23 +138,17 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      *
      * @param rpcService The RPC server that dispatches calls to this RPC endpoint.
      * @param endpointId Unique identifier for this endpoint
-     * @param configureExecutor customizes the {@link ComponentMainThreadExecutor} used by this
-     *     {@link RpcEndpoint}
      */
     protected RpcEndpoint(
-            RpcService rpcService,
-            String endpointId,
-            Function<ComponentMainThreadExecutor, ComponentMainThreadExecutor> configureExecutor) {
+            RpcService rpcService, String endpointId, Map<String, String> loggingContext) {
         this.rpcService = checkNotNull(rpcService, "rpcService");
         this.endpointId = checkNotNull(endpointId, "endpointId");
 
-        this.rpcServer = rpcService.startServer(this);
+        this.rpcServer = rpcService.startServer(this, loggingContext);
         this.resourceRegistry = new CloseableRegistry();
 
         this.mainThreadExecutor =
-                configureExecutor.apply(
-                        new MainThreadExecutor(
-                                rpcServer, this::validateRunsInMainThread, endpointId));
+                new MainThreadExecutor(rpcServer, this::validateRunsInMainThread, endpointId);
 
         registerResource(this.mainThreadExecutor);
     }
@@ -165,7 +160,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      * @param endpointId Unique identifier for this endpoint
      */
     protected RpcEndpoint(final RpcService rpcService, final String endpointId) {
-        this(rpcService, endpointId, Function.identity());
+        this(rpcService, endpointId, Collections.emptyMap());
     }
 
     /**
@@ -360,7 +355,7 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      *
      * @return Main thread execution context
      */
-    protected ComponentMainThreadExecutor getMainThreadExecutor() {
+    protected MainThreadExecutor getMainThreadExecutor() {
         return mainThreadExecutor;
     }
 
@@ -372,10 +367,9 @@ public abstract class RpcEndpoint implements RpcGateway, AutoCloseableAsync {
      *     i.e. add/remove before/after the invocations using the returned executor
      * @return Main thread execution context
      */
-    protected ComponentMainThreadExecutor getMainThreadExecutor(JobID jobID) {
+    protected Executor getMainThreadExecutor(JobID jobID) {
         // todo: consider caching
-        return new MdcAwareMainThreadExecutor(
-                getMainThreadExecutor(), MdcUtils.asContextData(jobID));
+        return MdcUtils.scopeToJob(jobID, getMainThreadExecutor());
     }
 
     /**

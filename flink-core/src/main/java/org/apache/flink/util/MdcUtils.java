@@ -49,18 +49,25 @@ public class MdcUtils {
         MDC.remove(JOB_ID);
     }
 
+    public static MdcCloseable withContext(Map<String, String> context) {
+        final Map<String, String> orig = MDC.getCopyOfContextMap();
+        MDC.setContextMap(context);
+        return () -> MDC.setContextMap(orig);
+    }
+
+    public interface MdcCloseable extends AutoCloseable {
+        @Override
+        void close();
+    }
+
     /**
      * Wrap the given {@link Runnable} so that the given data is added to {@link MDC} before its
      * execution and removed afterward.
      */
     public static Runnable wrapRunnable(Map<String, String> contextData, Runnable command) {
         return () -> {
-            final Map<String, String> orig = MDC.getCopyOfContextMap();
-            MDC.setContextMap(contextData);
-            try {
+            try (MdcCloseable ctx = withContext(contextData)) {
                 command.run();
-            } finally {
-                MDC.setContextMap(orig);
             }
         };
     }
@@ -72,12 +79,8 @@ public class MdcUtils {
     public static <T> Callable<T> wrapCallable(
             Map<String, String> contextData, Callable<T> command) {
         return () -> {
-            final Map<String, String> orig = MDC.getCopyOfContextMap();
-            MDC.setContextMap(contextData);
-            try {
+            try (MdcCloseable ctx = withContext(contextData)) {
                 return command.call();
-            } finally {
-                MDC.setContextMap(orig);
             }
         };
     }

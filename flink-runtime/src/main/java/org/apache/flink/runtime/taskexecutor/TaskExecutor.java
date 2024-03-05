@@ -1085,35 +1085,34 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
             long completedCheckpointTimestamp,
             long lastSubsumedCheckpointId) {
         final Task task = taskSlotTable.getTask(executionAttemptID);
-        MdcUtils.addJobID(task.getJobID());
-        log.debug(
-                "Confirm completed checkpoint {}@{} and last subsumed checkpoint {} for {}.",
-                completedCheckpointId,
-                completedCheckpointTimestamp,
-                lastSubsumedCheckpointId,
-                executionAttemptID);
 
-        try {
-            if (task != null) {
+        if (task != null) {
+            MdcUtils.addJobID(task.getJobID());
+            try {
+                log.debug(
+                        "Confirm completed checkpoint {}@{} and last subsumed checkpoint {} for {}.",
+                        completedCheckpointId,
+                        completedCheckpointTimestamp,
+                        lastSubsumedCheckpointId,
+                        executionAttemptID);
                 task.notifyCheckpointComplete(completedCheckpointId);
 
                 task.notifyCheckpointSubsumed(lastSubsumedCheckpointId);
                 return CompletableFuture.completedFuture(Acknowledge.get());
-            } else {
-                final String message =
-                        "TaskManager received a checkpoint confirmation for unknown task "
-                                + executionAttemptID
-                                + '.';
-
-                log.debug(message);
-                return FutureUtils.completedExceptionally(
-                        new CheckpointException(
-                                message,
-                                CheckpointFailureReason
-                                        .UNKNOWN_TASK_CHECKPOINT_NOTIFICATION_FAILURE));
+            } finally {
+                MdcUtils.removeJobID();
             }
-        } finally {
-            MdcUtils.removeJobID();
+        } else {
+            final String message =
+                    "TaskManager received a checkpoint confirmation for unknown task "
+                            + executionAttemptID
+                            + '.';
+
+            log.debug(message);
+            return FutureUtils.completedExceptionally(
+                    new CheckpointException(
+                            message,
+                            CheckpointFailureReason.UNKNOWN_TASK_CHECKPOINT_NOTIFICATION_FAILURE));
         }
     }
 
